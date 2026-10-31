@@ -11,9 +11,9 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
-### [PR.002]
-- **Data/Hora:** 31/10/2026 16:56 (Horário Local)
-- **Tag Git:** `PR.002`
+### [PR.003]
+- **Data/Hora:** 31/10/2026 17:02 (Horário Local)
+- **Tag Git:** `PR.003`
 - **Status:** Ativo / Em Produção 24/7
 - **Links Oficiais:**
   - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
@@ -22,28 +22,34 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
   - Localhost de Desenvolvimento: http://localhost:3000
   - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
 
-#### 🖥️ Implementações Estruturais do PR.002:
-1. **Mesa De-Para Operacional Interativa:**
-   - Visualização lado a lado de itens orçamentários originais x correspondências referenciais (SINAPI / SICRO).
-   - Badges coloridos de score de confiança (Verde >=80%, Âmbar >=50%, Vermelho <50%).
-   - Modal interativo para troca de candidatos e busca dinâmica no catálogo referencial.
-2. **Motor de IA e Matching Semântico:**
-   - Heurística com extração de especificações numéricas críticas (ex: 30 MPa, 10mm, traços).
-   - Ranqueamento dos top-4 candidatos com explicações e bônus por compatibilidade de unidade.
-3. **Ingestão e Parser de Planilhas:**
-   - Suporte a upload `.xlsx` via `openpyxl.load_workbook`.
-   - Botão para carregar Orçamento Modelo Realista com 1 clique.
-4. **Painel de Métricas Financeiras Consolidadas:**
-   - Comparativo em tempo real: Total Original x Total Compatibilizado x Variação Financeira (Delta R$ e %).
-5. **Exportação Excel com `openpyxl` (Strict Mode):**
-   - Criação de planilha executiva estilizada com Dark Industrial Luxury.
-   - Fórmulas vivas no Excel: `=D{row}*E{row}`, `=K{row}*J{row}`, `=SUM(...)` e fórmula da estratégia.
-   - Ativação de `calcProperties.fullCalcOnLoad = True`.
+#### 🖥️ Implementações Estruturais do PR.003:
+1. **Curva ABC Analítica Integrada (Princípio de Pareto 80/20):**
+   - Nova aba dedicada categorizando os insumos por relevância financeira:
+     - **Classe A:** até 80% do valor do orçamento.
+     - **Classe B:** de 80% a 95% do valor.
+     - **Classe C:** de 95% a 100% do valor.
+   - Cálculo automático de percentual unitário e acumulado.
+2. **Memória Histórica de Aprendizado (`MappingMemory`):**
+   - Nova aba dedicada e persistência local no `localStorage`.
+   - Toda alteração manual feita pelo usuário é memorizada pelo sistema e reaplicada com 100% de prioridade em orçamentos futuros.
+3. **Card Didático Interativo:**
+   - Seção expansível no frontend explicando com exemplos práticos do cotidiano como funcionam as estratégias matemáticas e como os módulos coexistem sem nenhum conflito.
+4. **Exportação Excel Multi-Aba via `openpyxl` (Strict Mode):**
+   - Criação de duas abas estilizadas no mesmo arquivo `.xlsx`: "Orçamento Compatibilizado" e "Curva ABC (Pareto)".
+   - Preservação estrita de fórmulas vivas em ambas as abas com `calcProperties.fullCalcOnLoad = True`.
+
+---
+
+### [PR.002]
+- **Data/Hora:** 31/10/2026 16:56 (Horário Local)
+- **Tag Git:** `PR.002`
+- **Status:** Concluído
+- **Implementações:** Ingestão de planilhas `.xlsx` com `openpyxl.load_workbook`, motor de similaridade semântica com tokens e unidades, catálogo SINAPI/SICRO e mesa De-Para operacional.
 
 ---
 
 ### [PR.001]
 - **Data/Hora:** 31/10/2026 16:46 (Horário Local)
 - **Tag Git:** `PR.001`
-- **Status:** Ativo / Em Produção 24/7
+- **Status:** Concluído
 - **Implementações:** Inicialização de infraestrutura, CI/CD, Next.js, App Router, TypeScript, Tailwind CSS, modelos de dados, backend Python serverless com openpyxl ativo.

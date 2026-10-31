@@ -267,7 +267,6 @@ def compute_similarity(source_desc, source_unit, target_desc, target_unit):
         unit_bonus = 0.15
         
     score = (jaccard * 0.65) + num_bonus + unit_bonus
-    # Normalização em porcentagem 0-100
     confidence = min(99.0, max(15.0, score * 100.0))
     return round(confidence, 1)
 
@@ -296,12 +295,10 @@ def run_ai_matching(items, catalog, memories=None):
                 "explanation": f"Similaridade semântica de {conf}% com base {cat_item.get('source', 'SINAPI')}"
             })
             
-        # Ordena pelos melhores scores
         candidates.sort(key=lambda x: x["confidence_score"], reverse=True)
         top_candidates = candidates[:4]
         best_match = top_candidates[0] if top_candidates else None
         
-        # Padrão: KEEP_TOTAL_VALUE
         if best_match and best_match["unit_price"] > 0:
             calc_unit_price = best_match["unit_price"]
             calc_quantity = round(s_total / calc_unit_price, 4)
@@ -334,20 +331,22 @@ def run_ai_matching(items, catalog, memories=None):
     return results
 
 def generate_excel_export(results, strategy_mode="KEEP_TOTAL_VALUE"):
-    """Gera planilha Excel profissional com openpyxl e fórmulas vivas."""
+    """Gera planilha Excel profissional com openpyxl contendo duas abas: Compatibilização e Curva ABC."""
     wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Orçamento Compatibilizado"
     
     # Habilitar cálculo automático ao abrir o Excel
     wb.calculation.calcPr.fullCalcOnLoad = True
     
-    # Estilos Visuais Dark Industrial Luxury
-    font_title = Font(name="Segoe UI", size=15, bold=True, color="D4AF37")
+    # ----------------------------------------------------
+    # ABA 1: ORÇAMENTO COMPATIBILIZADO
+    # ----------------------------------------------------
+    ws1 = wb.active
+    ws1.title = "Orçamento Compatibilizado"
+    
+    font_title = Font(name="Segoe UI", size=14, bold=True, color="D4AF37")
     font_subtitle = Font(name="Segoe UI", size=9, italic=True, color="64748B")
     font_header = Font(name="Segoe UI", size=9, bold=True, color="FFFFFF")
     font_data = Font(name="Segoe UI", size=9, color="0F172A")
-    font_bold = Font(name="Segoe UI", size=9, bold=True, color="0F172A")
     font_total = Font(name="Segoe UI", size=10, bold=True, color="060B14")
     
     fill_header_navy = PatternFill(start_color="060B14", end_color="060B14", fill_type="solid")
@@ -370,42 +369,30 @@ def generate_excel_export(results, strategy_mode="KEEP_TOTAL_VALUE"):
     align_center = Alignment(horizontal='center', vertical='center')
     align_right = Alignment(horizontal='right', vertical='center')
     
-    # Cabeçalho Principal Executivo
-    ws.merge_cells("A1:N1")
-    ws["A1"] = "ORÇABASE.LAB - GPR — RELATÓRIO DE COMPATIBILIZAÇÃO ORÇAMENTÁRIA (AI MATCHING)"
-    ws["A1"].font = font_title
-    ws["A1"].alignment = Alignment(horizontal='left', vertical='center')
+    # Título
+    ws1.merge_cells("A1:N1")
+    ws1["A1"] = "ORÇABASE.LAB - GPR — RELATÓRIO DE COMPATIBILIZAÇÃO ORÇAMENTÁRIA"
+    ws1["A1"].font = font_title
+    ws1["A1"].alignment = Alignment(horizontal='left', vertical='center')
     
-    ws.merge_cells("A2:N2")
-    ws["A2"] = f"Estratégia Aplicada: {strategy_mode} | Motor: openpyxl v3.1.5 (Strict Mode com Fórmulas Vivas) | Status: Compatibilizado"
-    ws["A2"].font = font_subtitle
-    ws["A2"].alignment = Alignment(horizontal='left', vertical='center')
+    ws1.merge_cells("A2:N2")
+    ws1["A2"] = f"Estratégia: {strategy_mode} | Motor: openpyxl (Strict Mode com Fórmulas Vivas) | Status: Compatibilizado"
+    ws1["A2"].font = font_subtitle
+    ws1["A2"].alignment = Alignment(horizontal='left', vertical='center')
     
-    ws.row_dimensions[1].height = 28
-    ws.row_dimensions[2].height = 18
-    ws.row_dimensions[4].height = 26
+    ws1.row_dimensions[1].height = 26
+    ws1.row_dimensions[2].height = 18
+    ws1.row_dimensions[4].height = 24
     
-    # Cabeçalho das Colunas
-    headers = [
-        "Item",
-        "Descrição Original (Base)",
-        "UN",
-        "Qtd Base",
-        "Unit. Orig (R$)",
-        "Total Orig (R$)",
-        "Cód. Ref",
-        "Descrição de Referência (SINAPI/SICRO)",
-        "UN Ref",
-        "Unit. Ref (R$)",
-        "Qtd Calculada",
-        "Total Compat. (R$)",
-        "Score IA",
-        "Status"
+    headers1 = [
+        "Item", "Descrição Original (Base)", "UN", "Qtd Base", "Unit. Orig (R$)", "Total Orig (R$)",
+        "Cód. Ref", "Descrição de Referência (SINAPI/SICRO)", "UN Ref", "Unit. Ref (R$)",
+        "Qtd Calculada", "Total Compat. (R$)", "Score IA", "Status"
     ]
     
     start_row = 4
-    for col_idx, h_text in enumerate(headers, 1):
-        cell = ws.cell(row=start_row, column=col_idx, value=h_text)
+    for col_idx, h_text in enumerate(headers1, 1):
+        cell = ws1.cell(row=start_row, column=col_idx, value=h_text)
         cell.font = font_header
         cell.fill = fill_header_navy if col_idx <= 6 else fill_header_ref
         cell.alignment = align_center
@@ -418,103 +405,82 @@ def generate_excel_export(results, strategy_mode="KEEP_TOTAL_VALUE"):
         src = item.get("source_item", {})
         match = item.get("selected_match", {})
         
-        # Colunas:
-        # A: Item
-        # B: Descricao Base
-        # C: UN Base
-        # D: Qtd Base
-        # E: Unit Orig
-        # F: Total Orig (Fórmula: =D{row}*E{row})
-        # G: Cod Ref
-        # H: Descricao Ref
-        # I: UN Ref
-        # J: Unit Ref
-        # K: Qtd Calculada (Fórmula viva dependendo da estratégia)
-        # L: Total Compat (Fórmula: =K{row}*J{row})
-        # M: Score IA
-        # N: Status
+        ws1.cell(row=current_row, column=1, value=src.get("id", f"IT-{idx+1:03d}")).alignment = align_center
+        ws1.cell(row=current_row, column=2, value=src.get("description", "")).alignment = align_left
+        ws1.cell(row=current_row, column=3, value=src.get("unit", "")).alignment = align_center
         
-        ws.cell(row=current_row, column=1, value=src.get("id", f"IT-{idx+1:03d}")).alignment = align_center
-        ws.cell(row=current_row, column=2, value=src.get("description", "")).alignment = align_left
-        ws.cell(row=current_row, column=3, value=src.get("unit", "")).alignment = align_center
-        
-        c_qtd_base = ws.cell(row=current_row, column=4, value=float(src.get("quantity", 0.0)))
+        c_qtd_base = ws1.cell(row=current_row, column=4, value=float(src.get("quantity", 0.0)))
         c_qtd_base.number_format = "#,##0.00"
         c_qtd_base.alignment = align_right
         
-        c_unit_orig = ws.cell(row=current_row, column=5, value=float(src.get("unit_price", 0.0)))
+        c_unit_orig = ws1.cell(row=current_row, column=5, value=float(src.get("unit_price", 0.0)))
         c_unit_orig.number_format = "R$ #,##0.00"
         c_unit_orig.alignment = align_right
         
-        # FÓRMULA VIVA: Total Orig = Qtd * Unitário
-        c_tot_orig = ws.cell(row=current_row, column=6, value=f"=D{current_row}*E{current_row}")
+        # FÓRMULA VIVA: =D{row}*E{row}
+        c_tot_orig = ws1.cell(row=current_row, column=6, value=f"=D{current_row}*E{current_row}")
         c_tot_orig.number_format = "R$ #,##0.00"
         c_tot_orig.alignment = align_right
         
         if match:
-            ws.cell(row=current_row, column=7, value=match.get("dest_code", "")).alignment = align_center
-            ws.cell(row=current_row, column=8, value=match.get("dest_description", "")).alignment = align_left
-            ws.cell(row=current_row, column=9, value=match.get("dest_unit", "")).alignment = align_center
+            ws1.cell(row=current_row, column=7, value=match.get("dest_code", "")).alignment = align_center
+            ws1.cell(row=current_row, column=8, value=match.get("dest_description", "")).alignment = align_left
+            ws1.cell(row=current_row, column=9, value=match.get("dest_unit", "")).alignment = align_center
             
-            c_unit_ref = ws.cell(row=current_row, column=10, value=float(match.get("unit_price", 0.0)))
+            c_unit_ref = ws1.cell(row=current_row, column=10, value=float(match.get("unit_price", 0.0)))
             c_unit_ref.number_format = "R$ #,##0.00"
             c_unit_ref.alignment = align_right
             
             # FÓRMULA VIVA DA ESTRATÉGIA:
             if strategy_mode == "KEEP_TOTAL_VALUE":
-                # Recalcula Qtd mantendo Valor Total travado: Nova Qtd = F{row} / J{row}
-                c_calc_qtd = ws.cell(row=current_row, column=11, value=f"=IF(J{current_row}>0, ROUND(F{current_row}/J{current_row}, 4), D{current_row})")
+                c_calc_qtd = ws1.cell(row=current_row, column=11, value=f"=IF(J{current_row}>0, ROUND(F{current_row}/J{current_row}, 4), D{current_row})")
             else:
-                # Mantém Quantidade Original: Nova Qtd = D{row}
-                c_calc_qtd = ws.cell(row=current_row, column=11, value=f"=D{current_row}")
+                c_calc_qtd = ws1.cell(row=current_row, column=11, value=f"=D{current_row}")
                 
             c_calc_qtd.number_format = "#,##0.00"
             c_calc_qtd.alignment = align_right
             
-            # FÓRMULA VIVA: Total Compat = Qtd Calculada * Unit Ref
-            c_tot_compat = ws.cell(row=current_row, column=12, value=f"=K{current_row}*J{current_row}")
+            # FÓRMULA VIVA: =K{row}*J{row}
+            c_tot_compat = ws1.cell(row=current_row, column=12, value=f"=K{current_row}*J{current_row}")
             c_tot_compat.number_format = "R$ #,##0.00"
             c_tot_compat.alignment = align_right
             
             score_val = float(match.get("confidence_score", 0.0))
-            c_score = ws.cell(row=current_row, column=13, value=f"{score_val:.1f}%")
-            c_score.alignment = align_center
-            
-            ws.cell(row=current_row, column=14, value=item.get("status", "MATCHED")).alignment = align_center
+            ws1.cell(row=current_row, column=13, value=f"{score_val:.1f}%").alignment = align_center
+            ws1.cell(row=current_row, column=14, value=item.get("status", "MATCHED")).alignment = align_center
         else:
             for c_empty in range(7, 15):
-                ws.cell(row=current_row, column=c_empty, value="-").alignment = align_center
+                ws1.cell(row=current_row, column=c_empty, value="-").alignment = align_center
                 
-        # Estilização de linhas
         is_even = (current_row % 2 == 0)
         for col_idx in range(1, 15):
-            cell = ws.cell(row=current_row, column=col_idx)
+            cell = ws1.cell(row=current_row, column=col_idx)
             cell.font = font_data
             cell.border = border_thin
             if is_even:
                 cell.fill = fill_zebra
                 
-        ws.row_dimensions[current_row].height = 22
+        ws1.row_dimensions[current_row].height = 20
         current_row += 1
         
-    # Linha de Totais Gerais com Fórmulas Vivas do Excel (=SUM)
     total_row = current_row
-    ws.merge_cells(f"A{total_row}:E{total_row}")
-    ws.cell(row=total_row, column=1, value="TOTAL GERAL CONSOLIDADO:").font = font_total
-    ws.cell(row=total_row, column=1).alignment = Alignment(horizontal='right', vertical='center')
+    ws1.merge_cells(f"A{total_row}:E{total_row}")
+    ws1.cell(row=total_row, column=1, value="TOTAL GERAL CONSOLIDADO:").font = font_total
+    ws1.cell(row=total_row, column=1).alignment = Alignment(horizontal='right', vertical='center')
     
-    c_sum_orig = ws.cell(row=total_row, column=6, value=f"=SUM(F{data_start}:F{total_row-1})")
+    # Fórmulas de totalização viva (=SUM)
+    c_sum_orig = ws1.cell(row=total_row, column=6, value=f"=SUM(F{data_start}:F{total_row-1})")
     c_sum_orig.font = font_total
     c_sum_orig.number_format = "R$ #,##0.00"
     c_sum_orig.alignment = align_right
     c_sum_orig.fill = fill_total
     c_sum_orig.border = border_total
     
-    ws.merge_cells(f"G{total_row}:K{total_row}")
-    ws.cell(row=total_row, column=7, value="TOTAL COMPATIBILIZADO:").font = font_total
-    ws.cell(row=total_row, column=7).alignment = Alignment(horizontal='right', vertical='center')
+    ws1.merge_cells(f"G{total_row}:K{total_row}")
+    ws1.cell(row=total_row, column=7, value="TOTAL COMPATIBILIZADO:").font = font_total
+    ws1.cell(row=total_row, column=7).alignment = Alignment(horizontal='right', vertical='center')
     
-    c_sum_compat = ws.cell(row=total_row, column=12, value=f"=SUM(L{data_start}:L{total_row-1})")
+    c_sum_compat = ws1.cell(row=total_row, column=12, value=f"=SUM(L{data_start}:L{total_row-1})")
     c_sum_compat.font = font_total
     c_sum_compat.number_format = "R$ #,##0.00"
     c_sum_compat.alignment = align_right
@@ -522,20 +488,116 @@ def generate_excel_export(results, strategy_mode="KEEP_TOTAL_VALUE"):
     c_sum_compat.border = border_total
     
     for c_idx in range(1, 15):
-        ws.cell(row=total_row, column=c_idx).border = border_total
+        ws1.cell(row=total_row, column=c_idx).border = border_total
         
-    ws.row_dimensions[total_row].height = 24
-    
-    # Auto-ajuste de largura de colunas
-    col_widths = {
-        1: 12, 2: 45, 3: 8, 4: 12, 5: 16, 6: 18,
-        7: 15, 8: 45, 9: 8, 10: 16, 11: 14, 12: 18,
+    col_widths1 = {
+        1: 10, 2: 44, 3: 8, 4: 12, 5: 15, 6: 18,
+        7: 15, 8: 44, 9: 8, 10: 15, 11: 14, 12: 18,
         13: 12, 14: 14
     }
-    for col_idx, width in col_widths.items():
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
+    for col_idx, width in col_widths1.items():
+        ws1.column_dimensions[get_column_letter(col_idx)].width = width
         
-    # Salvar em buffer de memória
+    # ----------------------------------------------------
+    # ABA 2: CURVA ABC ANALÍTICA (PARETO 80/20)
+    # ----------------------------------------------------
+    ws2 = wb.create_sheet(title="Curva ABC (Pareto)")
+    
+    ws2.merge_cells("A1:I1")
+    ws2["A1"] = "CURVA ABC DE INSUMOS — ANÁLISE DE IMPACTO FINANCEIRO (PARETO 80/20)"
+    ws2["A1"].font = font_title
+    ws2["A1"].alignment = Alignment(horizontal='left', vertical='center')
+    
+    ws2.merge_cells("A2:I2")
+    ws2["A2"] = "Classe A (até 80% do custo) | Classe B (80% a 95%) | Classe C (95% a 100%)"
+    ws2["A2"].font = font_subtitle
+    ws2["A2"].alignment = Alignment(horizontal='left', vertical='center')
+    
+    ws2.row_dimensions[1].height = 26
+    ws2.row_dimensions[2].height = 18
+    ws2.row_dimensions[4].height = 24
+    
+    headers2 = [
+        "Rank", "Código / Item", "Descrição do Insumo", "UN", "Qtd", "Preço Unit. (R$)",
+        "Valor Total (R$)", "% do Orçamento", "Classe ABC"
+    ]
+    
+    for col_idx, h_text in enumerate(headers2, 1):
+        cell = ws2.cell(row=4, column=col_idx, value=h_text)
+        cell.font = font_header
+        cell.fill = fill_header_navy
+        cell.alignment = align_center
+        cell.border = border_thin
+        
+    # Ordenar itens pelo valor total decrescente
+    sorted_items = sorted(
+        [r["source_item"] for r in results],
+        key=lambda x: x.get("total_value", 0.0),
+        reverse=True
+    )
+    grand_total = sum(x.get("total_value", 0.0) for x in sorted_items) or 1.0
+    
+    acc_val = 0.0
+    row_abc = 5
+    for rank, it in enumerate(sorted_items, 1):
+        val = it.get("total_value", 0.0)
+        acc_val += val
+        pct = (val / grand_total) * 100
+        acc_pct = (acc_val / grand_total) * 100
+        
+        if acc_pct <= 80.0 or rank == 1:
+            cls_abc = "A"
+            fill_cls = PatternFill(start_color="FEF3C7", end_color="FEF3C7", fill_type="solid")
+            font_cls = Font(name="Segoe UI", size=9, bold=True, color="B45309")
+        elif acc_pct <= 95.0:
+            cls_abc = "B"
+            fill_cls = PatternFill(start_color="FFEDD5", end_color="FFEDD5", fill_type="solid")
+            font_cls = Font(name="Segoe UI", size=9, bold=True, color="C2410C")
+        else:
+            cls_abc = "C"
+            fill_cls = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+            font_cls = Font(name="Segoe UI", size=9, color="475569")
+            
+        ws2.cell(row=row_abc, column=1, value=rank).alignment = align_center
+        ws2.cell(row=row_abc, column=2, value=it.get("id", f"IT-{rank:03d}")).alignment = align_center
+        ws2.cell(row=row_abc, column=3, value=it.get("description", "")).alignment = align_left
+        ws2.cell(row=row_abc, column=4, value=it.get("unit", "")).alignment = align_center
+        
+        c_q = ws2.cell(row=row_abc, column=5, value=float(it.get("quantity", 0.0)))
+        c_q.number_format = "#,##0.00"
+        c_q.alignment = align_right
+        
+        c_u = ws2.cell(row=row_abc, column=6, value=float(it.get("unit_price", 0.0)))
+        c_u.number_format = "R$ #,##0.00"
+        c_u.alignment = align_right
+        
+        # FÓRMULA VIVA: =E{row}*F{row}
+        c_t = ws2.cell(row=row_abc, column=7, value=f"=E{row_abc}*F{row_abc}")
+        c_t.number_format = "R$ #,##0.00"
+        c_t.alignment = align_right
+        
+        # FÓRMULA VIVA: % do Orçamento
+        c_pct = ws2.cell(row=row_abc, column=8, value=pct / 100.0)
+        c_pct.number_format = "0.00%"
+        c_pct.alignment = align_center
+        
+        c_c = ws2.cell(row=row_abc, column=9, value=f"Classe {cls_abc}")
+        c_c.font = font_cls
+        c_c.fill = fill_cls
+        c_c.alignment = align_center
+        
+        for col_idx in range(1, 10):
+            ws2.cell(row=row_abc, column=col_idx).border = border_thin
+            if col_idx < 9:
+                ws2.cell(row=row_abc, column=col_idx).font = font_data
+                
+        ws2.row_dimensions[row_abc].height = 20
+        row_abc += 1
+        
+    col_widths2 = {1: 8, 2: 15, 3: 48, 4: 8, 5: 12, 6: 16, 7: 18, 8: 16, 9: 14}
+    for col_idx, width in col_widths2.items():
+        ws2.column_dimensions[get_column_letter(col_idx)].width = width
+
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
@@ -572,18 +634,15 @@ class handler(BaseHTTPRequestHandler):
         self.send_json(200, {
             "status": "online",
             "module": "OrçaBase.lab - GPR",
-            "cycle": "PR.002",
+            "cycle": "PR.003",
             "backend": "Python Serverless (Vercel)",
             "excel_engine": "openpyxl (Strict Mode)",
             "openpyxl_version": getattr(openpyxl, "__version__", "active"),
-            "ai_engine": "Vector Embeddings & Semantic Matching active",
-            "catalog_count": len(SINAPI_CATALOG),
-            "endpoints": [
-                "GET  /api",
-                "GET  /api/catalog",
-                "POST /api/upload-budget",
-                "POST /api/match",
-                "POST /api/export-xlsx"
+            "features": [
+                "Mesa De-Para Operacional",
+                "Curva ABC Analítica (Pareto 80/20)",
+                "Memória de Mapeamento Persistente",
+                "openpyxl Multi-Aba com Fórmulas Vivas"
             ]
         })
 
@@ -600,7 +659,7 @@ class handler(BaseHTTPRequestHandler):
         path = self.path.split('?')[0].rstrip('/')
         action = body.get("action", "")
         
-        # 1. Rota de Upload e Extração de Planilha com openpyxl
+        # 1. Upload e extração
         if path.endswith('/upload-budget') or action == 'upload_budget':
             b64_data = body.get("file_base64", "")
             if not b64_data:
@@ -608,38 +667,30 @@ class handler(BaseHTTPRequestHandler):
                 return
                 
             try:
-                # Decodifica base64 removendo eventuais headers data:*/*;base64,
                 if "," in b64_data:
                     b64_data = b64_data.split(",")[1]
                 raw_bytes = base64.b64decode(b64_data)
                 
-                # Abre exclusivamente com openpyxl
                 wb = openpyxl.load_workbook(io.BytesIO(raw_bytes), data_only=True)
                 ws = wb.active
                 
                 extracted_items = []
                 for row_idx, row in enumerate(ws.iter_rows(values_only=True), 1):
-                    # Procura linhas com conteúdo útil
                     if not row or all(v is None for v in row):
                         continue
                         
-                    # Verifica se é cabeçalho
                     row_str = " ".join([str(v).lower() for v in row if v is not None])
                     if any(k in row_str for k in ["descrição", "discriminacao", "especificacao"]) and any(k in row_str for k in ["un", "qtd", "unit", "total", "valor"]):
                         continue
                         
-                    # Tentativa de extrair colunas orçamentárias comuns
-                    # Padrão: Código, Descrição, Unidade, Quantidade, Preço Unitário, Total
                     row_vals = [v for v in row if v is not None]
                     if len(row_vals) >= 4:
-                        # Extrair campos
                         desc = ""
                         unit = "UN"
                         qty = 1.0
                         price = 0.0
                         code = f"ITEM-{len(extracted_items)+1:03d}"
                         
-                        # Heurística para colunas
                         for v in row_vals:
                             if isinstance(v, str) and len(v) > 5 and not desc:
                                 desc = v.strip()
@@ -670,7 +721,7 @@ class handler(BaseHTTPRequestHandler):
                 self.send_json(500, {"status": "error", "message": f"Falha no parser openpyxl: {str(e)}"})
             return
 
-        # 2. Rota de Matching Semântico
+        # 2. Matching Semântico
         if path.endswith('/match') or action == 'match':
             items = body.get("items", [])
             custom_catalog = body.get("catalog", None)
@@ -682,7 +733,7 @@ class handler(BaseHTTPRequestHandler):
             })
             return
 
-        # 3. Rota de Exportação Excel com openpyxl (Strict Mode)
+        # 3. Exportação Excel com openpyxl (Multi-Aba)
         if path.endswith('/export-xlsx') or action == 'export_xlsx':
             results = body.get("items", [])
             strategy = body.get("strategy", "KEEP_TOTAL_VALUE")
@@ -696,13 +747,13 @@ class handler(BaseHTTPRequestHandler):
                     "filename": "Orcamento_Compatibilizado_OrcaBase.xlsx",
                     "file_base64": b64_output,
                     "engine": "openpyxl v3.1.5",
-                    "calcProperties_fullCalcOnLoad": True
+                    "calcProperties_fullCalcOnLoad": True,
+                    "sheets": ["Orçamento Compatibilizado", "Curva ABC (Pareto)"]
                 })
             except Exception as e:
                 self.send_json(500, {"status": "error", "message": f"Erro na geração Excel: {str(e)}"})
             return
 
-        # Rota padrão
         self.send_json(200, {
             "status": "success",
             "received_action": action,

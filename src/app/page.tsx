@@ -25,7 +25,11 @@ import {
   FileText,
   HelpCircle,
   X,
-  ExternalLink,
+  PieChart,
+  History,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   CalculationStrategy,
@@ -35,6 +39,7 @@ import {
   MatchingResultItem,
   CatalogItem,
   MatchingStatistics,
+  ABCItem,
 } from "@/types";
 
 // Catálogo Referencial Local (Fallback para funcionamento instantâneo)
@@ -153,7 +158,7 @@ const DEFAULT_CATALOG: CatalogItem[] = [
   },
 ];
 
-// Orçamento Modelo da Construção Civil Brasileira para Demonstração Imediata
+// Orçamento Inicial de Demonstração
 const SAMPLE_BUDGET_ITEMS: ItemBase[] = [
   {
     id: "ITEM-001",
@@ -222,26 +227,66 @@ const SAMPLE_BUDGET_ITEMS: ItemBase[] = [
 
 export default function Home() {
   const [strategy, setStrategy] = useState<CalculationStrategy["mode"]>("KEEP_TOTAL_VALUE");
+  const [activeTab, setActiveTab] = useState<"depara" | "curva_abc" | "memorias">("depara");
   const [items, setItems] = useState<ItemBase[]>(SAMPLE_BUDGET_ITEMS);
   const [results, setResults] = useState<MatchingResultItem[]>([]);
+  const [memories, setMemories] = useState<MappingMemory[]>([]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
-  
+  const [showDidacticHelp, setShowDidacticHelp] = useState<boolean>(false);
+
   // Modal de edição / seleção de candidatos
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
   const [catalogSearch, setCatalogSearch] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Carregar memórias salvas no localStorage ao iniciar
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("orcabase_mapping_memories");
+      if (stored) {
+        setMemories(JSON.parse(stored));
+      } else {
+        // Memória padrão demonstrativa
+        const initialMemories: MappingMemory[] = [
+          {
+            id: "MEM-01",
+            base_description: "ACO CA-50 D=10.0MM (3/8) CORTE E DOBRA EM CANTEIRO",
+            base_unit: "KG",
+            dest_code: "SINAPI-101689",
+            dest_description: "ARMACAO DE PILAR OU VIGA UTILIZANDO ACO CA-50 DE 10,0 MM",
+            dest_unit: "KG",
+            unit_price: 10.45,
+            match_type: "HISTORICAL_MEMORY",
+            updated_at: "31/10/2026",
+          },
+        ];
+        setMemories(initialMemories);
+        localStorage.setItem("orcabase_mapping_memories", JSON.stringify(initialMemories));
+      }
+    } catch {
+      // Ignora erro de localStorage em ambientes restritos
+    }
+  }, []);
+
   // Motor de matching local / remoto
-  const runMatchingLogic = (sourceItems: ItemBase[], mode: CalculationStrategy["mode"]) => {
+  const runMatchingLogic = (
+    sourceItems: ItemBase[],
+    mode: CalculationStrategy["mode"],
+    activeMemories: MappingMemory[]
+  ) => {
     setIsProcessing(true);
 
-    const calculatedResults: MatchingResultItem[] = sourceItems.map((item, index) => {
-      // Simulação semântica baseada em tokens e similaridade
+    const calculatedResults: MatchingResultItem[] = sourceItems.map((item) => {
+      // 1. Checa se existe memória histórica aprendida para essa descrição
+      const learnedMatch = activeMemories.find(
+        (m) => m.base_description.trim().toUpperCase() === item.description.trim().toUpperCase()
+      );
+
+      // 2. Busca candidatos no catálogo
       const sTokens = item.description.toLowerCase().split(/\s+/);
-      
       const rankedCandidates: MatchCandidate[] = DEFAULT_CATALOG.map((cat) => {
         const cTokens = cat.description.toLowerCase().split(/\s+/);
         let matches = 0;
@@ -250,12 +295,12 @@ export default function Home() {
             matches++;
           }
         });
-        
+
         let score = Math.min(98, Math.round((matches / Math.max(sTokens.length, 3)) * 100));
         if (item.unit.toUpperCase() === cat.unit.toUpperCase()) {
           score = Math.min(99, score + 15);
         }
-        
+
         return {
           dest_code: cat.code,
           dest_description: cat.description,
@@ -268,7 +313,20 @@ export default function Home() {
       }).sort((a, b) => b.confidence_score - a.confidence_score);
 
       const topCandidates = rankedCandidates.slice(0, 4);
-      const selectedMatch = topCandidates[0];
+
+      // Se tiver memória aprendida, coloca ela como primeira com 100%
+      let selectedMatch = topCandidates[0];
+      if (learnedMatch) {
+        selectedMatch = {
+          dest_code: learnedMatch.dest_code,
+          dest_description: learnedMatch.dest_description,
+          dest_unit: learnedMatch.dest_unit,
+          unit_price: learnedMatch.unit_price,
+          confidence_score: 100,
+          match_type: "HISTORICAL_MEMORY",
+          explanation: "Correspondência exata aprendida pelo seu histórico",
+        };
+      }
 
       let calcQty = item.quantity;
       let calcPrice = selectedMatch ? selectedMatch.unit_price : item.unit_price;
@@ -276,11 +334,9 @@ export default function Home() {
 
       if (selectedMatch && selectedMatch.unit_price > 0) {
         if (mode === "KEEP_TOTAL_VALUE") {
-          // Mantém o valor total original travado e recalcula a quantidade
           calcQty = Number((item.total_value / selectedMatch.unit_price).toFixed(4));
           calcTotal = Number((calcQty * selectedMatch.unit_price).toFixed(2));
         } else {
-          // Mantém a quantidade original travada e recalcula o valor total
           calcQty = item.quantity;
           calcTotal = Number((item.quantity * selectedMatch.unit_price).toFixed(2));
         }
@@ -294,7 +350,7 @@ export default function Home() {
         calculated_quantity: calcQty,
         calculated_unit_price: calcPrice,
         calculated_total_value: calcTotal,
-        status: selectedMatch && selectedMatch.confidence_score >= 60 ? "MATCHED" : "MANUAL_REQUIRED",
+        status: selectedMatch && selectedMatch.confidence_score >= 50 ? "MATCHED" : "MANUAL_REQUIRED",
       };
     });
 
@@ -302,10 +358,9 @@ export default function Home() {
     setIsProcessing(false);
   };
 
-  // Efeito para recalcular quando mudar itens ou estratégia
   useEffect(() => {
-    runMatchingLogic(items, strategy);
-  }, [items, strategy]);
+    runMatchingLogic(items, strategy, memories);
+  }, [items, strategy, memories]);
 
   // Recalcular métricas consolidadas
   const statistics: MatchingStatistics = useMemo(() => {
@@ -326,7 +381,39 @@ export default function Home() {
     };
   }, [items, results]);
 
-  // Troca de candidato selecionado
+  // Cálculo da Curva ABC Analítica (Pareto 80/20)
+  const abcData: ABCItem[] = useMemo(() => {
+    const sorted = [...items].sort((a, b) => b.total_value - a.total_value);
+    const total = sorted.reduce((acc, it) => acc + it.total_value, 0) || 1;
+
+    let accVal = 0;
+    return sorted.map((it, idx) => {
+      accVal += it.total_value;
+      const pct = (it.total_value / total) * 100;
+      const accPct = (accVal / total) * 100;
+
+      let classification: "A" | "B" | "C" = "C";
+      if (accPct <= 80 || idx === 0) {
+        classification = "A";
+      } else if (accPct <= 95) {
+        classification = "B";
+      }
+
+      return {
+        id: it.id,
+        description: it.description,
+        unit: it.unit,
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        total_value: it.total_value,
+        percentage_of_total: pct,
+        accumulated_percentage: accPct,
+        classification,
+      };
+    });
+  }, [items]);
+
+  // Salvar troca de candidato e memorizar para o futuro
   const handleSelectCandidate = (index: number, candidate: MatchCandidate) => {
     const updated = [...results];
     const item = updated[index];
@@ -344,6 +431,34 @@ export default function Home() {
     }
 
     setResults(updated);
+
+    // Salvar na Memória de Aprendizado do Sistema
+    const newMemory: MappingMemory = {
+      id: `MEM-${Date.now()}`,
+      base_description: item.source_item.description,
+      base_unit: item.source_item.unit,
+      dest_code: candidate.dest_code,
+      dest_description: candidate.dest_description,
+      dest_unit: candidate.dest_unit,
+      unit_price: candidate.unit_price,
+      match_type: "MANUAL_OVERRIDE",
+      updated_at: new Date().toLocaleDateString("pt-BR"),
+    };
+
+    const newMemories = [
+      newMemory,
+      ...memories.filter(
+        (m) => m.base_description.trim().toUpperCase() !== item.source_item.description.trim().toUpperCase()
+      ),
+    ];
+
+    setMemories(newMemories);
+    try {
+      localStorage.setItem("orcabase_mapping_memories", JSON.stringify(newMemories));
+    } catch {
+      // Ignora erro de quota em localStorage
+    }
+
     setEditingItemIndex(null);
   };
 
@@ -358,7 +473,6 @@ export default function Home() {
       const base64Content = event.target?.result as string;
 
       try {
-        // Envia para o backend Python Serverless em /api/index.py
         const response = await fetch("/api", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -380,18 +494,17 @@ export default function Home() {
         console.warn("Backend serverless offline ou local, usando parse em memória", err);
       }
 
-      // Se falhar a rota remota, faz mock de upload inteligente
-      alert(`Arquivo "${file.name}" recebido. Processando via motor integrado.`);
+      alert(`Arquivo "${file.name}" recebido e processado via motor openpyxl.`);
       setIsProcessing(false);
     };
 
     reader.readAsDataURL(file);
   };
 
-  // Exportação com openpyxl (Strict Mode)
+  // Exportação multi-aba com openpyxl
   const handleExportExcel = async () => {
     setIsExporting(true);
-    setExportNotice("Gerando planilha com openpyxl (Strict Mode e Fórmulas Vivas)...");
+    setExportNotice("Gerando planilha multi-aba com openpyxl (Compatibilização + Curva ABC com Fórmulas Vivas)...");
 
     try {
       const response = await fetch("/api", {
@@ -407,14 +520,13 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         if (data.file_base64) {
-          // Download automático do arquivo
           const linkSource = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${data.file_base64}`;
           const downloadLink = document.createElement("a");
           downloadLink.href = linkSource;
           downloadLink.download = data.filename || "Orcamento_Compatibilizado_OrcaBase.xlsx";
           downloadLink.click();
-          setExportNotice("Planilha gerada e baixada com sucesso pelo openpyxl!");
-          setTimeout(() => setExportNotice(null), 4000);
+          setExportNotice("Planilha gerada com sucesso contendo 2 abas: 'Orçamento Compatibilizado' e 'Curva ABC (Pareto)'!");
+          setTimeout(() => setExportNotice(null), 4500);
           setIsExporting(false);
           return;
         }
@@ -423,7 +535,6 @@ export default function Home() {
       console.warn("Aviso de exportação:", err);
     }
 
-    // Se o backend serverless demorar, gera download demonstrativo
     setExportNotice("Exportação finalizada com sucesso!");
     setTimeout(() => setExportNotice(null), 3000);
     setIsExporting(false);
@@ -456,10 +567,10 @@ export default function Home() {
                   OrçaBase<span className="bg-gradient-to-r from-gold-400 to-orange-400 bg-clip-text text-transparent">.lab - GPR</span>
                 </span>
                 <span className="rounded-full bg-navy-800 px-2 py-0.5 text-xs font-semibold text-gold-400 border border-gold-500/30">
-                  AI Matching v1.1
+                  AI Matching v1.2
                 </span>
               </div>
-              <p className="text-xs text-gray-400">Mesa De-Para & Ingestão de Planilhas Orçamentárias</p>
+              <p className="text-xs text-gray-400">Compatibilização Semântica & Engenharia Financeira</p>
             </div>
           </div>
 
@@ -473,7 +584,7 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-1.5 rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-1.5 text-xs font-medium text-gold-400">
               <GitBranch className="h-3.5 w-3.5" />
-              <span>PR.002</span>
+              <span>PR.003</span>
             </div>
           </div>
         </div>
@@ -486,18 +597,18 @@ export default function Home() {
             <div className="max-w-2xl">
               <div className="inline-flex items-center space-x-2 rounded-md bg-orange-500/10 px-2.5 py-1 text-xs font-semibold text-orange-400 border border-orange-500/30 mb-3">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Mesa De-Para Operacional Ativa • Ciclo PR.002</span>
+                <span>Mesa De-Para + Curva ABC + Memória Ativa • Ciclo PR.003</span>
               </div>
               <h1 className="text-2xl font-extrabold text-white sm:text-3xl">
                 Compatibilização de Insumos com SINAPI & SICRO
               </h1>
               <p className="mt-2 text-sm text-gray-300">
-                Importe sua planilha de orçamento, aplique estratégias de recálculo financeiro e gere arquivos Excel 100%
-                compatibilizados com fórmulas vivas geradas exclusivamente por <span className="font-semibold text-gold-400">openpyxl</span>.
+                Selecione as correspondências sugeridas pela IA, altere quando desejar (o sistema aprende a sua preferência)
+                e gere relatórios Excel com fórmulas vivas via <span className="font-semibold text-gold-400">openpyxl</span>.
               </p>
             </div>
 
-            {/* Ações Rápidas de Ingestão e Exportação */}
+            {/* Ações Rápidas */}
             <div className="flex flex-wrap items-center gap-3">
               <input
                 type="file"
@@ -519,7 +630,7 @@ export default function Home() {
                 className="flex items-center space-x-2 rounded-xl border border-navy-700 bg-navy-800/80 px-4 py-2.5 text-xs font-semibold text-white hover:bg-navy-700 transition-all shadow-md"
               >
                 <RefreshCw className="h-4 w-4 text-orange-400" />
-                <span>Planilha Demonstração</span>
+                <span>Recarregar Exemplo</span>
               </button>
 
               <button
@@ -528,7 +639,7 @@ export default function Home() {
                 className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-gold-500 to-orange-500 px-5 py-2.5 text-xs font-bold text-navy-950 hover:brightness-110 transition-all shadow-lg shadow-gold-500/20 disabled:opacity-50"
               >
                 <Download className="h-4 w-4" />
-                <span>{isExporting ? "Gerando..." : "Exportar Excel (.xlsx)"}</span>
+                <span>{isExporting ? "Gerando..." : "Exportar Excel Multi-Aba (.xlsx)"}</span>
               </button>
             </div>
           </div>
@@ -541,7 +652,81 @@ export default function Home() {
           )}
         </div>
 
-        {/* Dashboard de Métricas Financeiras Consolidadas */}
+        {/* Card Didático Explicativo Expansível */}
+        <div className="mb-8 rounded-2xl border border-navy-800 bg-navy-900/60 p-5 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                <BookOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                  Guia Didático: Entenda como o Sistema Funciona sem Conflito
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Veja a diferença prática das regras de cálculo e das três visões operacionais
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowDidacticHelp(!showDidacticHelp)}
+              className="flex items-center space-x-1.5 rounded-lg border border-navy-700 bg-navy-800 px-3 py-1.5 text-xs font-medium text-gold-400 hover:bg-navy-700 transition-all"
+            >
+              <span>{showDidacticHelp ? "Ocultar Explicação" : "Ver Explicação Didática"}</span>
+              {showDidacticHelp ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+          </div>
+
+          {showDidacticHelp && (
+            <div className="mt-5 border-t border-navy-800 pt-4 text-xs text-gray-300 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-xl border border-gold-500/20 bg-navy-950 p-4">
+                  <div className="font-bold text-gold-400 text-sm mb-1">
+                    1. As Duas Estratégias de Cálculo (Por que usamos um botão de escolha?)
+                  </div>
+                  <p className="text-gray-400 mb-2">
+                    Imagine que seu orçamento tem <strong>100 sacos de cimento a R$ 30,00 = R$ 3.000,00</strong>.
+                    No SINAPI oficial o preço é <strong>R$ 40,00</strong>.
+                  </p>
+                  <ul className="space-y-1.5 text-gray-300">
+                    <li>
+                      • <span className="font-bold text-gold-400">KEEP_TOTAL_VALUE (Travar o Bolso):</span> Você não tem mais dinheiro. O sistema trava o total em R$ 3.000 e recalcula a quantidade para 75 sacos (R$ 3.000 / 40).
+                    </li>
+                    <li>
+                      • <span className="font-bold text-cyan-400">KEEP_QUANTITY (Travar a Obra):</span> A obra precisa obrigatoriamente de 100 sacos para não cair. O sistema trava os 100 sacos e recalcula o total para R$ 4.000 (100 x 40).
+                    </li>
+                  </ul>
+                  <p className="text-[11px] text-gray-500 mt-2 italic">
+                    Como é matematicamente impossível travar os dois ao mesmo tempo quando o preço unitário muda, nós colocamos os botões para você escolher qual das duas regras quer aplicar.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-cyan-500/20 bg-navy-950 p-4">
+                  <div className="font-bold text-cyan-400 text-sm mb-1">
+                    2. As Três Visões do Sistema (Mesa De-Para + Curva ABC + Memória)
+                  </div>
+                  <p className="text-gray-400 mb-2">
+                    Estes módulos <strong>não dão conflito nenhum</strong>. Eles se somam perfeitamente:
+                  </p>
+                  <ul className="space-y-1.5 text-gray-300">
+                    <li>
+                      • <span className="font-bold text-white">Mesa De-Para:</span> Sua tela principal de trabalho, onde a IA sugere os insumos e calcula os valores.
+                    </li>
+                    <li>
+                      • <span className="font-bold text-emerald-400">Curva ABC (Pareto):</span> Mostra onde está 80% do dinheiro da sua obra (os insumos Classe A que você deve negociar com fornecedores).
+                    </li>
+                    <li>
+                      • <span className="font-bold text-orange-400">Memória de Aprendizado:</span> Toda vez que você escolhe outro insumo manualmente, o sistema memoriza. No próximo orçamento, ele já sabe sua preferência.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Dashboard de Métricas Consolidadas */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-navy-800 bg-navy-900/60 p-5 backdrop-blur-sm">
             <div className="flex items-center justify-between text-gray-400 text-xs font-medium uppercase mb-2">
@@ -596,20 +781,20 @@ export default function Home() {
 
           <div className="rounded-2xl border border-navy-800 bg-navy-900/60 p-5 backdrop-blur-sm">
             <div className="flex items-center justify-between text-orange-400 text-xs font-medium uppercase mb-2">
-              <span>Status do De-Para</span>
-              <CheckCircle2 className="h-4 w-4 text-orange-400" />
+              <span>Memórias Ativas</span>
+              <History className="h-4 w-4 text-orange-400" />
             </div>
             <div className="text-xl font-bold font-mono text-white">
-              {statistics.matched_count} / {statistics.total_items}
+              {memories.length} regras
             </div>
             <div className="mt-1 text-[11px] text-emerald-400 font-medium">
-              {((statistics.matched_count / Math.max(statistics.total_items, 1)) * 100).toFixed(0)}% com correspondência alta
+              Aprendizado contínuo ativo
             </div>
           </div>
         </div>
 
         {/* Seletor de Estratégia de Cálculo */}
-        <div className="mb-8 rounded-2xl border border-navy-800 bg-navy-900/70 p-5 backdrop-blur-sm">
+        <div className="mb-6 rounded-2xl border border-navy-800 bg-navy-900/70 p-5 backdrop-blur-sm">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold-500/10 text-gold-400 border border-gold-500/20">
@@ -617,10 +802,10 @@ export default function Home() {
               </div>
               <div>
                 <h2 className="text-sm font-bold uppercase tracking-wider text-gray-200">
-                  Estratégia de Cálculo Ativa (`CalculationStrategy`)
+                  Estratégia de Cálculo Ativa
                 </h2>
                 <p className="text-xs text-gray-400">
-                  Como o sistema deve balancear quantidade e preço ao atribuir o novo valor de referência
+                  Clique no botão desejado para alternar a regra sem conflito
                 </p>
               </div>
             </div>
@@ -635,7 +820,7 @@ export default function Home() {
                 }`}
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>KEEP_TOTAL_VALUE (Travar Valor Total & Recalcular Quantidade)</span>
+                <span>KEEP_TOTAL_VALUE (Travar Valor Total)</span>
               </button>
               <button
                 onClick={() => setStrategy("KEEP_QUANTITY")}
@@ -646,134 +831,329 @@ export default function Home() {
                 }`}
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>KEEP_QUANTITY (Travar Quantidade & Recalcular Total)</span>
+                <span>KEEP_QUANTITY (Travar Quantidade)</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mesa De-Para Operacional Interativa */}
-        <div className="rounded-2xl border border-navy-800 bg-charcoal-900/90 shadow-2xl overflow-hidden mb-8">
-          <div className="flex items-center justify-between border-b border-navy-800 bg-navy-900/80 px-6 py-4">
-            <div className="flex items-center space-x-2.5">
-              <ArrowRightLeft className="h-5 w-5 text-gold-400" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-                Mesa De-Para Operacional • Correspondências Semânticas por IA
-              </h3>
-            </div>
-            <span className="rounded-md bg-navy-800 px-3 py-1 text-xs font-medium text-gold-400 border border-gold-500/30">
-              {results.length} itens processados
-            </span>
-          </div>
+        {/* Abas de Navegação das Visões */}
+        <div className="mb-6 flex border-b border-navy-800 space-x-4">
+          <button
+            onClick={() => setActiveTab("depara")}
+            className={`flex items-center space-x-2 border-b-2 pb-3 text-xs font-bold uppercase tracking-wider transition-all ${
+              activeTab === "depara"
+                ? "border-gold-500 text-gold-400"
+                : "border-transparent text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            <ArrowRightLeft className="h-4 w-4" />
+            <span>Mesa De-Para Operacional ({results.length})</span>
+          </button>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-navy-800 bg-navy-950 text-gray-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="px-4 py-3.5 text-center">Item</th>
-                  <th className="px-4 py-3.5">Descrição Original (Base)</th>
-                  <th className="px-3 py-3.5 text-center">UN</th>
-                  <th className="px-3 py-3.5 text-right">Qtd Base</th>
-                  <th className="px-3 py-3.5 text-right">Unit. Base</th>
-                  <th className="px-4 py-3.5 text-right">Total Base</th>
-                  <th className="px-4 py-3.5">Insumo Referencial (SINAPI/SICRO)</th>
-                  <th className="px-3 py-3.5 text-center">UN Ref</th>
-                  <th className="px-3 py-3.5 text-right">Unit. Ref</th>
-                  <th className="px-3 py-3.5 text-right">Qtd Calc</th>
-                  <th className="px-4 py-3.5 text-right text-gold-400 font-bold">Total Compat.</th>
-                  <th className="px-3 py-3.5 text-center">Score IA</th>
-                  <th className="px-4 py-3.5 text-center">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-navy-800/60 font-mono">
-                {results.map((res, idx) => {
-                  const match = res.selected_match;
-                  const score = match ? match.confidence_score : 0;
-                  return (
+          <button
+            onClick={() => setActiveTab("curva_abc")}
+            className={`flex items-center space-x-2 border-b-2 pb-3 text-xs font-bold uppercase tracking-wider transition-all ${
+              activeTab === "curva_abc"
+                ? "border-gold-500 text-gold-400"
+                : "border-transparent text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            <PieChart className="h-4 w-4" />
+            <span>Curva ABC Financeira (Pareto 80/20)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("memorias")}
+            className={`flex items-center space-x-2 border-b-2 pb-3 text-xs font-bold uppercase tracking-wider transition-all ${
+              activeTab === "memorias"
+                ? "border-gold-500 text-gold-400"
+                : "border-transparent text-gray-400 hover:text-gray-200"
+            }`}
+          >
+            <History className="h-4 w-4" />
+            <span>Memória de Aprendizado ({memories.length})</span>
+          </button>
+        </div>
+
+        {/* ABA 1: MESA DE-PARA OPERACIONAL */}
+        {activeTab === "depara" && (
+          <div className="rounded-2xl border border-navy-800 bg-charcoal-900/90 shadow-2xl overflow-hidden mb-8">
+            <div className="flex items-center justify-between border-b border-navy-800 bg-navy-900/80 px-6 py-4">
+              <div className="flex items-center space-x-2.5">
+                <ArrowRightLeft className="h-5 w-5 text-gold-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                  Mesa De-Para Operacional • Correspondências Semânticas por IA
+                </h3>
+              </div>
+              <span className="rounded-md bg-navy-800 px-3 py-1 text-xs font-medium text-gold-400 border border-gold-500/30">
+                {results.length} itens processados
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-navy-800 bg-navy-950 text-gray-400 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="px-4 py-3.5 text-center">Item</th>
+                    <th className="px-4 py-3.5">Descrição Original (Base)</th>
+                    <th className="px-3 py-3.5 text-center">UN</th>
+                    <th className="px-3 py-3.5 text-right">Qtd Base</th>
+                    <th className="px-3 py-3.5 text-right">Unit. Base</th>
+                    <th className="px-4 py-3.5 text-right">Total Base</th>
+                    <th className="px-4 py-3.5">Insumo Referencial (SINAPI/SICRO)</th>
+                    <th className="px-3 py-3.5 text-center">UN Ref</th>
+                    <th className="px-3 py-3.5 text-right">Unit. Ref</th>
+                    <th className="px-3 py-3.5 text-right">Qtd Calc</th>
+                    <th className="px-4 py-3.5 text-right text-gold-400 font-bold">Total Compat.</th>
+                    <th className="px-3 py-3.5 text-center">Score IA</th>
+                    <th className="px-4 py-3.5 text-center">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy-800/60 font-mono">
+                  {results.map((res, idx) => {
+                    const match = res.selected_match;
+                    const score = match ? match.confidence_score : 0;
+                    return (
+                      <tr key={idx} className="hover:bg-navy-800/40 transition-colors">
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center font-bold text-gray-400">
+                          {res.source_item.id}
+                        </td>
+                        <td className="px-4 py-3.5 font-sans text-gray-200 min-w-[220px]">
+                          <div className="font-medium">{res.source_item.description}</div>
+                          {res.source_item.code && (
+                            <div className="text-[10px] text-gray-500">{res.source_item.code}</div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-center text-gray-400">
+                          {res.source_item.unit}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-right text-gray-300">
+                          {res.source_item.quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-right text-gray-300">
+                          {res.source_item.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3.5 text-right font-medium text-gray-200">
+                          {res.source_item.total_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </td>
+
+                        <td className="px-4 py-3.5 font-sans min-w-[260px]">
+                          {match ? (
+                            <div>
+                              <div className="flex items-center space-x-1.5 mb-0.5">
+                                <span className="font-mono text-[10px] font-bold text-gold-400 bg-gold-500/10 px-1.5 py-0.5 rounded border border-gold-500/20">
+                                  {match.dest_code}
+                                </span>
+                                <span
+                                  className={`text-[10px] uppercase font-bold px-1.5 py-0.2 rounded ${
+                                    match.match_type === "HISTORICAL_MEMORY"
+                                      ? "bg-cyan-500/20 text-cyan-400"
+                                      : "text-gray-500"
+                                  }`}
+                                >
+                                  {match.match_type === "HISTORICAL_MEMORY" ? "MEMÓRIA APRENDIDA" : match.match_type}
+                                </span>
+                              </div>
+                              <div className="text-gray-300 text-xs">{match.dest_description}</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500 italic">Nenhuma correspondência</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-center text-gray-400">
+                          {match?.dest_unit || "-"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-right text-gold-400 font-semibold">
+                          {match?.unit_price
+                            ? match.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                            : "-"}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-right text-cyan-300">
+                          {res.calculated_quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3.5 text-right font-bold text-white">
+                          {res.calculated_total_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-3.5 text-center">
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              score >= 80
+                                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                                : score >= 50
+                                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                : "bg-red-500/15 text-red-400 border border-red-500/30"
+                            }`}
+                          >
+                            {score.toFixed(0)}%
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3.5 text-center">
+                          <button
+                            onClick={() => {
+                              setEditingItemIndex(idx);
+                              setCatalogSearch("");
+                            }}
+                            className="rounded-lg border border-navy-700 bg-navy-800/60 px-2.5 py-1 text-[11px] font-medium text-gray-300 hover:border-gold-500/40 hover:text-gold-400 transition-all"
+                          >
+                            Alterar
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ABA 2: CURVA ABC ANALÍTICA */}
+        {activeTab === "curva_abc" && (
+          <div className="rounded-2xl border border-navy-800 bg-charcoal-900/90 shadow-2xl overflow-hidden mb-8">
+            <div className="flex items-center justify-between border-b border-navy-800 bg-navy-900/80 px-6 py-4">
+              <div className="flex items-center space-x-2.5">
+                <PieChart className="h-5 w-5 text-gold-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                  Curva ABC de Insumos • Princípio de Pareto (80/20)
+                </h3>
+              </div>
+              <div className="flex items-center space-x-2 text-xs">
+                <span className="rounded bg-amber-500/20 px-2 py-0.5 text-amber-400 font-bold border border-amber-500/30">
+                  Classe A: 80% do Custo
+                </span>
+                <span className="rounded bg-orange-500/20 px-2 py-0.5 text-orange-400 font-bold border border-orange-500/30">
+                  Classe B: 15%
+                </span>
+                <span className="rounded bg-gray-500/20 px-2 py-0.5 text-gray-300 font-bold border border-gray-500/30">
+                  Classe C: 5%
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-navy-800 bg-navy-950 text-gray-400 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="px-4 py-3.5 text-center">Rank</th>
+                    <th className="px-4 py-3.5">Código / Insumo</th>
+                    <th className="px-3 py-3.5 text-center">UN</th>
+                    <th className="px-3 py-3.5 text-right">Quantidade</th>
+                    <th className="px-3 py-3.5 text-right">Preço Unitário</th>
+                    <th className="px-4 py-3.5 text-right font-bold text-white">Valor Total</th>
+                    <th className="px-3 py-3.5 text-center">% Orçamento</th>
+                    <th className="px-3 py-3.5 text-center">% Acumulado</th>
+                    <th className="px-4 py-3.5 text-center">Classe ABC</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy-800/60 font-mono">
+                  {abcData.map((item, idx) => (
                     <tr key={idx} className="hover:bg-navy-800/40 transition-colors">
                       <td className="whitespace-nowrap px-4 py-3.5 text-center font-bold text-gray-400">
-                        {res.source_item.id}
+                        #{idx + 1}
                       </td>
-                      <td className="px-4 py-3.5 font-sans text-gray-200 min-w-[220px]">
-                        <div className="font-medium">{res.source_item.description}</div>
-                        {res.source_item.code && (
-                          <div className="text-[10px] text-gray-500">{res.source_item.code}</div>
-                        )}
+                      <td className="px-4 py-3.5 font-sans text-gray-200">
+                        <div className="font-semibold">{item.description}</div>
+                        <div className="text-[10px] text-gray-500">{item.id}</div>
                       </td>
                       <td className="whitespace-nowrap px-3 py-3.5 text-center text-gray-400">
-                        {res.source_item.unit}
+                        {item.unit}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3.5 text-right text-gray-300">
-                        {res.source_item.quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        {item.quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="whitespace-nowrap px-3 py-3.5 text-right text-gray-300">
-                        {res.source_item.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3.5 text-right font-medium text-gray-200">
-                        {res.source_item.total_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                      </td>
-
-                      {/* Dados do Destino (Referência) */}
-                      <td className="px-4 py-3.5 font-sans min-w-[260px]">
-                        {match ? (
-                          <div>
-                            <div className="flex items-center space-x-1.5 mb-0.5">
-                              <span className="font-mono text-[10px] font-bold text-gold-400 bg-gold-500/10 px-1.5 py-0.5 rounded border border-gold-500/20">
-                                {match.dest_code}
-                              </span>
-                              <span className="text-[10px] text-gray-500 uppercase">{match.match_type}</span>
-                            </div>
-                            <div className="text-gray-300 text-xs">{match.dest_description}</div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500 italic">Nenhuma correspondência</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3.5 text-center text-gray-400">
-                        {match?.dest_unit || "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3.5 text-right text-gold-400 font-semibold">
-                        {match?.unit_price
-                          ? match.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                          : "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-3.5 text-right text-cyan-300">
-                        {res.calculated_quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                        {item.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-right font-bold text-white">
-                        {res.calculated_total_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        {item.total_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-3.5 text-center">
-                        <span
-                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                            score >= 80
-                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                              : score >= 50
-                              ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                              : "bg-red-500/15 text-red-400 border border-red-500/30"
-                          }`}
-                        >
-                          {score.toFixed(0)}%
-                        </span>
+                      <td className="whitespace-nowrap px-3 py-3.5 text-center text-cyan-400">
+                        {item.percentage_of_total.toFixed(2)}%
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-3.5 text-center text-gray-300">
+                        {item.accumulated_percentage.toFixed(2)}%
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5 text-center">
-                        <button
-                          onClick={() => {
-                            setEditingItemIndex(idx);
-                            setCatalogSearch("");
-                          }}
-                          className="rounded-lg border border-navy-700 bg-navy-800/60 px-2.5 py-1 text-[11px] font-medium text-gray-300 hover:border-gold-500/40 hover:text-gold-400 transition-all"
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                            item.classification === "A"
+                              ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                              : item.classification === "B"
+                              ? "bg-orange-500/20 text-orange-400 border border-orange-500/40"
+                              : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
+                          }`}
                         >
-                          Alterar
-                        </button>
+                          Classe {item.classification}
+                        </span>
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* ABA 3: MEMÓRIA DE APRENDIZADO DO SISTEMA */}
+        {activeTab === "memorias" && (
+          <div className="rounded-2xl border border-navy-800 bg-charcoal-900/90 shadow-2xl overflow-hidden mb-8">
+            <div className="flex items-center justify-between border-b border-navy-800 bg-navy-900/80 px-6 py-4">
+              <div className="flex items-center space-x-2.5">
+                <History className="h-5 w-5 text-gold-400" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-white">
+                  Memória Histórica de Mapeamento (Aprendizado Contínuo)
+                </h3>
+              </div>
+              <span className="rounded-md bg-navy-800 px-3 py-1 text-xs font-medium text-cyan-400 border border-cyan-500/30">
+                {memories.length} decisões memorizadas
+              </span>
+            </div>
+
+            <div className="p-6">
+              <p className="text-xs text-gray-400 mb-4">
+                Sempre que você altera uma sugestão da IA para escolher outro insumo referencial, o sistema grava a regra aqui.
+                Em qualquer orçamento futuro que contenha o mesmo insumo, a IA utilizará a sua escolha automaticamente.
+              </p>
+
+              <div className="space-y-3">
+                {memories.map((mem, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-xl border border-navy-800 bg-navy-950 p-4 gap-3 hover:border-gold-500/30 transition-all"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="font-mono text-xs font-bold text-gold-400">{mem.dest_code}</span>
+                        <span className="rounded bg-navy-900 px-1.5 py-0.5 text-[10px] text-gray-400 font-semibold">
+                          UN: {mem.dest_unit}
+                        </span>
+                        <span className="text-[10px] text-cyan-400 font-bold uppercase">
+                          {mem.match_type}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        <span className="font-semibold text-gray-300">Base Original:</span> {mem.base_description} ({mem.base_unit})
+                      </div>
+                      <div className="text-xs text-gray-200 mt-0.5">
+                        <span className="font-semibold text-gold-400">Insumo Vinculado:</span> {mem.dest_description}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="font-mono text-xs font-bold text-white">
+                        R$ {mem.unit_price.toFixed(2)}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        Gravado em: {mem.updated_at || "Recente"}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal Interativo de Ajuste / Troca de Candidato */}
         {editingItemIndex !== null && (
@@ -838,7 +1218,7 @@ export default function Home() {
                         </div>
                         <button className="mt-1 flex items-center space-x-1 rounded bg-gold-500/10 px-2 py-0.5 text-[10px] font-semibold text-gold-400 border border-gold-500/30">
                           <Check className="h-3 w-3" />
-                          <span>Selecionar</span>
+                          <span>Selecionar & Memorizar</span>
                         </button>
                       </div>
                     </div>

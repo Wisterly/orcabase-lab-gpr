@@ -1,5 +1,5 @@
 /**
- * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.002)
+ * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.003)
  */
 
 export interface CalculationStrategy {
@@ -26,12 +26,15 @@ export interface CatalogItem {
 }
 
 export interface MappingMemory {
+  id?: string;
   base_description: string;
   base_unit: string;
   dest_code: string;
   dest_description: string;
   dest_unit: string;
+  unit_price: number;
   match_type: 'AI_SUGGESTION' | 'MANUAL_OVERRIDE' | 'HISTORICAL_MEMORY';
+  updated_at?: string;
 }
 
 export interface MatchCandidate {
@@ -63,4 +66,16 @@ export interface MatchingStatistics {
   calculated_total_value: number;
   variance_value: number;
   variance_percentage: number;
+}
+
+export interface ABCItem {
+  id: string;
+  description: string;
+  unit: string;
+  quantity: number;
+  unit_price: number;
+  total_value: number;
+  percentage_of_total: number;
+  accumulated_percentage: number;
+  classification: 'A' | 'B' | 'C';
 }
