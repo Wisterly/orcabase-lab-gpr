@@ -1,1375 +1,2122 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import * as XLSX from "xlsx";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
-  Brain,
-  FileSpreadsheet,
-  CheckCircle2,
-  Sliders,
-  ArrowRightLeft,
+  UploadCloud,
   Sparkles,
   Download,
-  UploadCloud,
-  X,
-  PieChart,
-  History,
-  TrendingDown,
-  TrendingUp,
-  Search,
-  Check,
-  Database,
-  Trash2,
-  Inbox,
-  AlertCircle,
-  Building2,
-  Settings,
-  Eye,
-  Plus,
-  Play,
-  Layers,
-  FileCheck,
+  FileSpreadsheet,
+  ArrowRight,
+  CheckCircle2,
+  Sliders,
+  ShieldCheck,
   RefreshCw,
-  FolderOpen,
-  DollarSign,
-  Tag,
+  Trash2,
+  Settings,
+  Plus,
+  Building2,
+  Calendar,
+  Percent,
+  Check,
+  Search,
+  Layers,
+  Edit3,
+  X,
+  Eye,
+  FileCheck2,
+  Cpu,
+  Scale,
+  Calculator,
+  FolderKanban,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
-  CalculationStrategy,
   ItemBase,
   ContractBaseCard,
-  MatchingResultItem,
-  MatchingStatistics,
-} from "@/types";
+  ContractCompositionMatch,
+  CalculationStrategy,
+  SpreadsheetStudy,
+} from "../types";
+import {
+  studySpreadsheetFromBuffer,
+  arrayBufferToBase64,
+  saveContractBinary,
+  getContractBinary,
+  deleteContractBinary,
+  buildCompatibilityMatrix,
+  applyCalculationStrategyToMatches,
+  triggerBase64ExcelDownload,
+  injectQuantitiesClientFallback,
+} from "../lib/excelEngine";
 
-// Contrato Padrão Inicial
+const STORAGE_KEY_CONTRACTS = "orcabase_gpr_contracts_v8";
+
 const INITIAL_CONTRACTS: ContractBaseCard[] = [
   {
-    id: "CT-DESENVOLVA-027",
-    title: "DESENVOLVA",
-    company: "DESENVOLVA EMPREENDIMENTOS",
-    contractNumber: "CT 027 - DESENVOLVA",
-    bdi: 25.50,
-    fileName: "DESENVOLVA - 12°GRE - MODIFICADO.xlsx",
-    fileSize: "142.0 KB",
-    budgetSheetName: "Orçamento Geral",
-    totalGeralValue: 147570.00,
-    totalGeralLabel: "TOTAL GERAL DA PLANILHA",
-    compositionsCount: 10,
-    stagesCount: 4,
-    createdAt: "31/10/2026",
+    id: "ct-default-1",
+    contractName: "Manutenção Predial e Adequação Civil — Lote 01",
+    contractNumber: "045/2026-GPR",
+    organization: "Secretaria de Infraestrutura / GPR",
+    bdiPercent: 24.5,
+    referenceBase: "SINAPI / ORSE",
+    updatedAt: "31/10/2026",
+    fileName: "Planilha_Base_Contrato_045_2026.xlsx",
+    budgetSheetName: "Orçamento",
+    sheetNames: ["Orçamento"],
+    totalGeralValue: 412850.0,
+    totalGeralLabel: "TOTAL GERAL DO ORÇAMENTO",
+    detectedColumns: {
+      headerRow: 4,
+      colItem: 1,
+      colCode: 2,
+      colSource: 3,
+      colDesc: 4,
+      colUnit: 5,
+      colQty: 6,
+      colPrice: 7,
+      colTotal: 8,
+      colQtyLetter: "F",
+    },
+    stages: [
+      { code: "1.0", title: "SERVIÇOS DE PINTURA E ACABAMENTOS", discipline: "PINTURA", rowIndex: 5, itemsCount: 2, subtotal: 45200 },
+      { code: "2.0", title: "ESTRUTURA E CONCRETAGEM", discipline: "ESTRUTURA", rowIndex: 8, itemsCount: 3, subtotal: 198450 },
+      { code: "3.0", title: "ALVENARIA, PISOS E REVESTIMENTOS", discipline: "REVESTIMENTO", rowIndex: 12, itemsCount: 2, subtotal: 94200 },
+      { code: "4.0", title: "INSTALAÇÕES HIDRÁULICAS E ELÉTRICAS", discipline: "HIDRÁULICA", rowIndex: 15, itemsCount: 2, subtotal: 75000 },
+    ],
+    itemsCount: 9,
     items: [
-      { id: "1.1", code: "COMP-01", description: "REFORMA MANUTENÇÃO PREVENTIVA E CORRETIVA PREDIAL", unit: "UN", quantity: 1.0, unit_price: 15420.00, total_value: 15420.00, row_index: 5 },
-      { id: "1.2", code: "COMP-02", description: "CONCRETO USINADO FCK 30 MPA BOMBEAVEL SLUMP 12 +/- 2", unit: "M3", quantity: 50.0, unit_price: 492.30, total_value: 24615.00, row_index: 6 },
-      { id: "1.3", code: "COMP-03", description: "ARMACAO DE PILAR OU VIGA UTILIZANDO ACO CA-50 DE 10,0 MM", unit: "KG", quantity: 1200.0, unit_price: 10.45, total_value: 12540.00, row_index: 7 },
-      { id: "1.4", code: "COMP-04", description: "FORMA DE COMPENSADO RESINADO ESPESSURA 12MM C/ REAPROVEITAMENTO", unit: "M2", quantity: 380.0, unit_price: 72.80, total_value: 27664.00, row_index: 8 },
-      { id: "2.1", code: "COMP-05", description: "ALVENARIA DE VEDACAO BLOCO CERAMICO 9X19X19CM COM ARGAMASSA MISTA", unit: "M2", quantity: 290.0, unit_price: 64.90, total_value: 18821.00, row_index: 9 },
-      { id: "2.2", code: "COMP-06", description: "EMBOCO OU MASSA UNICA PARA RECEBIMENTO DE PINTURA E=20MM", unit: "M2", quantity: 580.0, unit_price: 31.40, total_value: 18212.00, row_index: 10 },
-      { id: "3.1", code: "COMP-07", description: "APLICACAO MANUAL DE PINTURA COM TINTA LATEX ACRILICA DUAS DEMAOS", unit: "M2", quantity: 580.0, unit_price: 24.60, total_value: 14268.00, row_index: 11 },
-      { id: "3.2", code: "COMP-08", description: "REVESTIMENTO CERAMICO ESMALTADO PARA PISO 60X60CM PEI-4", unit: "M2", quantity: 240.0, unit_price: 79.50, total_value: 19080.00, row_index: 12 },
-      { id: "4.1", code: "COMP-09", description: "CABO DE COBRE FLEXIVEL ISOLADO 2,5 MM2 ANTI-CHAMA 750V", unit: "M", quantity: 950.0, unit_price: 3.85, total_value: 3657.50, row_index: 13 },
-      { id: "4.2", code: "COMP-10", description: "IMPERMEABILIZACAO COM MANTA ASFALTICA E=4MM APLICADA A MACARICO", unit: "M2", quantity: 85.0, unit_price: 88.50, total_value: 7522.50, row_index: 14 },
+      {
+        id: "SINAPI-88489",
+        itemNumber: "1.1",
+        code: "88489",
+        source: "SINAPI",
+        description: "Pintura látex acrílica premium em paredes internas/externas, 2 demãos",
+        unit: "M2",
+        quantity: 1200,
+        unit_price: 26.5,
+        total_value: 31800,
+        row_index: 6,
+        stage_code: "1.0",
+        stage_title: "SERVIÇOS DE PINTURA E ACABAMENTOS",
+        discipline: "PINTURA",
+      },
+      {
+        id: "SINAPI-88485",
+        itemNumber: "1.2",
+        code: "88485",
+        source: "SINAPI",
+        description: "Aplicação de fundo selador acrílico em paredes internas e externas",
+        unit: "M2",
+        quantity: 1200,
+        unit_price: 11.16,
+        total_value: 13400,
+        row_index: 7,
+        stage_code: "1.0",
+        stage_title: "SERVIÇOS DE PINTURA E ACABAMENTOS",
+        discipline: "PINTURA",
+      },
+      {
+        id: "SINAPI-94965",
+        itemNumber: "2.1",
+        code: "94965",
+        source: "SINAPI",
+        description: "Concreto FCK 30MPa, traço 1:2,1:2,5 (em massa seca de cimento/areia/brita) — preparo mecânico e lançamento",
+        unit: "M3",
+        quantity: 210,
+        unit_price: 540.2,
+        total_value: 113442,
+        row_index: 9,
+        stage_code: "2.0",
+        stage_title: "ESTRUTURA E CONCRETAGEM",
+        discipline: "ESTRUTURA",
+      },
+      {
+        id: "SINAPI-92762",
+        itemNumber: "2.2",
+        code: "92762",
+        source: "SINAPI",
+        description: "Armação de pilar ou viga de uma estrutura convencional de concreto armado utilizando aço CA-50 de 10,0 mm",
+        unit: "KG",
+        quantity: 4200,
+        unit_price: 13.8,
+        total_value: 57960,
+        row_index: 10,
+        stage_code: "2.0",
+        stage_title: "ESTRUTURA E CONCRETAGEM",
+        discipline: "ESTRUTURA",
+      },
+      {
+        id: "SINAPI-92419",
+        itemNumber: "2.3",
+        code: "92419",
+        source: "SINAPI",
+        description: "Montagem e desmontagem de fôrma de viga, escada e pilar em chapa de madeira compensada resinada",
+        unit: "M2",
+        quantity: 290,
+        unit_price: 93.26,
+        total_value: 27048,
+        row_index: 11,
+        stage_code: "2.0",
+        stage_title: "ESTRUTURA E CONCRETAGEM",
+        discipline: "ESTRUTURA",
+      },
+      {
+        id: "SINAPI-87495",
+        itemNumber: "3.1",
+        code: "87495",
+        source: "SINAPI",
+        description: "Alvenaria de vedação de blocos cerâmicos furados na horizontal de 9x19x19 cm (espessura 9 cm)",
+        unit: "M2",
+        quantity: 650,
+        unit_price: 82.0,
+        total_value: 53300,
+        row_index: 13,
+        stage_code: "3.0",
+        stage_title: "ALVENARIA, PISOS E REVESTIMENTOS",
+        discipline: "ALVENARIA",
+      },
+      {
+        id: "SINAPI-87263",
+        itemNumber: "3.2",
+        code: "87263",
+        source: "SINAPI",
+        description: "Revestimento cerâmico para piso ou parede com placas tipo porcelanato 60x60 cm",
+        unit: "M2",
+        quantity: 320,
+        unit_price: 127.81,
+        total_value: 40900,
+        row_index: 14,
+        stage_code: "3.0",
+        stage_title: "ALVENARIA, PISOS E REVESTIMENTOS",
+        discipline: "PISOS",
+      },
+      {
+        id: "SINAPI-89356",
+        itemNumber: "4.1",
+        code: "89356",
+        source: "SINAPI",
+        description: "Tubo PVC, série normal, esgoto predial, DN 100 mm, fornecido e instalado em ramal de descarga ou esgoto",
+        unit: "M",
+        quantity: 450,
+        unit_price: 85.0,
+        total_value: 38250,
+        row_index: 16,
+        stage_code: "4.0",
+        stage_title: "INSTALAÇÕES HIDRÁULICAS E ELÉTRICAS",
+        discipline: "HIDRÁULICA",
+      },
+      {
+        id: "SINAPI-91926",
+        itemNumber: "4.2",
+        code: "91926",
+        source: "SINAPI",
+        description: "Cabo de cobre flexível isolado, 2,5 mm², anti-chama 450/750 V, para circuitos terminais elétricos — fornecido e instalado",
+        unit: "M",
+        quantity: 3500,
+        unit_price: 10.5,
+        total_value: 36750,
+        row_index: 17,
+        stage_code: "4.0",
+        stage_title: "INSTALAÇÕES HIDRÁULICAS E ELÉTRICAS",
+        discipline: "ELÉTRICA",
+      },
     ],
   },
 ];
 
-export default function Home() {
-  const [activeTab, setActiveTab] = useState<"compatibilizacao" | "configuracoes">("compatibilizacao");
-  const [strategy, setStrategy] = useState<CalculationStrategy["mode"]>("KEEP_QUANTITY");
+export default function OrcaBaseDashboard() {
+  // Navegação de Abas
+  const [activeTab, setActiveTab] = useState<"WORKSPACE" | "SETTINGS">("WORKSPACE");
 
-  // Lista de Contratos Base
-  const [contracts, setContracts] = useState<ContractBaseCard[]>([]);
-  const [selectedContractId, setSelectedContractId] = useState<string>("");
+  // Contratos Base cadastrados nas Configurações
+  const [contracts, setContracts] = useState<ContractBaseCard[]>(INITIAL_CONTRACTS);
+  const [selectedContractId, setSelectedContractId] = useState<string>("ct-default-1");
+  const [expandedContractStudyId, setExpandedContractStudyId] = useState<string | null>(null);
 
-  // Planilha 1 (Planilha Inicial a compatibilizar)
-  const [initialFile, setInitialFile] = useState<File | null>(null);
+  // Planilha 1 (Origem dos Quantitativos)
   const [initialFileName, setInitialFileName] = useState<string | null>(null);
-  const [initialFileSize, setInitialFileSize] = useState<string | null>(null);
-  const [initialItems, setInitialItems] = useState<ItemBase[]>([]);
-  const [isDraggingInitial, setIsDraggingInitial] = useState<boolean>(false);
+  const [sheet1RawBuffer, setSheet1RawBuffer] = useState<ArrayBuffer | null>(null);
+  const [sheet1Study, setSheet1Study] = useState<SpreadsheetStudy | null>(null);
+  const [isDraggingInitial, setIsDraggingInitial] = useState(false);
 
-  // Estados de Compatibilização
-  const [isMatching, setIsMatching] = useState<boolean>(false);
-  const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [isCompatibilizado, setIsCompatibilizado] = useState<boolean>(false);
-  const [matchedResults, setMatchedResults] = useState<MatchingResultItem[]>([]);
+  // Estratégia de Quantitativo (As 2 opções solicitadas pelo usuário)
+  const [calcStrategy, setCalcStrategy] = useState<CalculationStrategy["mode"]>("KEEP_TOTAL_VALUE");
+  const [customTargetTotal, setCustomTargetTotal] = useState<string>("");
 
-  // Modal de Criação de Contrato Base
-  const [isCreateContractOpen, setIsCreateContractOpen] = useState<boolean>(false);
-  const [newContractTitle, setNewContractTitle] = useState<string>("");
-  const [newContractCompany, setNewContractCompany] = useState<string>("");
-  const [newContractNumber, setNewContractNumber] = useState<string>("");
-  const [newContractBdi, setNewContractBdi] = useState<string>("25.50");
-  const [newContractFile, setNewContractFile] = useState<File | null>(null);
+  // Matriz de Compatibilização (Todas as composições da Planilha Base do Contrato com os quantitativos posicionados)
+  const [compositionMatches, setCompositionMatches] = useState<ContractCompositionMatch[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  // Filtros da Mesa de Alocação
+  const [searchFilter, setSearchFilter] = useState("");
+  const [disciplineFilter, setDisciplineFilter] = useState<string>("ALL");
+  const [showOnlyMatched, setShowOnlyMatched] = useState<boolean>(false);
+
+  // Modal de Troca Manual de Item da Planilha 1 para uma Composição do Contrato
+  const [activeSwapContractIndex, setActiveSwapContractIndex] = useState<number | null>(null);
+  const [swapModalSearch, setSwapModalSearch] = useState<string>("");
+
+  // Modal de Criação de Novo Contrato na Aba Configurações
+  const [isAddingContract, setIsAddingContract] = useState(false);
+  const [isInspectingContract, setIsInspectingContract] = useState(false);
+  const [newContractName, setNewContractName] = useState("");
+  const [newContractNumber, setNewContractNumber] = useState("");
+  const [newContractOrg, setNewContractOrg] = useState("");
+  const [newContractBdi, setNewContractBdi] = useState("24.50");
+  const [newContractBaseRef, setNewContractBaseRef] = useState("SINAPI");
   const [newContractFileName, setNewContractFileName] = useState<string | null>(null);
-  const [newContractFileSize, setNewContractFileSize] = useState<string | null>(null);
-  const [newContractBase64, setNewContractBase64] = useState<string | null>(null);
-  const [newContractItems, setNewContractItems] = useState<ItemBase[]>([]);
-  const [newContractBudgetSheet, setNewContractBudgetSheet] = useState<string>("Orçamento");
-  const [newContractTotalGeral, setNewContractTotalGeral] = useState<number>(0);
-  const [newContractTotalLabel, setNewContractTotalLabel] = useState<string>("Total Geral");
-  const [isDraggingModalFile, setIsDraggingModalFile] = useState<boolean>(false);
-  const [isAnalyzingContract, setIsAnalyzingContract] = useState<boolean>(false);
+  const [newContractBuffer, setNewContractBuffer] = useState<ArrayBuffer | null>(null);
+  const [newContractStudy, setNewContractStudy] = useState<SpreadsheetStudy | null>(null);
+  const [isDraggingContract, setIsDraggingContract] = useState(false);
 
-  // Modal para ver composições do contrato
-  const [viewingContract, setViewingContract] = useState<ContractBaseCard | null>(null);
+  // Estado de atualização de card existente na Aba Configurações
+  const [updatingCardId, setUpdatingCardId] = useState<string | null>(null);
 
-  // Toast
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Notificação Toast
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const initialFileInputRef = useRef<HTMLInputElement>(null);
-  const modalFileInputRef = useRef<HTMLInputElement>(null);
-  const replaceContractFileInputRef = useRef<HTMLInputElement>(null);
-  const [targetReplaceContractId, setTargetReplaceContractId] = useState<string | null>(null);
+  const contractFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Carregar contratos salvos
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 5000);
+  };
+
+  // Carrega contratos salvos no navegador
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("orcabase_contracts_v2");
-      if (stored) {
-        const parsed: ContractBaseCard[] = JSON.parse(stored);
-        setContracts(parsed);
-        if (parsed.length > 0) setSelectedContractId(parsed[0].id);
-      } else {
-        setContracts(INITIAL_CONTRACTS);
-        setSelectedContractId(INITIAL_CONTRACTS[0].id);
-        localStorage.setItem("orcabase_contracts_v2", JSON.stringify(INITIAL_CONTRACTS));
+      const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setContracts(parsed);
+          setSelectedContractId(parsed[0].id);
+        }
       }
     } catch {
-      setContracts(INITIAL_CONTRACTS);
-      setSelectedContractId(INITIAL_CONTRACTS[0].id);
+      // Ignora erro de parse
     }
   }, []);
 
-  const currentSelectedContract = useMemo(() => {
-    return contracts.find((c) => c.id === selectedContractId) || contracts[0] || null;
-  }, [contracts, selectedContractId]);
-
-  // Conversor File para Base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (err) => reject(err);
-      reader.readAsDataURL(file);
-    });
+  // Salva metadados e estudo completo dos contratos no localStorage (o binário pesado fica no IndexedDB)
+  const persistContracts = (updated: ContractBaseCard[]) => {
+    setContracts(updated);
+    try {
+      const lightCopy = updated.map((c) => {
+        const copy = { ...c };
+        delete copy.rawWorkbookBase64;
+        return copy;
+      });
+      localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(lightCopy));
+    } catch {
+      // Se ainda assim exceder, mantém em memória
+    }
   };
 
-  // Parser Inteligente com Detecção de Aba de Orçamento e Busca de TOTAL GERAL
-  const inspectAndParseContractFile = async (file: File) => {
-    setIsAnalyzingContract(true);
-    setToastMessage("IA analisando planilha: identificando aba de orçamento e TOTAL GERAL...");
+  const selectedContract = useMemo(
+    () => contracts.find((c) => c.id === selectedContractId) || contracts[0],
+    [contracts, selectedContractId]
+  );
 
-    const b64 = await fileToBase64(file);
-    setNewContractBase64(b64);
+  // Valor Alvo Efetivo para o modo KEEP_TOTAL_VALUE
+  const effectiveTargetTotal = useMemo(() => {
+    const parsedCustom = parseFloat(customTargetTotal.replace(/\./g, "").replace(",", "."));
+    if (!isNaN(parsedCustom) && parsedCustom > 0) {
+      return parsedCustom;
+    }
+    return sheet1Study?.totalGeralValue || 0;
+  }, [customTargetTotal, sheet1Study]);
 
+  // ============================================================================
+  // 1. LEITURA E ESTUDO 100% DA PLANILHA 1 (ORIGEM DOS QUANTITATIVOS)
+  // ============================================================================
+  const handleProcessSheet1File = async (file: File, preferredSheet?: string) => {
+    setInitialFileName(file.name);
+    setIsProcessing(true);
     try {
-      // 1. Tenta inspeção no backend Python Serverless
-      const response = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "inspect_contract",
-          file_base64: b64,
-        }),
+      const buf = await file.arrayBuffer();
+      setSheet1RawBuffer(buf);
+      const study = studySpreadsheetFromBuffer(buf, preferredSheet);
+      setSheet1Study(study);
+      setCustomTargetTotal(
+        study.totalGeralValue.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      );
+      setCompositionMatches([]);
+      showToast(
+        `Estudo da Planilha 1 concluído: ${study.items.length} serviços em ${study.stages.length} etapas | Total: R$ ${study.totalGeralValue.toLocaleString(
+          "pt-BR",
+          { minimumFractionDigits: 2 }
+        )}`
+      );
+    } catch (err) {
+      console.error(err);
+      showToast("Erro ao ler a Planilha 1. Verifique se é um arquivo Excel (.xlsx/.xls) válido.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleChangeSheet1Tab = (newSheetName: string) => {
+    if (!sheet1RawBuffer) return;
+    const study = studySpreadsheetFromBuffer(sheet1RawBuffer, newSheetName);
+    setSheet1Study(study);
+    setCustomTargetTotal(
+      study.totalGeralValue.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
+    setCompositionMatches([]);
+    showToast(`Aba "${newSheetName}" analisada: ${study.items.length} serviços extraídos.`);
+  };
+
+  // ============================================================================
+  // 2. LEITURA E ESTUDO 100% DA PLANILHA 2 (CONTRATO BASE NAS CONFIGURAÇÕES)
+  // ============================================================================
+  const inspectNewContractModalFile = async (file: File, preferredSheet?: string) => {
+    setIsInspectingContract(true);
+    setNewContractFileName(file.name);
+    try {
+      const buf = await file.arrayBuffer();
+      setNewContractBuffer(buf);
+      const study = studySpreadsheetFromBuffer(buf, preferredSheet);
+      setNewContractStudy(study);
+      showToast(
+        `Estudo do Contrato concluído: ${study.items.length} composições (${study.stages.length} etapas) | Total Geral: R$ ${study.totalGeralValue.toLocaleString(
+          "pt-BR",
+          { minimumFractionDigits: 2 }
+        )}`
+      );
+    } catch (err) {
+      console.error(err);
+      showToast("Não foi possível analisar a planilha anexada.");
+    } finally {
+      setIsInspectingContract(false);
+    }
+  };
+
+  const handleChangeNewContractModalTab = (sheetName: string) => {
+    if (!newContractBuffer) return;
+    const study = studySpreadsheetFromBuffer(newContractBuffer, sheetName);
+    setNewContractStudy(study);
+  };
+
+  // Corrige definitivamente a substituição/atualização de planilha direto num Card existente!
+  const handleUpdateExistingContractCardFile = async (contractId: string, file: File) => {
+    setUpdatingCardId(contractId);
+    try {
+      const buf = await file.arrayBuffer();
+      const b64 = arrayBufferToBase64(buf);
+      const study = studySpreadsheetFromBuffer(buf);
+
+      // Salva o binário original completo no IndexedDB
+      await saveContractBinary(contractId, b64);
+
+      const updatedList = contracts.map((c) => {
+        if (c.id !== contractId) return c;
+        return {
+          ...c,
+          fileName: file.name,
+          updatedAt: new Date().toLocaleDateString("pt-BR"),
+          sheetNames: study.sheetNames,
+          budgetSheetName: study.selectedSheetName,
+          totalGeralValue: study.totalGeralValue,
+          totalGeralLabel: study.totalGeralLabel,
+          detectedColumns: study.detectedColumns,
+          stages: study.stages,
+          itemsCount: study.items.length,
+          items: study.items,
+        };
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success" && data.inspection) {
-          const insp = data.inspection;
-          setNewContractBudgetSheet(insp.budget_sheet_name || "Orçamento");
-          setNewContractTotalGeral(insp.total_geral_value || 0);
-          setNewContractTotalLabel(insp.total_geral_label || "Total Geral");
-          setNewContractItems(insp.compositions || []);
-          setToastMessage(`Planilha analisada! Total Geral detectado: R$ ${insp.total_geral_value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
-          setTimeout(() => setToastMessage(null), 4000);
-          setIsAnalyzingContract(false);
-          return;
-        }
+      persistContracts(updatedList);
+      setExpandedContractStudyId(contractId);
+      if (selectedContractId === contractId) {
+        setCompositionMatches([]);
       }
+      showToast(
+        `Planilha "${file.name}" estudada 100%: ${study.items.length} composições, ${study.stages.length} etapas e Total R$ ${study.totalGeralValue.toLocaleString(
+          "pt-BR",
+          { minimumFractionDigits: 2 }
+        )} salvos no contrato!`
+      );
     } catch (err) {
-      console.warn("Backend offline, executando leitura inteligente no client:", err);
+      console.error(err);
+      showToast("Erro ao processar a planilha no contrato.");
+    } finally {
+      setUpdatingCardId(null);
     }
+  };
 
-    // 2. Parser inteligente client-side (Fallback resiliente com busca do TOTAL GERAL)
+  // Permite trocar a aba ativa de um contrato já salvo caso o Excel tenha múltiplas abas
+  const handleSwitchExistingContractSheet = async (contractId: string, newSheetName: string) => {
+    setUpdatingCardId(contractId);
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
-
-      // Localiza a aba de orçamento
-      let targetSheetName = workbook.SheetNames[0];
-      for (const name of workbook.SheetNames) {
-        const nLow = name.toLowerCase();
-        if (nLow.includes("orçamento") || nLow.includes("orcamento") || nLow.includes("planilha") || nLow.includes("analítico")) {
-          targetSheetName = name;
-          break;
-        }
+      const b64 = await getContractBinary(contractId);
+      if (!b64) {
+        showToast("Anexe novamente o arquivo .xlsx neste card para alternar entre suas abas.");
+        return;
       }
-
-      const worksheet = workbook.Sheets[targetSheetName];
-      const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-
-      // Procura ativamente a linha de TOTAL GERAL de baixo para cima
-      let detectedTotal = 0;
-      let detectedTotalLabel = "TOTAL GERAL";
-
-      for (let r = rows.length - 1; r >= Math.max(0, rows.length - 35); r--) {
-        const row = rows[r];
-        if (!row) continue;
-        const rowStr = row.map((c) => String(c).toLowerCase().trim()).join(" ");
-        if (rowStr.includes("total geral") || rowStr.includes("valor total") || rowStr.includes("total do orçamento") || rowStr.includes("total orcamento")) {
-          detectedTotalLabel = "TOTAL GERAL DO ORÇAMENTO";
-          for (let c = row.length - 1; c >= 0; c--) {
-            const val = row[c];
-            if (typeof val === "number" && val > 0) {
-              detectedTotal = val;
-              break;
-            } else if (typeof val === "string") {
-              const cleaned = val.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
-              const num = parseFloat(cleaned);
-              if (!isNaN(num) && num > 0) {
-                detectedTotal = num;
-                break;
-              }
-            }
-          }
-          if (detectedTotal > 0) break;
-        }
+      const binaryString = window.atob(b64.includes(",") ? b64.split(",")[1] : b64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
+      const study = studySpreadsheetFromBuffer(bytes.buffer, newSheetName);
 
-      // Extração de composições
-      const comps: ItemBase[] = [];
-      let headerRow = -1;
-      let colDesc = 1;
-      let colUnit = 2;
-      let colQty = 3;
-      let colPrice = 4;
-
-      for (let r = 0; r < Math.min(rows.length, 15); r++) {
-        const row = rows[r].map((c) => String(c).toLowerCase().trim());
-        if (row.some((c) => c.includes("descri") || c.includes("especifica") || c.includes("composição"))) {
-          headerRow = r;
-          row.forEach((c, idx) => {
-            if (c.includes("descri") || c.includes("composição")) colDesc = idx;
-            if (c.includes("unid") || c === "un") colUnit = idx;
-            if (c.includes("quant") || c === "qtd") colQty = idx;
-            if (c.includes("unit") || c.includes("preço")) colPrice = idx;
-          });
-          break;
-        }
-      }
-
-      for (let r = headerRow + 1; r < rows.length; r++) {
-        const row = rows[r];
-        if (!row) continue;
-        const desc = String(row[colDesc] || "").trim();
-        if (desc.length > 4 && !desc.toLowerCase().includes("total geral")) {
-          const qty = parseFloat(String(row[colQty]).replace(/\./g, "").replace(",", ".")) || 1.0;
-          const price = parseFloat(String(row[colPrice]).replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".")) || 0.0;
-          comps.push({
-            id: `IT-${comps.length + 1}`,
-            code: `COMP-${comps.length + 1}`,
-            description: desc,
-            unit: String(row[colUnit] || "UN").toUpperCase(),
-            quantity: qty,
-            unit_price: price,
-            total_value: Number((qty * price).toFixed(2)),
-            row_index: r + 1,
-          });
-        }
-      }
-
-      setNewContractBudgetSheet(targetSheetName);
-      setNewContractTotalGeral(detectedTotal || comps.reduce((acc, c) => acc + c.total_value, 0));
-      setNewContractTotalLabel(detectedTotalLabel);
-      setNewContractItems(comps);
-      setToastMessage(`Leitura concluída! ${comps.length} composições identificadas na aba "${targetSheetName}".`);
+      const updatedList = contracts.map((c) => {
+        if (c.id !== contractId) return c;
+        return {
+          ...c,
+          budgetSheetName: study.selectedSheetName,
+          totalGeralValue: study.totalGeralValue,
+          totalGeralLabel: study.totalGeralLabel,
+          detectedColumns: study.detectedColumns,
+          stages: study.stages,
+          itemsCount: study.items.length,
+          items: study.items,
+        };
+      });
+      persistContracts(updatedList);
+      showToast(
+        `Aba "${newSheetName}" selecionada: ${study.items.length} composições | Total: R$ ${study.totalGeralValue.toLocaleString(
+          "pt-BR",
+          { minimumFractionDigits: 2 }
+        )}`
+      );
     } catch (e) {
       console.error(e);
-      setToastMessage("Aviso: Leitura concluída com valores padrão.");
     } finally {
-      setIsAnalyzingContract(false);
-      setTimeout(() => setToastMessage(null), 4000);
+      setUpdatingCardId(null);
     }
   };
 
-  // Upload da Planilha 1 (Planilha Inicial)
-  const handleInitialFileUpload = async (file: File) => {
-    setInitialFile(file);
-    setInitialFileName(file.name);
-    setInitialFileSize(`${(file.size / 1024).toFixed(1)} KB`);
-    setIsMatching(true);
-
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
-
-      const parsed: ItemBase[] = [];
-      let colDesc = 1;
-      let colUnit = 2;
-      let colQty = 3;
-
-      for (let r = 0; r < Math.min(rows.length, 15); r++) {
-        const row = rows[r].map((c) => String(c).toLowerCase().trim());
-        row.forEach((c, idx) => {
-          if (c.includes("descri") || c.includes("serviço") || c.includes("item")) colDesc = idx;
-          if (c.includes("unid") || c === "un") colUnit = idx;
-          if (c.includes("quant") || c === "qtd") colQty = idx;
-        });
-      }
-
-      for (let r = 1; r < rows.length; r++) {
-        const row = rows[r];
-        if (!row) continue;
-        const desc = String(row[colDesc] || "").trim();
-        if (desc.length > 3) {
-          const rawQ = String(row[colQty] || "1").replace(/\./g, "").replace(",", ".");
-          const qty = parseFloat(rawQ) || 1.0;
-          parsed.push({
-            id: `P1-${parsed.length + 1}`,
-            description: desc,
-            unit: String(row[colUnit] || "UN").toUpperCase(),
-            quantity: qty,
-            unit_price: 0,
-            total_value: 0,
-          });
-        }
-      }
-
-      setInitialItems(parsed);
-      setIsCompatibilizado(false);
-      setMatchedResults([]);
-      setToastMessage(`Planilha Inicial carregada com ${parsed.length} serviços para quantificar.`);
-    } catch {
-      setToastMessage("Erro ao ler Planilha Inicial.");
-    } finally {
-      setIsMatching(false);
-      setTimeout(() => setToastMessage(null), 3500);
-    }
-  };
-
-  // Salvar Novo Contrato Base
-  const handleSaveContract = () => {
-    if (!newContractTitle.trim()) {
-      alert("Por favor, digite o Nome/Título do Contrato.");
+  const handleSaveNewContract = async () => {
+    if (!newContractName.trim() || !newContractNumber.trim()) {
+      showToast("Preencha o Nome do Contrato e o Número do Contrato.");
       return;
+    }
+    if (!newContractStudy || newContractStudy.items.length === 0) {
+      showToast("Anexe uma planilha orçamentária válida (.xlsx) para criar o Contrato Base.");
+      return;
+    }
+
+    const newId = `ct-${Date.now()}`;
+    if (newContractBuffer) {
+      const b64 = arrayBufferToBase64(newContractBuffer);
+      await saveContractBinary(newId, b64);
     }
 
     const newCard: ContractBaseCard = {
-      id: `CT-${Date.now()}`,
-      title: newContractTitle.toUpperCase(),
-      company: newContractCompany || "CONTRATADA OFICIAL",
-      contractNumber: newContractNumber || "CT S/N",
-      bdi: parseFloat(newContractBdi) || 25.50,
-      fileName: newContractFileName || "Planilha_Base_Oficial.xlsx",
-      fileSize: newContractFileSize || "120 KB",
-      budgetSheetName: newContractBudgetSheet,
-      totalGeralValue: newContractTotalGeral,
-      totalGeralLabel: newContractTotalLabel,
-      compositionsCount: newContractItems.length || 0,
-      stagesCount: 4,
-      createdAt: new Date().toLocaleDateString("pt-BR"),
-      items: newContractItems,
-      rawWorkbookBase64: newContractBase64 || undefined,
+      id: newId,
+      contractName: newContractName.trim(),
+      contractNumber: newContractNumber.trim(),
+      organization: newContractOrg.trim() || "GPR / Engenharia",
+      bdiPercent: parseFloat(newContractBdi) || 0,
+      referenceBase: newContractBaseRef.trim() || "SINAPI",
+      updatedAt: new Date().toLocaleDateString("pt-BR"),
+      fileName: newContractFileName || "Planilha_Base.xlsx",
+      sheetNames: newContractStudy.sheetNames,
+      budgetSheetName: newContractStudy.selectedSheetName,
+      totalGeralValue: newContractStudy.totalGeralValue,
+      totalGeralLabel: newContractStudy.totalGeralLabel,
+      detectedColumns: newContractStudy.detectedColumns,
+      stages: newContractStudy.stages,
+      itemsCount: newContractStudy.items.length,
+      items: newContractStudy.items,
     };
 
     const updated = [newCard, ...contracts];
-    setContracts(updated);
+    persistContracts(updated);
     setSelectedContractId(newCard.id);
-    try {
-      localStorage.setItem("orcabase_contracts_v2", JSON.stringify(updated));
-    } catch {}
 
-    setIsCreateContractOpen(false);
-    setNewContractTitle("");
-    setNewContractCompany("");
+    setNewContractName("");
     setNewContractNumber("");
-    setNewContractBdi("25.50");
-    setNewContractFile(null);
+    setNewContractOrg("");
     setNewContractFileName(null);
-    setToastMessage(`Card de Contrato "${newCard.title}" salvo com sucesso!`);
-    setTimeout(() => setToastMessage(null), 3500);
+    setNewContractBuffer(null);
+    setNewContractStudy(null);
+    setIsAddingContract(false);
+    showToast(
+      `Contrato "${newCard.contractNumber}" salvo com ${newCard.itemsCount} composições estudadas e layout 100% preservado!`
+    );
   };
 
-  // Excluir Contrato
-  const handleDeleteContract = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteContract = async (id: string) => {
     if (contracts.length <= 1) {
-      alert("É necessário manter ao menos um Contrato Base no sistema.");
+      showToast("O sistema precisa manter pelo menos 1 Contrato Base cadastrado.");
       return;
     }
+    await deleteContractBinary(id);
     const updated = contracts.filter((c) => c.id !== id);
-    setContracts(updated);
-    if (selectedContractId === id) setSelectedContractId(updated[0].id);
-    try {
-      localStorage.setItem("orcabase_contracts_v2", JSON.stringify(updated));
-    } catch {}
+    persistContracts(updated);
+    if (selectedContractId === id) {
+      setSelectedContractId(updated[0].id);
+    }
+    showToast("Contrato Base removido.");
   };
 
-  // COMPATIBILIZAÇÃO INTELIGENTE (Cruza palavras-chaves e posiciona o quantitativo)
-  const handleRunCompatibilizacao = async () => {
-    if (!initialItems || initialItems.length === 0) {
-      alert("Por favor, adicione a Planilha Inicial primeiro.");
+  // ============================================================================
+  // 3. MOTOR DE COMPATIBILIZAÇÃO E POSICIONAMENTO DE QUANTITATIVOS
+  // ============================================================================
+  const runCompatibilityEngine = (
+    overrideStrategy?: CalculationStrategy["mode"],
+    overrideTargetTotal?: number
+  ) => {
+    if (!sheet1Study || sheet1Study.items.length === 0) {
+      showToast("Anexe primeiro a Planilha 1 (Planilha Inicial) para extrair os quantitativos.");
       return;
     }
-    if (!currentSelectedContract || !currentSelectedContract.items || currentSelectedContract.items.length === 0) {
-      alert("O Contrato Base selecionado não possui itens cadastrados.");
+    if (!selectedContract || selectedContract.items.length === 0) {
+      showToast("Selecione um Contrato Base válido com composições.");
       return;
     }
 
-    setIsMatching(true);
-    setToastMessage("IA mapeando serviços e posicionando quantitativos nas composições...");
+    setIsProcessing(true);
+    const modeToUse = overrideStrategy || calcStrategy;
+    const targetToUse =
+      overrideTargetTotal !== undefined ? overrideTargetTotal : effectiveTargetTotal;
 
-    // Similaridade de IA por tokens e semântica
-    const results: MatchingResultItem[] = currentSelectedContract.items.map((contractComp) => {
-      const cDesc = contractComp.description.toLowerCase();
-      let bestItem: ItemBase | null = null;
-      let highestScore = 0;
+    setTimeout(() => {
+      const matrix = buildCompatibilityMatrix(
+        sheet1Study.items,
+        selectedContract.items,
+        modeToUse,
+        targetToUse,
+        selectedContract.bdiPercent
+      );
+      setCompositionMatches(matrix);
+      setIsProcessing(false);
 
-      initialItems.forEach((src) => {
-        const sDesc = src.description.toLowerCase();
-        const sWords = sDesc.split(/\s+/).filter((w) => w.length > 2);
-        let matches = 0;
+      const matchedCount = matrix.filter((m) => m.final_injected_quantity > 0).length;
+      const finalSum = matrix.reduce((s, m) => s + m.calculated_total_value, 0);
+      showToast(
+        `Compatibilização concluída! ${matchedCount} composições receberam quantitativos | Novo Total na Base: R$ ${finalSum.toLocaleString(
+          "pt-BR",
+          { minimumFractionDigits: 2 }
+        )}`
+      );
+    }, 250);
+  };
 
-        sWords.forEach((word) => {
-          if (cDesc.includes(word)) matches++;
-        });
+  // Quando o usuário alterna entre os 2 botões (KEEP_QUANTITY vs KEEP_TOTAL_VALUE), recalcula na hora!
+  const handleSelectStrategyMode = (newMode: CalculationStrategy["mode"]) => {
+    setCalcStrategy(newMode);
+    if (compositionMatches.length > 0) {
+      const updated = applyCalculationStrategyToMatches(
+        compositionMatches,
+        newMode,
+        effectiveTargetTotal
+      );
+      setCompositionMatches(updated);
+    }
+  };
 
-        let score = Math.round((matches / Math.max(sWords.length, 2)) * 100);
-        if (src.unit.toUpperCase() === contractComp.unit.toUpperCase()) score += 15;
+  // Recalcula ao alterar o valor alvo manualmente no modo KEEP_TOTAL_VALUE
+  const handleApplyCustomTargetTotal = () => {
+    if (compositionMatches.length > 0 && calcStrategy === "KEEP_TOTAL_VALUE") {
+      const updated = applyCalculationStrategyToMatches(
+        compositionMatches,
+        "KEEP_TOTAL_VALUE",
+        effectiveTargetTotal
+      );
+      setCompositionMatches(updated);
+      showToast(
+        `Quantitativos reescalonados para atingir o Valor Final de R$ ${effectiveTargetTotal.toLocaleString(
+          "pt-BR",
+          { minimumFractionDigits: 2 }
+        )}!`
+      );
+    }
+  };
 
-        // Bônus específico para palavras chave de engenharia (ex: pintura, concreto, aço, alvenaria)
-        const keywords = ["pintura", "tinta", "concreto", "aço", "forma", "alvenaria", "pvc", "cabo", "manta", "escavação"];
-        keywords.forEach((k) => {
-          if (sDesc.includes(k) && cDesc.includes(k)) score += 25;
-        });
+  // Permite editar manualmente o quantitativo injetado de qualquer composição na tabela
+  const handleManualQuantityChange = (contractIdx: number, rawVal: string) => {
+    const num = parseFloat(rawVal.replace(",", "."));
+    const validQty = isNaN(num) || num < 0 ? 0 : num;
 
-        if (score > highestScore) {
-          highestScore = score;
-          bestItem = src;
+    setCompositionMatches((prev) =>
+      prev.map((m, idx) => {
+        if (idx !== contractIdx) return m;
+        return {
+          ...m,
+          final_injected_quantity: validQty,
+          calculated_total_value: Number((validQty * m.contract_unit_price).toFixed(2)),
+          status: validQty > 0 ? "MANUAL_OVERRIDE" : "ZEROED",
+        };
+      })
+    );
+  };
+
+  // Permite vincular manualmente qualquer item da Planilha 1 a uma composição da Planilha Base
+  const handleManualAssignSourceItem = (contractIdx: number, sourceItem: ItemBase | null) => {
+    setCompositionMatches((prev) => {
+      const updated = prev.map((m, idx) => {
+        if (idx !== contractIdx) return m;
+        if (!sourceItem) {
+          return {
+            ...m,
+            matched_source_items: [],
+            best_candidate: undefined,
+            base_quantity_from_sheet1: 0,
+            final_injected_quantity: 0,
+            calculated_total_value: 0,
+            confidence_score: 0,
+            status: "ZEROED" as const,
+          };
         }
+
+        const baseQty = sourceItem.quantity || 0;
+        return {
+          ...m,
+          matched_source_items: [sourceItem],
+          best_candidate: {
+            source_item_id: sourceItem.id,
+            source_item_number: sourceItem.itemNumber,
+            source_description: sourceItem.description,
+            source_unit: sourceItem.unit,
+            source_quantity: baseQty,
+            source_unit_price: sourceItem.unit_price,
+            source_total_value: sourceItem.total_value,
+            source_stage: sourceItem.stage_title,
+            source_discipline: sourceItem.discipline,
+            confidence_score: 100,
+            match_reason: "Vínculo manual selecionado pelo orçamentista",
+          },
+          base_quantity_from_sheet1: baseQty,
+          final_injected_quantity: baseQty,
+          calculated_total_value: Number((baseQty * m.contract_unit_price).toFixed(2)),
+          confidence_score: 100,
+          status: "MANUAL_OVERRIDE" as const,
+        };
       });
 
-      // Se encontrou item na planilha 1 com score compatível, posiciona o mesmo quantitativo na planilha do contrato!
-      const injectedQty = bestItem && highestScore >= 35 ? (bestItem as ItemBase).quantity : 0;
-      const unitPrice = contractComp.unit_price;
-      const calcTotal = Number((injectedQty * unitPrice).toFixed(2));
-
-      return {
-        source_item: bestItem || {
-          id: "-",
-          description: "Sem item na Planilha 1",
-          unit: contractComp.unit,
-          quantity: 0,
-          unit_price: 0,
-          total_value: 0,
-        },
-        selected_match: {
-          dest_code: contractComp.code || contractComp.id,
-          dest_description: contractComp.description,
-          dest_unit: contractComp.unit,
-          unit_price: contractComp.unit_price,
-          confidence_score: Math.min(99, highestScore),
-          match_type: "AI_SUGGESTION",
-        },
-        candidates: [],
-        strategy_applied: strategy,
-        calculated_quantity: injectedQty,
-        calculated_unit_price: unitPrice,
-        calculated_total_value: calcTotal,
-        status: injectedQty > 0 ? "MATCHED" : "MANUAL_REQUIRED",
-        contract_row_index: contractComp.row_index,
-      };
+      return applyCalculationStrategyToMatches(updated, calcStrategy, effectiveTargetTotal);
     });
-
-    setMatchedResults(results);
-    setIsCompatibilizado(true);
-    setIsMatching(false);
-    setToastMessage("Compatibilização realizada com sucesso! Quantitativos posicionados nas composições.");
-    setTimeout(() => setToastMessage(null), 4500);
+    setActiveSwapContractIndex(null);
+    showToast("Alocação de quantitativo atualizada com sucesso!");
   };
 
-  // BAIXAR PLANILHA FINAL (Clona o contrato original com openpyxl e altera apenas os quantitativos)
+  // ============================================================================
+  // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX)
+  // ============================================================================
   const handleDownloadFinalSpreadsheet = async () => {
-    if (!isCompatibilizado || matchedResults.length === 0) {
-      alert("Execute a compatibilização antes de baixar.");
+    if (compositionMatches.length === 0 || !selectedContract) {
+      showToast("Execute a compatibilização antes de baixar a Planilha Final.");
       return;
     }
 
-    setIsExporting(true);
-    setToastMessage("Gerando Planilha Final com openpyxl (Mantendo 100% do layout original)...");
+    setIsDownloading(true);
+    const safeContractNumber = selectedContract.contractNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const outputFilename = `Planilha_Compatibilizada_${safeContractNumber}.xlsx`;
 
     try {
+      // 1. Recupera o binário .xlsx original do Contrato Base no IndexedDB (ou do objeto em memória)
+      let contractBase64 = await getContractBinary(selectedContract.id);
+      if (!contractBase64 && selectedContract.rawWorkbookBase64) {
+        contractBase64 = selectedContract.rawWorkbookBase64;
+      }
+
+      // Prepara payload leve com todas as linhas e quantitativos injetados
+      const compositionPayload = compositionMatches.map((cm) => ({
+        contract_row_index: cm.contract_item.row_index,
+        contract_item_number: cm.contract_item.itemNumber,
+        contract_code: cm.contract_item.code,
+        contract_source: cm.contract_item.source,
+        contract_description: cm.contract_item.description,
+        contract_unit: cm.contract_item.unit,
+        contract_unit_price: cm.contract_unit_price,
+        final_injected_quantity: cm.final_injected_quantity,
+        stage_code: cm.contract_item.stage_code,
+        stage_title: cm.contract_item.stage_title,
+      }));
+
+      // 2. Chama o motor Python openpyxl (/api) para clonar 100% a planilha original injetando só a coluna de Quantitativo
       const response = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "inject_quantities",
-          contract_base64: currentSelectedContract?.rawWorkbookBase64 || "",
-          matching_results: matchedResults,
-          filename: `Planilha_Final_Compatibilizada_${currentSelectedContract?.title || "Contrato"}.xlsx`,
+          contract_base64: contractBase64 || "",
+          sheet_name: selectedContract.budgetSheetName,
+          col_qty: selectedContract.detectedColumns?.colQty,
+          col_price: selectedContract.detectedColumns?.colPrice,
+          col_total: selectedContract.detectedColumns?.colTotal,
+          composition_matches: compositionPayload,
+          contract_meta: {
+            contractName: selectedContract.contractName,
+            contractNumber: selectedContract.contractNumber,
+            organization: selectedContract.organization,
+            referenceBase: selectedContract.referenceBase,
+            bdiPercent: selectedContract.bdiPercent,
+          },
+          filename: outputFilename,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.file_base64) {
-          const linkSource = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${data.file_base64}`;
-          const downloadLink = document.createElement("a");
-          downloadLink.href = linkSource;
-          downloadLink.download = data.filename;
-          downloadLink.click();
-          setToastMessage("Planilha Final compatibilizada baixada com sucesso!");
-          setTimeout(() => setToastMessage(null), 4000);
-          setIsExporting(false);
+        if (data.status === "success" && data.file_base64) {
+          triggerBase64ExcelDownload(data.file_base64, outputFilename);
+          showToast(
+            `Download concluído! "${outputFilename}" gerada mantendo 100% do layout do contrato com os novos quantitativos.`
+          );
+          setIsDownloading(false);
           return;
         }
       }
-    } catch (err) {
-      console.warn("Exportação via servidor:", err);
+
+      // 3. Fallback local imediato se /api não responder (ex: modo offline ou dev local sem servidor Python)
+      injectQuantitiesClientFallback(
+        contractBase64,
+        {
+          contractName: selectedContract.contractName,
+          contractNumber: selectedContract.contractNumber,
+          organization: selectedContract.organization,
+          referenceBase: selectedContract.referenceBase,
+          bdiPercent: selectedContract.bdiPercent,
+          budgetSheetName: selectedContract.budgetSheetName,
+          detectedColumns: selectedContract.detectedColumns,
+        },
+        compositionMatches,
+        outputFilename
+      );
+      showToast(`Download concluído! "${outputFilename}" baixada com sucesso.`);
+    } catch (error) {
+      console.error("Usando motor local de contingência para download:", error);
+      const contractBase64 = await getContractBinary(selectedContract.id);
+      injectQuantitiesClientFallback(
+        contractBase64,
+        {
+          contractName: selectedContract.contractName,
+          contractNumber: selectedContract.contractNumber,
+          organization: selectedContract.organization,
+          referenceBase: selectedContract.referenceBase,
+          bdiPercent: selectedContract.bdiPercent,
+          budgetSheetName: selectedContract.budgetSheetName,
+          detectedColumns: selectedContract.detectedColumns,
+        },
+        compositionMatches,
+        outputFilename
+      );
+      showToast(`Download concluído! "${outputFilename}" baixada com sucesso.`);
+    } finally {
+      setIsDownloading(false);
     }
-
-    // Fallback: exportação pura openpyxl
-    try {
-      const fallbackResp = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "export_xlsx",
-          items: matchedResults,
-          strategy: strategy,
-        }),
-      });
-      if (fallbackResp.ok) {
-        const data = await fallbackResp.json();
-        if (data.file_base64) {
-          const linkSource = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${data.file_base64}`;
-          const downloadLink = document.createElement("a");
-          downloadLink.href = linkSource;
-          downloadLink.download = `Planilha_Final_Compatibilizada_${currentSelectedContract?.title || "Contrato"}.xlsx`;
-          downloadLink.click();
-        }
-      }
-    } catch {}
-
-    setToastMessage("Download concluído com sucesso!");
-    setTimeout(() => setToastMessage(null), 3500);
-    setIsExporting(false);
   };
 
+  // Totais calculados para exibição
+  const totalSheet1Value = sheet1Study?.totalGeralValue || 0;
+  const totalCompatibleValue = useMemo(
+    () => compositionMatches.reduce((acc, m) => acc + m.calculated_total_value, 0),
+    [compositionMatches]
+  );
+  const activeCompositionsCount = useMemo(
+    () => compositionMatches.filter((m) => m.final_injected_quantity > 0).length,
+    [compositionMatches]
+  );
+
+  // Lista de disciplinas presentes no Contrato Base
+  const availableDisciplines = useMemo(() => {
+    const set = new Set<string>();
+    selectedContract?.items.forEach((it) => {
+      if (it.discipline) set.add(it.discipline);
+    });
+    return Array.from(set);
+  }, [selectedContract]);
+
+  // Filtro da Mesa de Alocação
+  const filteredMatches = useMemo(() => {
+    return compositionMatches
+      .map((m, originalIndex) => ({ m, originalIndex }))
+      .filter(({ m }) => {
+        if (showOnlyMatched && m.final_injected_quantity <= 0) return false;
+        if (disciplineFilter !== "ALL" && m.contract_item.discipline !== disciplineFilter) {
+          return false;
+        }
+        if (!searchFilter.trim()) return true;
+        const q = searchFilter.toLowerCase();
+        return (
+          m.contract_item.description.toLowerCase().includes(q) ||
+          m.contract_item.code.toLowerCase().includes(q) ||
+          (m.contract_item.stage_title || "").toLowerCase().includes(q) ||
+          (m.best_candidate?.source_description || "").toLowerCase().includes(q)
+        );
+      });
+  }, [compositionMatches, showOnlyMatched, disciplineFilter, searchFilter]);
+
   return (
-    <main className="min-h-screen bg-[#07090E] text-gray-200 antialiased selection:bg-gold-500/30 selection:text-gold-300">
-      {/* Header Superior */}
-      <header className="sticky top-0 z-40 border-b border-[#141A28] bg-[#07090E]/90 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-gold-500 to-orange-500 shadow-md shadow-orange-500/10">
-              <Brain className="h-5 w-5 text-[#07090E]" />
+    <div className="min-h-screen bg-[#07090E] text-[#F3F4F6] flex flex-col selection:bg-[#F97316] selection:text-black font-sans">
+      {/* Notificação Toast Flutuante */}
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl bg-[#111622] border border-[#D4AF37]/50 text-xs font-semibold text-white shadow-[0_15px_35px_rgba(0,0,0,0.85)] max-w-md">
+          <CheckCircle2 className="w-4 h-4 text-[#D4AF37] shrink-0" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
+      {/* Topbar Minimalista Luxury */}
+      <header className="border-b border-[#1E2436] bg-[#0B0F19]/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#F97316] p-[1px] shadow-[0_0_25px_rgba(249,115,22,0.25)]">
+              <div className="w-full h-full bg-[#07090E] rounded-[11px] flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+              </div>
             </div>
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-base font-semibold tracking-tight text-white">
-                  OrçaBase<span className="text-gold-400">.lab</span>
-                </span>
-                <span className="text-[11px] font-medium text-orange-400 tracking-wider">
-                  GPR
+              <div className="flex items-center gap-2.5">
+                <span className="font-bold text-lg tracking-tight text-white">OrçaBase</span>
+                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30 font-semibold">
+                  LAB • GPR
                 </span>
               </div>
+              <p className="text-xs text-[#9CA3AF] mt-0.5">
+                Estudo Estrutural de Planilhas & Alocação Inteligente de Quantitativos
+              </p>
             </div>
           </div>
 
-          {/* Abas */}
-          <div className="flex items-center space-x-2 rounded-xl bg-[#0B0F19] p-1 border border-[#141A28]">
+          {/* Navegação Principal */}
+          <div className="flex items-center gap-2 bg-[#111622] p-1.5 rounded-xl border border-[#1E2436]">
             <button
-              onClick={() => setActiveTab("compatibilizacao")}
-              className={`flex items-center space-x-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
-                activeTab === "compatibilizacao"
-                  ? "bg-gradient-to-r from-gold-500 to-orange-500 text-[#07090E] shadow-sm"
-                  : "text-gray-400 hover:text-white"
+              onClick={() => setActiveTab("WORKSPACE")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === "WORKSPACE"
+                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+                  : "text-[#9CA3AF] hover:text-white"
               }`}
             >
-              <ArrowRightLeft className="h-4 w-4" />
-              <span>Compatibilização</span>
+              <Layers className="w-4 h-4" />
+              Área de Compatibilização (2 Planilhas)
             </button>
-
             <button
-              onClick={() => setActiveTab("configuracoes")}
-              className={`flex items-center space-x-2 rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
-                activeTab === "configuracoes"
-                  ? "bg-gradient-to-r from-gold-500 to-orange-500 text-[#07090E] shadow-sm"
-                  : "text-gray-400 hover:text-white"
+              onClick={() => setActiveTab("SETTINGS")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === "SETTINGS"
+                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_15px_rgba(212,175,55,0.3)]"
+                  : "text-[#9CA3AF] hover:text-white"
               }`}
             >
-              <Settings className="h-4 w-4" />
-              <span>Configurações de Contratos</span>
-              <span className="rounded-full bg-[#141A28] px-1.5 py-0.2 text-[10px] text-gold-400 ml-1">
+              <Settings className="w-4 h-4" />
+              Configurações (Contratos Base)
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                  activeTab === "SETTINGS" ? "bg-black/20 text-black" : "bg-[#1E2436] text-[#D4AF37]"
+                }`}
+              >
                 {contracts.length}
               </span>
             </button>
           </div>
-
-          <div className="hidden sm:flex items-center space-x-3">
-            <div className="flex items-center space-x-2 rounded-full border border-[#1E2638] bg-[#0B0F19] px-3 py-1 text-xs text-gray-400">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="font-mono text-[11px]">openpyxl v3.1.5</span>
-            </div>
-          </div>
         </div>
       </header>
 
-      {/* Toast Flutuante */}
-      {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 flex items-center space-x-2.5 rounded-xl border border-gold-500/30 bg-[#0B0F19]/95 px-4 py-3 text-xs text-gold-300 shadow-2xl backdrop-blur-md">
-          <CheckCircle2 className="h-4 w-4 text-gold-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col gap-8">
+        {activeTab === "WORKSPACE" ? (
+          <>
+            {/* =====================================================================
+                PASSO 1: ÁREA DE TRABALHO DUPLA — ESTUDO DAS DUAS PLANILHAS
+               ===================================================================== */}
+            <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* CARD ESQUERDO: PLANILHA 1 (ORIGEM DOS QUANTITATIVOS E VALOR DO ORÇAMENTO) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDraggingInitial(true);
+                }}
+                onDragLeave={() => setIsDraggingInitial(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDraggingInitial(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleProcessSheet1File(file);
+                }}
+                className={`lg:col-span-6 relative rounded-2xl border transition-all duration-300 p-6 flex flex-col justify-between overflow-hidden ${
+                  isDraggingInitial
+                    ? "border-[#F97316] bg-[#F97316]/10 shadow-[0_0_40px_rgba(249,115,22,0.2)]"
+                    : sheet1Study
+                    ? "border-[#D4AF37]/50 bg-[#0B0F19]"
+                    : "border-[#1E2436] hover:border-[#F97316]/60 bg-[#0B0F19]/90"
+                }`}
+              >
+                <input
+                  ref={initialFileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleProcessSheet1File(file);
+                    e.target.value = "";
+                  }}
+                />
 
-      {/* Input Oculto para Substituição */}
-      <input
-        type="file"
-        ref={replaceContractFileInputRef}
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file || !targetReplaceContractId) return;
-          await inspectAndParseContractFile(file);
-        }}
-        accept=".xlsx, .xls, .csv"
-        className="hidden"
-      />
-
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        {/* ======================================================== */}
-        {/* ABA 1: TELA DE COMPATIBILIZAÇÃO                           */}
-        {/* ======================================================== */}
-        {activeTab === "compatibilizacao" && (
-          <div>
-            {/* DUAS COLUNAS LADO A LADO */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
-              {/* COLUNA 1: PLANILHA INICIAL (A PLANILHA QUE VAI PUXAR INFORMAÇÕES) */}
-              <div className="rounded-2xl border border-[#141A28] bg-[#0B0F19] p-6 shadow-xl flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/20">
-                        <FileSpreadsheet className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-sm font-bold text-white tracking-wide uppercase">
-                          Planilha Inicial (Projeto a Orçar)
-                        </h2>
-                        <p className="text-[11px] text-gray-400">
-                          Planilha de onde a IA extrairá os quantitativos de cada serviço
-                        </p>
-                      </div>
-                    </div>
-
-                    {initialFileName && (
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] font-semibold flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#F97316]"></span>
+                      Planilha 1 • Origem dos Quantitativos
+                    </span>
+                    {sheet1Study && (
                       <button
-                        onClick={() => {
-                          setInitialFile(null);
-                          setInitialFileName(null);
-                          setInitialItems([]);
-                          setIsCompatibilizado(false);
-                          setMatchedResults([]);
-                        }}
-                        className="rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                        title="Remover planilha"
+                        onClick={() => initialFileInputRef.current?.click()}
+                        className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1 cursor-pointer"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <RefreshCw className="w-3.5 h-3.5" /> Trocar Planilha 1
                       </button>
                     )}
                   </div>
 
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDraggingInitial(true);
-                    }}
-                    onDragLeave={() => setIsDraggingInitial(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDraggingInitial(false);
-                      if (e.dataTransfer.files?.[0]) handleInitialFileUpload(e.dataTransfer.files[0]);
-                    }}
-                    onClick={() => initialFileInputRef.current?.click()}
-                    className={`group cursor-pointer rounded-xl border-2 border-dashed p-8 transition-all flex flex-col items-center justify-center ${
-                      isDraggingInitial
-                        ? "border-gold-400 bg-gold-500/5 scale-[1.01]"
-                        : initialFileName
-                        ? "border-emerald-500/30 bg-[#07090E]"
-                        : "border-[#1E2638] bg-[#07090E]/60 hover:border-gold-500/40 hover:bg-[#07090E]"
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      ref={initialFileInputRef}
-                      onChange={(e) => e.target.files?.[0] && handleInitialFileUpload(e.target.files[0])}
-                      accept=".xlsx, .xls, .csv"
-                      className="hidden"
-                    />
-
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold-500/10 text-gold-400 mb-3 group-hover:scale-110 transition-transform">
-                      <UploadCloud className="h-6 w-6" />
-                    </div>
-
-                    <span className="text-xs font-semibold text-white">
-                      {initialFileName ? "Substituir Planilha Inicial" : "Arraste e solte a Planilha Inicial"}
-                    </span>
-                    <span className="text-[11px] text-gray-500 mt-0.5">
-                      ou clique para abrir o explorador de arquivos (.xlsx)
-                    </span>
-
-                    {initialFileName && (
-                      <div className="mt-4 flex items-center space-x-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="font-medium text-white">{initialFileName}</span>
-                        <span className="text-[10px] text-gray-400">({initialItems.length} serviços detectados)</span>
+                  {!sheet1Study ? (
+                    <div
+                      onClick={() => initialFileInputRef.current?.click()}
+                      className="py-10 px-4 border-2 border-dashed border-[#1E2436] hover:border-[#F97316]/50 rounded-xl flex flex-col items-center text-center cursor-pointer transition-all"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-[#141A28] border border-[#26304A] flex items-center justify-center mb-4">
+                        <UploadCloud className="w-7 h-7 text-[#F97316]" />
                       </div>
-                    )}
-                  </div>
+                      <h3 className="text-base font-bold text-white mb-1">
+                        Anexar Planilha Inicial (Planilha 1)
+                      </h3>
+                      <p className="text-xs text-[#9CA3AF] max-w-sm">
+                        Arraste seu arquivo <span className="text-white font-medium">.XLSX</span> ou clique para abrir. O sistema lerá 100% dos quantitativos, etapas, disciplinas e o valor total do orçamento.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between gap-3 bg-[#111622] p-3.5 rounded-xl border border-[#1E2436]">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <FileSpreadsheet className="w-8 h-8 text-[#D4AF37] shrink-0" />
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-white truncate">
+                              {initialFileName}
+                            </h4>
+                            <p className="text-[11px] text-[#9CA3AF]">
+                              Coluna de Quantitativo lida:{" "}
+                              <span className="text-[#D4AF37] font-mono font-bold">
+                                Coluna {sheet1Study.detectedColumns.colQtyLetter}
+                              </span>{" "}
+                              • Cabeçalho na linha {sheet1Study.detectedColumns.headerRow}
+                            </p>
+                          </div>
+                        </div>
+
+                        {sheet1Study.sheetNames.length > 1 && (
+                          <select
+                            value={sheet1Study.selectedSheetName}
+                            onChange={(e) => handleChangeSheet1Tab(e.target.value)}
+                            className="bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
+                            title="Escolher aba da Planilha 1"
+                          >
+                            {sheet1Study.sheetNames.map((sn) => (
+                              <option key={sn} value={sn}>
+                                Aba: {sn}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+
+                      {/* Métricas do Estudo da Planilha 1 */}
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
+                          <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                            Serviços Lidos
+                          </span>
+                          <span className="text-base font-bold text-white font-mono">
+                            {sheet1Study.items.length} itens
+                          </span>
+                        </div>
+                        <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
+                          <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                            Etapas / Grupos
+                          </span>
+                          <span className="text-base font-bold text-[#F97316] font-mono">
+                            {sheet1Study.stages.length} etapas
+                          </span>
+                        </div>
+                        <div className="bg-[#111622] border border-[#D4AF37]/40 rounded-xl p-3">
+                          <span className="text-[10px] text-[#D4AF37] uppercase block font-semibold">
+                            Valor Total (Planilha 1)
+                          </span>
+                          <span className="text-sm font-bold text-[#D4AF37] font-mono">
+                            R${" "}
+                            {sheet1Study.totalGeralValue.toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Resumo dos Setores/Disciplinas identificados na Planilha 1 */}
+                      <div className="bg-[#07090E]/90 border border-[#1E2436] rounded-xl p-3">
+                        <span className="text-[10px] font-mono uppercase text-[#9CA3AF] block mb-2">
+                          Setores e Etapas Mapeados na Planilha 1:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                          {sheet1Study.stages.map((st, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#141A28] border border-[#26304A] text-gray-300"
+                            >
+                              <strong className="text-[#F97316]">{st.discipline}:</strong>{" "}
+                              {st.title.slice(0, 32)} ({st.itemsCount})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-[#141A28] flex items-center justify-between text-xs text-gray-400">
-                  <span>Serviços para Mapear:</span>
-                  <span className="font-mono font-bold text-white">{initialItems.length} itens</span>
+                <div className="mt-4 pt-3 border-t border-[#1E2436] flex items-center justify-between text-[11px] text-[#9CA3AF]">
+                  <span>O sistema extrai os quantitativos desta planilha</span>
+                  <span className="text-[#D4AF37] font-mono">100% Lido em Memória</span>
                 </div>
               </div>
 
-              {/* COLUNA 2: ESCOLHER A PLANILHA DO CONTRATO BASE */}
-              <div className="rounded-2xl border border-[#141A28] bg-[#0B0F19] p-6 shadow-xl flex flex-col justify-between">
+              {/* CARD DIREITO: PLANILHA 2 (CONTRATO BASE DESTINO — ONDE OS QUANTITATIVOS SERÃO POSICIONADOS) */}
+              <div className="lg:col-span-6 rounded-2xl border border-[#1E2436] bg-[#0B0F19]/90 p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20">
-                        <Building2 className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h2 className="text-sm font-bold text-white tracking-wide uppercase">
-                          Planilha Base do Contrato Selecionado
-                        </h2>
-                        <p className="text-[11px] text-gray-400">
-                          Modelo oficial que ditará 100% da formatação e composições
-                        </p>
-                      </div>
-                    </div>
-
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-[#D4AF37] font-semibold flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#D4AF37]"></span>
+                      Planilha 2 • Contrato Base (Molde Destino)
+                    </span>
                     <button
-                      onClick={() => {
-                        setActiveTab("configuracoes");
-                        setIsCreateContractOpen(true);
-                      }}
-                      className="flex items-center space-x-1 rounded-lg border border-gold-500/30 bg-gold-500/10 px-2.5 py-1 text-[11px] font-semibold text-gold-400 hover:bg-gold-500/20 transition-all"
+                      onClick={() => setActiveTab("SETTINGS")}
+                      className="text-xs text-[#F97316] hover:text-[#D4AF37] transition-colors flex items-center gap-1 font-medium cursor-pointer"
                     >
-                      <Plus className="h-3 w-3" />
-                      <span>Novo Contrato</span>
+                      <Plus className="w-3.5 h-3.5" /> Gerenciar / Anexar nas Configurações
                     </button>
                   </div>
 
-                  {/* Dropdown de Contratos */}
+                  {/* Seletor de Contrato */}
                   <div className="mb-4">
-                    <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">
-                      Escolha o Contrato Cadastrado:
+                    <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                      Escolha o Contrato Base que receberá os quantitativos:
                     </label>
                     <select
                       value={selectedContractId}
                       onChange={(e) => {
                         setSelectedContractId(e.target.value);
-                        setIsCompatibilizado(false);
+                        setCompositionMatches([]);
                       }}
-                      className="w-full rounded-xl border border-[#1E2638] bg-[#07090E] px-4 py-2.5 text-xs text-white focus:border-gold-500 focus:outline-none font-medium"
+                      className="w-full bg-[#111622] border border-[#26304A] focus:border-[#D4AF37] rounded-xl px-4 py-3 text-sm text-white font-semibold focus:outline-none transition-colors cursor-pointer"
                     >
                       {contracts.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.title} — {c.contractNumber} (BDI {c.bdi.toFixed(2)}%)
+                          [{c.contractNumber}] {c.contractName} — ({c.itemsCount} composições |{" "}
+                          {c.fileName || "Base Padrão"})
                         </option>
                       ))}
                     </select>
                   </div>
 
-                  {/* Detalhes do Contrato Ativo */}
-                  {currentSelectedContract && (
-                    <div className="rounded-xl border border-[#1A2234] bg-[#07090E] p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-gold-400">
-                          {currentSelectedContract.contractNumber}
-                        </span>
-                        <span className="rounded bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-400 border border-orange-500/30">
-                          BDI {currentSelectedContract.bdi.toFixed(2)}%
-                        </span>
+                  {selectedContract && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2.5">
+                        <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
+                          <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                            Composições na Base
+                          </span>
+                          <span className="text-base font-bold text-white font-mono">
+                            {selectedContract.itemsCount} linhas
+                          </span>
+                        </div>
+                        <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
+                          <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                            Coluna Alvo (Qtd)
+                          </span>
+                          <span className="text-base font-bold text-emerald-400 font-mono">
+                            Coluna {selectedContract.detectedColumns?.colQtyLetter || "F"}
+                          </span>
+                        </div>
+                        <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
+                          <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                            Valor Total do Contrato
+                          </span>
+                          <span className="text-sm font-bold text-[#D4AF37] font-mono">
+                            R${" "}
+                            {(selectedContract.totalGeralValue || 0).toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="text-xs font-medium text-white">
-                        {currentSelectedContract.company}
-                      </div>
-
-                      {/* TOTAL GERAL DO ORÇAMENTO LIDO PELA IA */}
-                      <div className="flex items-center justify-between rounded-lg bg-[#0E1424] p-2.5 border border-gold-500/20">
-                        <span className="text-[11px] text-gray-400">
-                          {currentSelectedContract.totalGeralLabel || "TOTAL GERAL DA PLANILHA"}:
-                        </span>
-                        <span className="font-mono text-xs font-bold text-gold-400">
-                          {currentSelectedContract.totalGeralValue
-                            ? currentSelectedContract.totalGeralValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                            : "R$ 0,00"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1 border-t border-[#141A28]">
-                        <span className="flex items-center space-x-1.5 truncate">
-                          <FileCheck className="h-3.5 w-3.5 text-emerald-400" />
-                          <span className="truncate">{currentSelectedContract.fileName}</span>
-                        </span>
-                        <span className="text-emerald-400 font-semibold text-[10px] shrink-0">100% Compatibilizável</span>
+                      <div className="bg-[#07090E]/90 border border-[#1E2436] rounded-xl p-3">
+                        <div className="flex items-center justify-between text-[11px] text-[#9CA3AF] mb-1.5">
+                          <span>
+                            Arquivo Molde:{" "}
+                            <strong className="text-white">
+                              {selectedContract.fileName || "Modelo Padrão"}
+                            </strong>{" "}
+                            (Aba: <span className="text-[#D4AF37]">{selectedContract.budgetSheetName || "Orçamento"}</span>)
+                          </span>
+                          <span className="text-emerald-400 font-mono text-[10px]">
+                            Layout & Fórmulas Protegidos
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                          {(selectedContract.stages || []).map((st, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] px-2 py-0.5 rounded bg-[#141A28] border border-[#26304A] text-gray-300"
+                            >
+                              <strong className="text-[#D4AF37]">{st.discipline}:</strong>{" "}
+                              {st.title.slice(0, 32)} ({st.itemsCount})
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-[#141A28] flex items-center justify-between text-xs text-gray-400">
-                  <span>Composições Oficiais da Base:</span>
-                  <span className="font-mono font-bold text-gold-400">
-                    {currentSelectedContract?.compositionsCount || 0} composições
+                <div className="mt-4 pt-3 border-t border-[#1E2436] flex items-center justify-between text-[11px] text-[#9CA3AF]">
+                  <span>
+                    Apenas a coluna de Quantitativo (Col{" "}
+                    {selectedContract?.detectedColumns?.colQtyLetter || "F"}) será alterada
                   </span>
+                  <span className="text-emerald-400 font-mono">Clone Fiel .XLSX</span>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* BARRA DE AÇÃO PRINCIPAL */}
-            <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[#141A28] bg-[#0B0F19] p-5 shadow-2xl">
-              <div className="flex items-center space-x-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-gold-500 to-orange-500 text-[#07090E]">
-                  <Sparkles className="h-6 w-6" />
-                </div>
+            {/* =====================================================================
+                PASSO 2: ESCOLHA DO MODO DE QUANTITATIVO (OS 2 BOTÕES SEM CONFLITO)
+                + BOTÕES DE COMPATIBILIZAR E BAIXAR PLANILHA FINAL
+               ===================================================================== */}
+            <section className="rounded-2xl border border-[#1E2436] bg-[#0B0F19] p-6 shadow-xl space-y-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#1E2436] pb-5">
                 <div>
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Injeção Exclusiva de Quantitativos por IA
+                  <span className="text-[11px] font-mono uppercase tracking-widest text-[#D4AF37] block mb-1">
+                    Regra de Posicionamento e Ajuste na Coluna de Quantitativo
+                  </span>
+                  <h3 className="text-base font-bold text-white">
+                    Como deseja aplicar os quantitativos da Planilha 1 na Planilha Base do Contrato?
                   </h3>
-                  <p className="text-xs text-gray-400">
-                    A IA localiza cada composição compatível e transfere o quantitativo para a planilha base, sem alterar formatações ou fórmulas
-                  </p>
                 </div>
+
+                {/* Campo de Valor Alvo quando KEEP_TOTAL_VALUE estiver ativo */}
+                {calcStrategy === "KEEP_TOTAL_VALUE" && (
+                  <div className="flex items-center gap-2 bg-[#111622] px-3.5 py-2 rounded-xl border border-[#D4AF37]/50">
+                    <Calculator className="w-4 h-4 text-[#D4AF37]" />
+                    <span className="text-xs text-[#9CA3AF]">Valor Final Alvo (R$):</span>
+                    <input
+                      type="text"
+                      value={customTargetTotal}
+                      onChange={(e) => setCustomTargetTotal(e.target.value)}
+                      onBlur={handleApplyCustomTargetTotal}
+                      placeholder="Ex: 300.000,00"
+                      className="w-32 bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#D4AF37] focus:border-[#F97316] focus:outline-none text-right"
+                    />
+                    <button
+                      onClick={handleApplyCustomTargetTotal}
+                      className="px-2.5 py-1 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-[#D4AF37] text-[11px] font-semibold cursor-pointer"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center space-x-3 w-full sm:w-auto">
+              {/* Os 2 Botões de Escolha Didáticos e Independentes */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* OPÇÃO 1: MANTER O VALOR FINAL DO ORÇAMENTO (AJUSTANDO OS QUANTITATIVOS) */}
                 <button
-                  onClick={handleRunCompatibilizacao}
-                  disabled={isMatching || initialItems.length === 0}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 rounded-xl px-6 py-3 text-xs font-bold transition-all shadow-lg ${
-                    initialItems.length > 0
-                      ? "bg-gradient-to-r from-gold-500 to-orange-500 text-[#07090E] hover:brightness-110 shadow-gold-500/20 cursor-pointer"
-                      : "bg-[#141A28] text-gray-500 cursor-not-allowed opacity-50"
+                  type="button"
+                  onClick={() => handleSelectStrategyMode("KEEP_TOTAL_VALUE")}
+                  className={`text-left p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3.5 ${
+                    calcStrategy === "KEEP_TOTAL_VALUE"
+                      ? "bg-[#141A28] border-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.15)]"
+                      : "bg-[#07090E]/60 border-[#1E2436] hover:border-[#26304A]"
                   }`}
                 >
-                  <ArrowRightLeft className="h-4 w-4" />
-                  <span>{isMatching ? "Mapeando por IA..." : "Compatibilizar Planilhas"}</span>
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                      calcStrategy === "KEEP_TOTAL_VALUE"
+                        ? "bg-gradient-to-br from-[#D4AF37] to-[#F97316] text-black"
+                        : "bg-[#111622] text-[#9CA3AF]"
+                    }`}
+                  >
+                    <Scale className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-white">
+                        Opção 1: Manter o Valor Final do Orçamento
+                      </span>
+                      {calcStrategy === "KEEP_TOTAL_VALUE" && (
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40">
+                          Selecionado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                      Posiciona cada serviço na composição correta do Contrato Base e{" "}
+                      <strong className="text-white">
+                        aumenta ou diminui proporcionalmente os quantitativos
+                      </strong>{" "}
+                      para que o Valor Total Final da planilha compatibilizada bata com o valor da Planilha 1 (
+                      <span className="text-[#D4AF37] font-mono">
+                        R${" "}
+                        {effectiveTargetTotal.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                      ).
+                    </p>
+                  </div>
                 </button>
+
+                {/* OPÇÃO 2: MANTER EXATAMENTE O QUANTITATIVO DA PLANILHA 1 */}
+                <button
+                  type="button"
+                  onClick={() => handleSelectStrategyMode("KEEP_QUANTITY")}
+                  className={`text-left p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3.5 ${
+                    calcStrategy === "KEEP_QUANTITY"
+                      ? "bg-[#141A28] border-[#F97316] shadow-[0_0_25px_rgba(249,115,22,0.15)]"
+                      : "bg-[#07090E]/60 border-[#1E2436] hover:border-[#26304A]"
+                  }`}
+                >
+                  <div
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                      calcStrategy === "KEEP_QUANTITY"
+                        ? "bg-gradient-to-br from-[#F97316] to-[#D4AF37] text-black"
+                        : "bg-[#111622] text-[#9CA3AF]"
+                    }`}
+                  >
+                    <Sliders className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-white">
+                        Opção 2: Manter o Quantitativo Exato da Planilha 1
+                      </span>
+                      {calcStrategy === "KEEP_QUANTITY" && (
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#F97316]/20 text-[#F97316] border border-[#F97316]/40">
+                          Selecionado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                      Coloca na composição correspondente da Planilha Base{" "}
+                      <strong className="text-white">
+                        exatamente a mesma quantidade física (m², m³, kg, un)
+                      </strong>{" "}
+                      vinda da Planilha 1, permitindo que o Valor Total final varie conforme os preços unitários do Contrato Base.
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Barra de Ação Principal: Botão Compatibilizar + Resumo Financeiro + Botão Baixar Planilha Final */}
+              <div className="pt-2 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+                <button
+                  onClick={() => runCompatibilityEngine()}
+                  disabled={!sheet1Study || isProcessing}
+                  className={`px-7 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all cursor-pointer ${
+                    sheet1Study && !isProcessing
+                      ? "bg-gradient-to-r from-[#D4AF37] via-[#F97316] to-[#D4AF37] text-black shadow-[0_0_30px_rgba(249,115,22,0.35)] hover:scale-[1.01]"
+                      : "bg-[#141A28] text-[#6B7280] border border-[#1E2436] cursor-not-allowed"
+                  }`}
+                >
+                  {isProcessing ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Estudando Planilhas e Alocando Quantitativos...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5" />
+                      Compatibilizar Planilha 1 com Contrato Base
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+
+                {compositionMatches.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-6 bg-[#111622] px-5 py-3 rounded-xl border border-[#1E2436]">
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-[#9CA3AF] block">
+                        Composições Ativadas
+                      </span>
+                      <span className="text-sm font-bold text-white font-mono">
+                        {activeCompositionsCount} de {compositionMatches.length} linhas
+                      </span>
+                    </div>
+                    <div className="h-7 w-[1px] bg-[#1E2436]" />
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-[#9CA3AF] block">
+                        Total Planilha 1
+                      </span>
+                      <span className="text-sm font-bold text-gray-300 font-mono">
+                        R${" "}
+                        {totalSheet1Value.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                    <div className="h-7 w-[1px] bg-[#1E2436]" />
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-[#D4AF37] block font-semibold">
+                        Novo Total na Planilha Base
+                      </span>
+                      <span className="text-base font-bold text-[#D4AF37] font-mono">
+                        R${" "}
+                        {totalCompatibleValue.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <button
                   onClick={handleDownloadFinalSpreadsheet}
-                  disabled={!isCompatibilizado || isExporting}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 rounded-xl px-6 py-3 text-xs font-bold transition-all shadow-lg ${
-                    isCompatibilizado
-                      ? "bg-emerald-500 hover:bg-emerald-400 text-[#07090E] shadow-emerald-500/20 cursor-pointer"
-                      : "bg-[#141A28] text-gray-500 cursor-not-allowed opacity-40"
+                  disabled={compositionMatches.length === 0 || isDownloading}
+                  className={`px-7 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-3 transition-all cursor-pointer ${
+                    compositionMatches.length > 0 && !isDownloading
+                      ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:scale-[1.01]"
+                      : "bg-[#141A28] text-[#6B7280] border border-[#1E2436] cursor-not-allowed"
                   }`}
                 >
-                  <Download className="h-4 w-4" />
-                  <span>{isExporting ? "Gerando Excel..." : "Baixar Planilha Final (.xlsx)"}</span>
+                  <Download className="w-5 h-5" />
+                  {isDownloading
+                    ? "Gerando Planilha Final (.XLSX)..."
+                    : "Baixar Planilha Final (.XLSX)"}
                 </button>
               </div>
-            </div>
+            </section>
 
-            {/* MESA DE INJEÇÃO DE QUANTITATIVOS */}
-            <div className="rounded-2xl border border-[#141A28] bg-[#0B0F19] overflow-hidden shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[#141A28] bg-[#07090E] px-6 py-4">
-                <div className="flex items-center space-x-2">
-                  <Layers className="h-4 w-4 text-gold-400" />
-                  <h4 className="text-xs font-bold text-white uppercase tracking-wider">
-                    Posicionamento de Quantitativos ({currentSelectedContract?.title})
-                  </h4>
-                </div>
-                <span className="text-xs text-gray-400">
-                  {matchedResults.length > 0 ? `${matchedResults.length} composições da base oficial` : "Aguardando compatibilização"}
-                </span>
-              </div>
-
-              {!isCompatibilizado ? (
-                <div className="flex flex-col items-center justify-center p-16 text-center">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#1E2638] bg-[#07090E] text-gray-500 mb-3">
-                    <Inbox className="h-7 w-7" />
+            {/* =====================================================================
+                PASSO 3: MESA INTERATIVA DE ALOCAÇÃO DE QUANTITATIVOS
+               ===================================================================== */}
+            {compositionMatches.length > 0 && (
+              <section className="rounded-2xl border border-[#1E2436] bg-[#0B0F19] overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-[#1E2436] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />
+                      <h2 className="text-base font-bold text-white">
+                        Mapeamento de Quantitativos na Planilha Base ({selectedContract.contractNumber})
+                      </h2>
+                    </div>
+                    <p className="text-xs text-[#9CA3AF] mt-1">
+                      Veja exatamente em qual linha e composição do Contrato Base cada quantitativo da Planilha 1 foi posicionado. Você pode digitar na coluna de{" "}
+                      <strong className="text-emerald-400">Qtd. Injetada</strong> ou trocar o item vinculado a qualquer momento.
+                    </p>
                   </div>
-                  <h4 className="text-sm font-semibold text-gray-200">
-                    Aguardando Compatibilização
-                  </h4>
-                  <p className="mt-1 text-xs text-gray-500 max-w-sm">
-                    Anexe a Planilha Inicial e clique em &quot;Compatibilizar Planilhas&quot; para transferir os quantitativos diretamente para a tabela do Contrato Base.
-                  </p>
+
+                  {/* Controles de Filtro da Tabela */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      onClick={() => setShowOnlyMatched(!showOnlyMatched)}
+                      className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        showOnlyMatched
+                          ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]"
+                          : "bg-[#111622] border-[#26304A] text-[#9CA3AF] hover:text-white"
+                      }`}
+                    >
+                      {showOnlyMatched
+                        ? `Exibindo Ativas (${activeCompositionsCount})`
+                        : `Todas as Composições (${compositionMatches.length})`}
+                    </button>
+
+                    <select
+                      value={disciplineFilter}
+                      onChange={(e) => setDisciplineFilter(e.target.value)}
+                      className="bg-[#111622] border border-[#26304A] rounded-xl px-3 py-2 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
+                    >
+                      <option value="ALL">Todos os Setores / Disciplinas</option>
+                      {availableDisciplines.map((d) => (
+                        <option key={d} value={d}>
+                          Setor: {d}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="relative w-64">
+                      <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        placeholder="Buscar composição ou etapa..."
+                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="border-b border-[#141A28] bg-[#07090E] text-gray-400 font-semibold tracking-wider uppercase">
+
+                <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 z-10 bg-[#080B12] border-b border-[#1E2436] text-[10px] font-mono uppercase text-[#9CA3AF]">
                       <tr>
-                        <th className="px-5 py-4">Linha</th>
-                        <th className="px-5 py-4">Composição Oficial (Contrato Base)</th>
-                        <th className="px-3 py-4 text-center">UN</th>
-                        <th className="px-4 py-4 text-right">Preço Unit. Base</th>
-                        <th className="px-5 py-4">Serviço Detectado (Planilha Inicial)</th>
-                        <th className="px-4 py-4 text-right text-gold-400 font-bold">Quantitativo Injetado</th>
-                        <th className="px-5 py-4 text-right font-bold text-white">Total Calculado</th>
-                        <th className="px-3 py-4 text-center">Similaridade</th>
+                        <th className="py-3.5 px-4">Linha Excel / Setor</th>
+                        <th className="py-3.5 px-4">Composição na Planilha Base (Destino)</th>
+                        <th className="py-3.5 px-4">Serviço Alocado da Planilha 1 (Origem)</th>
+                        <th className="py-3.5 px-4 text-right">Qtd. Planilha 1</th>
+                        <th className="py-3.5 px-4 text-right text-emerald-400">
+                          Qtd. Injetada (Col {selectedContract.detectedColumns?.colQtyLetter || "F"})
+                        </th>
+                        <th className="py-3.5 px-4 text-right">Preço Unit. Base</th>
+                        <th className="py-3.5 px-4 text-right text-[#D4AF37]">Novo Subtotal</th>
+                        <th className="py-3.5 px-4 text-center">Ação</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#141A28]/60 font-mono">
-                      {matchedResults.map((res, idx) => (
-                        <tr key={idx} className="hover:bg-[#0E1424] transition-colors">
-                          <td className="whitespace-nowrap px-5 py-4 text-gray-500 font-medium">
-                            #{res.contract_row_index || idx + 1}
-                          </td>
-                          <td className="px-5 py-4 font-sans text-white font-medium min-w-[260px]">
-                            {res.selected_match?.dest_description}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-center text-gray-400">
-                            {res.selected_match?.dest_unit}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-4 text-right text-gray-300">
-                            {res.selected_match?.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                          </td>
-                          <td className="px-5 py-4 font-sans text-gray-300 min-w-[240px]">
-                            <div className="text-xs">{res.source_item.description}</div>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-4 text-right font-bold text-gold-400 text-sm">
-                            {res.calculated_quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="whitespace-nowrap px-5 py-4 text-right font-bold text-white">
-                            {res.calculated_total_value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                          </td>
-                          <td className="whitespace-nowrap px-3 py-4 text-center">
-                            <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                res.calculated_quantity > 0
-                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                                  : "bg-gray-500/10 text-gray-500 border border-gray-500/20"
-                              }`}
-                            >
-                              {res.selected_match?.confidence_score}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                    <tbody className="divide-y divide-[#1E2436] text-xs">
+                      {filteredMatches.map(({ m, originalIndex }) => {
+                        const cItem = m.contract_item;
+                        const hasMatch = m.final_injected_quantity > 0;
+                        return (
+                          <tr
+                            key={`${cItem.id}_${originalIndex}`}
+                            className={`transition-colors ${
+                              hasMatch
+                                ? "bg-[#111622]/60 hover:bg-[#141A28]"
+                                : "bg-[#07090E]/40 opacity-60 hover:opacity-100"
+                            }`}
+                          >
+                            {/* Linha Real do Excel e Disciplina */}
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-mono text-[11px] text-[#D4AF37] font-bold">
+                                  Linha {cItem.row_index || originalIndex + 1} • Item{" "}
+                                  {cItem.itemNumber || cItem.code}
+                                </span>
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-[#141A28] border border-[#26304A] text-[#F97316] font-mono w-fit">
+                                  {cItem.discipline || "GERAL"}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Composição na Planilha Base */}
+                            <td className="py-3.5 px-4 max-w-xs">
+                              <div className="font-semibold text-white leading-snug">
+                                {cItem.description}
+                              </div>
+                              <div className="text-[10px] text-[#9CA3AF] font-mono mt-1">
+                                Cód: {cItem.code} • Unid:{" "}
+                                <strong className="text-white">{cItem.unit}</strong>
+                                {cItem.stage_title ? ` • Etapa: ${cItem.stage_title}` : ""}
+                              </div>
+                            </td>
+
+                            {/* Serviço Alocado da Planilha 1 */}
+                            <td className="py-3.5 px-4 max-w-xs">
+                              {m.best_candidate ? (
+                                <div>
+                                  <div className="text-gray-200 font-medium leading-snug">
+                                    {m.best_candidate.source_description}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                      {m.confidence_score}% • {m.best_candidate.match_reason}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-[11px] text-[#6B7280] italic">
+                                  Nenhum quantitativo alocado (ficará 0,00)
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Quantitativo Original na Planilha 1 */}
+                            <td className="py-3.5 px-4 text-right font-mono text-[#9CA3AF]">
+                              {m.base_quantity_from_sheet1 > 0
+                                ? `${m.base_quantity_from_sheet1.toLocaleString("pt-BR", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })} ${m.best_candidate?.source_unit || cItem.unit}`
+                                : "—"}
+                            </td>
+
+                            {/* Quantitativo Final Injetado na Planilha Base (Editável!) */}
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="inline-flex items-center justify-end gap-1.5">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={m.final_injected_quantity}
+                                  onChange={(e) =>
+                                    handleManualQuantityChange(originalIndex, e.target.value)
+                                  }
+                                  className={`w-24 text-right font-mono font-bold text-xs px-2.5 py-1.5 rounded-lg border focus:outline-none ${
+                                    hasMatch
+                                      ? "bg-[#07090E] border-emerald-500/50 text-emerald-400 focus:border-[#D4AF37]"
+                                      : "bg-[#07090E] border-[#1E2436] text-[#6B7280]"
+                                  }`}
+                                />
+                                <span className="text-[10px] font-mono text-[#9CA3AF]">
+                                  {cItem.unit}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Preço Unitário do Contrato Base */}
+                            <td className="py-3.5 px-4 text-right font-mono text-gray-300">
+                              R${" "}
+                              {m.contract_unit_price.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </td>
+
+                            {/* Novo Subtotal da Linha */}
+                            <td className="py-3.5 px-4 text-right font-mono font-bold text-[#D4AF37]">
+                              R${" "}
+                              {m.calculated_total_value.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </td>
+
+                            {/* Botão de Trocar / Vincular Item da Planilha 1 */}
+                            <td className="py-3.5 px-4 text-center">
+                              <button
+                                onClick={() => {
+                                  setActiveSwapContractIndex(originalIndex);
+                                  setSwapModalSearch("");
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg bg-[#141A28] hover:bg-[#1E2436] border border-[#26304A] text-[11px] text-[#D4AF37] font-medium inline-flex items-center gap-1 cursor-pointer"
+                                title="Escolher qual serviço da Planilha 1 vai para esta composição"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                Vincular
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ======================================================== */}
-        {/* ABA 2: CONFIGURAÇÕES DE CONTRATOS (DESIGN DOS PRINTS)     */}
-        {/* ======================================================== */}
-        {activeTab === "configuracoes" && (
-          <div>
-            <div className="flex items-center justify-between mb-8">
+              </section>
+            )}
+          </>
+        ) : (
+          /* =====================================================================
+             ABA DE CONFIGURAÇÕES: GESTÃO E ESTUDO COMPLETO DOS CONTRATOS BASE
+             ===================================================================== */
+          <section className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2436] pb-6">
               <div>
-                <h2 className="text-xl font-bold text-white tracking-wide">
-                  Gerenciador de Contratos Base
+                <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] block mb-1">
+                  Repositório de Moldes Contratuais (.XLSX)
+                </span>
+                <h2 className="text-xl font-bold text-white">
+                  Configurações de Contratos Base (Planilhas Destino)
                 </h2>
-                <p className="text-xs text-gray-400 mt-1">
-                  Cadastre suas planilhas de contratos oficiais com leitura inteligente de TOTAL GERAL
+                <p className="text-xs text-[#9CA3AF] mt-1">
+                  Quando você anexa ou substitui uma planilha em um card, o sistema faz o estudo completo de todas as abas, cabeçalhos, etapas, composições e guarda o arquivo original intacto para clonagem.
                 </p>
               </div>
-
               <button
-                onClick={() => setIsCreateContractOpen(true)}
-                className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-gold-500 to-orange-500 px-5 py-2.5 text-xs font-bold text-[#07090E] hover:brightness-110 transition-all shadow-lg shadow-gold-500/10"
+                onClick={() => setIsAddingContract(true)}
+                className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-bold text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.25)] hover:opacity-95 cursor-pointer self-start"
               >
-                <Plus className="h-4 w-4" />
-                <span>Criar Novo Card de Contrato Base</span>
+                <Plus className="w-4 h-4" />
+                Novo Contrato Base
               </button>
             </div>
 
-            {/* GRADE DE CARDS (PRINT 1) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-              {contracts.map((contract) => (
-                <div
-                  key={contract.id}
-                  className="rounded-2xl border border-[#1A2234] bg-[#0B0F19] p-6 shadow-2xl relative flex flex-col justify-between hover:border-gold-500/40 transition-all"
-                >
-                  <div>
-                    {/* Header do Card */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold-500/10 text-gold-400 border border-gold-500/30">
-                          <Building2 className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-extrabold text-white tracking-wide">
-                            {contract.title}
-                          </h3>
-                          <div className="text-xs text-gray-400">
-                            <span>{contract.contractNumber}</span>
-                            <span className="mx-1.5">•</span>
-                            <span className="font-bold text-gold-400">BDI {contract.bdi.toFixed(2)}%</span>
-                          </div>
-                        </div>
-                      </div>
+            {/* Modal/Card de Criação de Novo Contrato Base */}
+            {isAddingContract && (
+              <div className="rounded-2xl border border-[#D4AF37]/50 bg-[#0B0F19] p-6 shadow-2xl space-y-6">
+                <div className="flex items-center justify-between border-b border-[#1E2436] pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <Cpu className="w-5 h-5 text-[#D4AF37]" />
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Cadastrar Novo Contrato Base com Estudo Estrutural 100%
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setIsAddingContract(false)}
+                    className="text-xs text-[#9CA3AF] hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" /> Fechar
+                  </button>
+                </div>
 
-                      <button
-                        onClick={(e) => handleDeleteContract(contract.id, e)}
-                        title="Excluir contrato"
-                        className="rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Dados do Contrato */}
+                  <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                        Objeto / Nome do Contrato *
+                      </label>
+                      <input
+                        type="text"
+                        value={newContractName}
+                        onChange={(e) => setNewContractName(e.target.value)}
+                        placeholder="Ex: Reforma e Manutenção Predial — Lote 02"
+                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
                     </div>
-
-                    <div className="text-xs font-bold text-gray-300 tracking-wider uppercase mb-4">
-                      {contract.company}
+                    <div>
+                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                        Número do Contrato *
+                      </label>
+                      <input
+                        type="text"
+                        value={newContractNumber}
+                        onChange={(e) => setNewContractNumber(e.target.value)}
+                        placeholder="Ex: 089/2026-GPR"
+                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
                     </div>
-
-                    {/* Capa da Planilha Base */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="flex items-center space-x-1.5 text-gray-300 font-medium">
-                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-400" />
-                          <span>Capa da Planilha Base</span>
-                        </span>
-                        <span className="text-emerald-400 font-semibold text-[11px]">
-                          100% Compatibilizável
-                        </span>
-                      </div>
-
-                      {/* Box Preview da Planilha com TOTAL GERAL */}
-                      <div className="relative rounded-xl border border-[#1A2234] bg-[#07090E] p-4 overflow-hidden">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center space-x-2 truncate">
-                            <span className="flex h-5 w-5 items-center justify-center rounded bg-emerald-500/20 text-emerald-400 text-xs font-bold">X</span>
-                            <span className="font-mono text-xs text-gray-300 truncate max-w-[200px]">{contract.fileName}</span>
-                          </div>
-                          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
-                            BASE ATIVA
-                          </span>
-                        </div>
-
-                        {/* Botão Abrir Planilha */}
-                        <div className="flex justify-center my-3">
-                          <button
-                            onClick={() => setViewingContract(contract)}
-                            className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-gold-500 to-orange-500 px-5 py-2 text-xs font-bold text-[#07090E] hover:brightness-110 transition-all shadow-md shadow-gold-500/20"
-                          >
-                            <Eye className="h-4 w-4" />
-                            <span>Abrir Planilha</span>
-                          </button>
-                        </div>
-
-                        {/* Exibição do TOTAL GERAL Lido pela IA */}
-                        <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-[#141A28]">
-                          <span className="truncate">Aba: {contract.budgetSheetName || "Orçamento"}</span>
-                          <span className="font-mono font-bold text-gold-400 shrink-0">
-                            {contract.totalGeralValue
-                              ? contract.totalGeralValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-                              : "-"}
-                          </span>
-                        </div>
-                      </div>
+                    <div>
+                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                        Órgão / Contratante
+                      </label>
+                      <input
+                        type="text"
+                        value={newContractOrg}
+                        onChange={(e) => setNewContractOrg(e.target.value)}
+                        placeholder="Ex: Prefeitura / GPR"
+                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
                     </div>
-
-                    {/* Substituir / Atualizar Planilha */}
-                    <div className="rounded-xl border border-[#1A2234] bg-[#07090E] p-3 mb-4">
-                      <div className="text-[11px] font-medium text-gray-300 mb-2 flex items-center space-x-1.5">
-                        <UploadCloud className="h-3.5 w-3.5 text-gold-400" />
-                        <span>Substituir / Atualizar Planilha</span>
-                      </div>
-
-                      <div className="flex items-center justify-between rounded-lg border border-dashed border-[#1E2638] bg-[#0B0F19] p-2.5">
-                        <span className="text-[11px] text-gray-400 truncate">
-                          Arraste novo .xlsx ou clique aqui
-                        </span>
-                        <button
-                          onClick={() => {
-                            setTargetReplaceContractId(contract.id);
-                            replaceContractFileInputRef.current?.click();
-                          }}
-                          className="rounded-lg border border-gold-500/30 bg-gold-500/10 px-3 py-1 text-[11px] font-semibold text-gold-400 hover:bg-gold-500/20 transition-all shrink-0"
-                        >
-                          Anexar Arquivo
-                        </button>
-                      </div>
+                    <div>
+                      <label className="text-xs text-[#9CA3AF] block mb-1.5">BDI (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={newContractBdi}
+                        onChange={(e) => setNewContractBdi(e.target.value)}
+                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
                     </div>
-
-                    {/* Métricas */}
-                    <div className="grid grid-cols-2 gap-3 mb-5">
-                      <div className="rounded-xl border border-[#141A28] bg-[#07090E] p-3 text-center">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider block">COMPOSIÇÕES</span>
-                        <span className="text-sm font-bold text-white font-mono">{contract.compositionsCount} itens</span>
-                      </div>
-                      <div className="rounded-xl border border-[#141A28] bg-[#07090E] p-3 text-center">
-                        <span className="text-[10px] text-gray-500 uppercase tracking-wider block">ETAPAS</span>
-                        <span className="text-sm font-bold text-gold-400 font-mono">{contract.stagesCount} grupos</span>
-                      </div>
+                    <div>
+                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                        Fonte / Base Oficial
+                      </label>
+                      <input
+                        type="text"
+                        value={newContractBaseRef}
+                        onChange={(e) => setNewContractBaseRef(e.target.value)}
+                        placeholder="Ex: SINAPI / ORSE"
+                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
                     </div>
                   </div>
 
-                  {/* Ações Inferiores */}
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#141A28]">
-                    <button
-                      onClick={() => setViewingContract(contract)}
-                      className="flex items-center justify-center space-x-2 rounded-xl border border-[#1E2638] bg-[#07090E] py-2.5 text-xs font-semibold text-gray-300 hover:border-gold-500/40 hover:text-white transition-all"
+                  {/* Dropzone de Upload e Estudo da Planilha do Contrato */}
+                  <div className="lg:col-span-6 flex flex-col justify-between">
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDraggingContract(true);
+                      }}
+                      onDragLeave={() => setIsDraggingContract(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDraggingContract(false);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) inspectNewContractModalFile(file);
+                      }}
+                      onClick={() => contractFileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[190px] ${
+                        isDraggingContract
+                          ? "border-[#F97316] bg-[#F97316]/10"
+                          : newContractStudy
+                          ? "border-emerald-500/50 bg-emerald-500/5"
+                          : "border-[#26304A] hover:border-[#D4AF37]/60 bg-[#111622]/60"
+                      }`}
                     >
-                      <Eye className="h-3.5 w-3.5" />
-                      <span>Ver Itens</span>
-                    </button>
+                      <input
+                        ref={contractFileInputRef}
+                        type="file"
+                        accept=".xlsx,.xls"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) inspectNewContractModalFile(file);
+                          e.target.value = "";
+                        }}
+                      />
+                      <UploadCloud
+                        className={`w-9 h-9 mb-2 ${
+                          newContractStudy ? "text-emerald-400" : "text-[#D4AF37]"
+                        }`}
+                      />
+                      {isInspectingContract ? (
+                        <p className="text-xs text-[#D4AF37] font-semibold animate-pulse">
+                          Analisando todas as abas, etapas, composições e Total Geral...
+                        </p>
+                      ) : newContractStudy ? (
+                        <div className="space-y-2 w-full">
+                          <p className="text-xs font-bold text-white">{newContractFileName}</p>
+                          <div className="flex flex-wrap items-center justify-center gap-2 text-[11px]">
+                            <span className="px-2 py-0.5 rounded bg-[#141A28] text-emerald-400 font-mono">
+                              {newContractStudy.items.length} composições lidas
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-[#141A28] text-[#F97316] font-mono">
+                              {newContractStudy.stages.length} etapas
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-[#141A28] text-[#D4AF37] font-mono font-bold">
+                              Total: R${" "}
+                              {newContractStudy.totalGeralValue.toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#9CA3AF]">
+                            Coluna de Quantitativo identificada:{" "}
+                            <strong className="text-white">
+                              Coluna {newContractStudy.detectedColumns.colQtyLetter}
+                            </strong>
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-xs font-bold text-white">
+                            Arraste a Planilha do Contrato (.XLSX) ou clique aqui
+                          </p>
+                          <p className="text-[11px] text-[#9CA3AF] mt-1">
+                            Leitura 100% completa de etapas, composições, coluna de quantitativo e Total Geral
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {newContractStudy && newContractStudy.sheetNames.length > 1 && (
+                      <div className="mt-3 flex items-center justify-between bg-[#111622] px-3 py-2 rounded-xl border border-[#26304A]">
+                        <span className="text-xs text-[#9CA3AF]">Aba do Orçamento:</span>
+                        <select
+                          value={newContractStudy.selectedSheetName}
+                          onChange={(e) => handleChangeNewContractModalTab(e.target.value)}
+                          className="bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1 text-xs text-white"
+                        >
+                          {newContractStudy.sheetNames.map((sn) => (
+                            <option key={sn} value={sn}>
+                              {sn}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-[#1E2436]">
+                  <button
+                    onClick={() => setIsAddingContract(false)}
+                    className="px-4 py-2.5 rounded-xl border border-[#26304A] text-xs text-[#9CA3AF] hover:text-white cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveNewContract}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-bold text-xs flex items-center gap-2 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    Salvar Contrato Base
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Lista de Cards de Contratos Base */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {contracts.map((c) => {
+                const isSelected = c.id === selectedContractId;
+                const isExpanded = expandedContractStudyId === c.id;
+                const isUpdatingThis = updatingCardId === c.id;
+
+                return (
+                  <div
+                    key={c.id}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleUpdateExistingContractCardFile(c.id, file);
+                    }}
+                    className={`rounded-2xl border p-6 flex flex-col justify-between transition-all ${
+                      isSelected
+                        ? "border-[#D4AF37] bg-[#0B0F19] shadow-[0_0_30px_rgba(212,175,55,0.12)]"
+                        : "border-[#1E2436] bg-[#0B0F19]/70 hover:border-[#26304A]"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <span className="text-[10px] font-mono uppercase px-2.5 py-1 rounded bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30 font-semibold">
+                            Contrato Nº {c.contractNumber}
+                          </span>
+                          <h3 className="text-base font-bold text-white mt-2 leading-snug">
+                            {c.contractName}
+                          </h3>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteContract(c.id)}
+                          className="p-2 rounded-lg text-[#9CA3AF] hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                          title="Excluir Contrato Base"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Metadados e Estudo Estrutural da Planilha do Contrato */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 p-3.5 rounded-xl bg-[#111622] border border-[#1E2436] text-xs">
+                        <div>
+                          <span className="text-[#9CA3AF] block text-[10px]">Composições Lidas</span>
+                          <span className="text-white font-bold font-mono">
+                            {c.itemsCount} itens
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9CA3AF] block text-[10px]">Etapas / Grupos</span>
+                          <span className="text-[#F97316] font-bold font-mono">
+                            {c.stages?.length || 1} etapas
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9CA3AF] block text-[10px]">Coluna Alvo Qtd</span>
+                          <span className="text-emerald-400 font-bold font-mono">
+                            Coluna {c.detectedColumns?.colQtyLetter || "F"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9CA3AF] block text-[10px]">Total Geral Lido</span>
+                          <span className="text-[#D4AF37] font-bold font-mono">
+                            R${" "}
+                            {(c.totalGeralValue || 0).toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Seletor de Aba se a planilha tiver mais de uma aba */}
+                      {c.sheetNames && c.sheetNames.length > 1 && (
+                        <div className="mb-3 flex items-center justify-between bg-[#111622] px-3 py-2 rounded-xl border border-[#26304A] text-xs">
+                          <span className="text-[#9CA3AF]">Aba ativa do Contrato:</span>
+                          <select
+                            value={c.budgetSheetName}
+                            onChange={(e) =>
+                              handleSwitchExistingContractSheet(c.id, e.target.value)
+                            }
+                            className="bg-[#07090E] border border-[#26304A] rounded-lg px-2 py-1 text-xs text-[#D4AF37] font-semibold"
+                          >
+                            {c.sheetNames.map((sn) => (
+                              <option key={sn} value={sn}>
+                                {sn}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Dropzone / Botão para Substituir ou Atualizar a Planilha dentro do próprio Card */}
+                      <label className="mb-3 flex items-center justify-between px-4 py-3 rounded-xl border border-dashed border-[#26304A] hover:border-[#D4AF37] bg-[#07090E]/70 cursor-pointer transition-colors text-xs">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FileSpreadsheet className="w-4 h-4 text-[#D4AF37] shrink-0" />
+                          <span className="text-gray-300 truncate">
+                            {isUpdatingThis
+                              ? "Estudando todas as linhas e colunas..."
+                              : c.fileName || "Planilha_Base.xlsx"}
+                          </span>
+                        </div>
+                        <span className="text-[#F97316] font-semibold shrink-0 ml-2">
+                          Substituir / Anexar .XLSX
+                        </span>
+                        <input
+                          type="file"
+                          accept=".xlsx,.xls"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleUpdateExistingContractCardFile(c.id, file);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+
+                      {/* Botão para Inspecionar o Estudo Completo das Composições do Card */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedContractStudyId(isExpanded ? null : c.id)
+                        }
+                        className="w-full py-2 px-3 rounded-xl bg-[#111622] hover:bg-[#141A28] border border-[#1E2436] text-xs text-[#D4AF37] font-medium flex items-center justify-between cursor-pointer mb-3"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Eye className="w-3.5 h-3.5" />
+                          Inspecionar Estudo Completo ({c.itemsCount} composições e etapas)
+                        </span>
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="mb-4 bg-[#07090E] border border-[#1E2436] rounded-xl p-3 max-h-64 overflow-y-auto space-y-2">
+                          <div className="text-[10px] font-mono text-[#9CA3AF] pb-2 border-b border-[#1E2436]">
+                            Cabeçalho na Linha {c.detectedColumns?.headerRow || 1} • Coluna Qtd:{" "}
+                            <strong className="text-emerald-400">
+                              Col {c.detectedColumns?.colQtyLetter || "F"}
+                            </strong>
+                          </div>
+                          {c.items.slice(0, 80).map((it, idx) => (
+                            <div
+                              key={idx}
+                              className="text-[11px] py-1.5 border-b border-[#1E2436]/60 flex items-start justify-between gap-2"
+                            >
+                              <div className="min-w-0">
+                                <span className="text-[#F97316] font-mono text-[10px] mr-1.5">
+                                  [L{it.row_index || idx + 1} • {it.discipline || "GERAL"}]
+                                </span>
+                                <span className="text-gray-200">{it.description}</span>
+                              </div>
+                              <div className="text-right font-mono shrink-0 text-[10px] text-[#D4AF37]">
+                                {it.unit} • R$ {it.unit_price.toFixed(2)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     <button
                       onClick={() => {
-                        setSelectedContractId(contract.id);
-                        setActiveTab("compatibilizacao");
-                        setToastMessage(`Contrato "${contract.title}" selecionado para a compatibilização.`);
-                        setTimeout(() => setToastMessage(null), 3500);
+                        setSelectedContractId(c.id);
+                        setActiveTab("WORKSPACE");
+                        showToast(`Contrato "${c.contractNumber}" selecionado para compatibilização!`);
                       }}
-                      className="flex items-center justify-center space-x-2 rounded-xl bg-gradient-to-r from-gold-500 to-orange-500 py-2.5 text-xs font-bold text-[#07090E] hover:brightness-110 transition-all shadow-md shadow-gold-500/20"
+                      className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40"
+                          : "bg-[#141A28] hover:bg-[#1E2436] text-white"
+                      }`}
                     >
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Usar no De-Para</span>
+                      <CheckCircle2 className="w-4 h-4" />
+                      {isSelected
+                        ? "Contrato Selecionado Atualmente (Ir para Compatibilização)"
+                        : "Usar este Contrato na Compatibilização"}
                     </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </div>
+          </section>
         )}
+      </main>
 
-        {/* ======================================================== */}
-        {/* MODAL: CRIAR NOVO CARD DE CONTRATO BASE (PRINT 2)        */}
-        {/* ======================================================== */}
-        {isCreateContractOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
-            <div className="w-full max-w-lg rounded-2xl border border-[#1E2638] bg-[#0B0F19] p-7 shadow-2xl animate-fade-in">
-              <div className="flex items-center justify-between border-b border-[#141A28] pb-4 mb-5">
-                <div className="flex items-center space-x-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-500/10 text-gold-400 border border-gold-500/20">
-                    <Building2 className="h-4 w-4" />
-                  </div>
-                  <h3 className="text-base font-bold text-white tracking-wide">
-                    Criar Novo Card de Contrato Base
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsCreateContractOpen(false)}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-[#141A28] hover:text-white transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
+      {/* =====================================================================
+          MODAL DE VÍNCULO MANUAL DE ITEM DA PLANILHA 1 PARA A COMPOSIÇÃO DO CONTRATO
+         ===================================================================== */}
+      {activeSwapContractIndex !== null && compositionMatches[activeSwapContractIndex] && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0B0F19] border border-[#D4AF37]/50 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-start justify-between gap-4 border-b border-[#1E2436] pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase text-[#F97316]">
+                  Alocação Manual de Quantitativo
+                </span>
+                <h3 className="text-sm font-bold text-white mt-0.5">
+                  Composição Destino:{" "}
+                  {compositionMatches[activeSwapContractIndex].contract_item.description}
+                </h3>
+                <p className="text-xs text-[#9CA3AF] mt-0.5">
+                  Unidade no Contrato:{" "}
+                  <strong className="text-white">
+                    {compositionMatches[activeSwapContractIndex].contract_item.unit}
+                  </strong>{" "}
+                  • Preço Unitário: R${" "}
+                  {compositionMatches[activeSwapContractIndex].contract_unit_price.toFixed(2)}
+                </p>
               </div>
+              <button
+                onClick={() => setActiveSwapContractIndex(null)}
+                className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              {/* Upload da Planilha Oficial com Leitura Inteligente do TOTAL GERAL */}
-              <div className="mb-4">
-                <div className="flex items-center justify-between text-xs mb-1.5">
-                  <span className="font-semibold text-white">Planilha Base Oficial (.xlsx):</span>
-                  <span className="text-[10px] text-gray-400">(Pode anexar agora ou depois no card)</span>
-                </div>
+            <div className="relative">
+              <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={swapModalSearch}
+                onChange={(e) => setSwapModalSearch(e.target.value)}
+                placeholder="Filtrar serviços da Planilha 1 por palavra-chave ou setor..."
+                className="w-full bg-[#111622] border border-[#26304A] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
 
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDraggingModalFile(true);
-                  }}
-                  onDragLeave={() => setIsDraggingModalFile(false)}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    setIsDraggingModalFile(false);
-                    if (e.dataTransfer.files?.[0]) {
-                      const f = e.dataTransfer.files[0];
-                      setNewContractFile(f);
-                      setNewContractFileName(f.name);
-                      setNewContractFileSize(`${(f.size / 1024).toFixed(1)} KB`);
-                      await inspectAndParseContractFile(f);
-                    }
-                  }}
-                  onClick={() => modalFileInputRef.current?.click()}
-                  className={`group cursor-pointer rounded-xl border-2 border-dashed p-6 transition-all flex flex-col items-center justify-center text-center ${
-                    isDraggingModalFile
-                      ? "border-gold-400 bg-gold-500/5"
-                      : newContractFileName
-                      ? "border-emerald-500/40 bg-[#07090E]"
-                      : "border-[#1E2638] bg-[#07090E]/80 hover:border-gold-500/40"
-                  }`}
-                >
-                  <input
-                    type="file"
-                    ref={modalFileInputRef}
-                    onChange={async (e) => {
-                      const f = e.target.files?.[0];
-                      if (f) {
-                        setNewContractFile(f);
-                        setNewContractFileName(f.name);
-                        setNewContractFileSize(`${(f.size / 1024).toFixed(1)} KB`);
-                        await inspectAndParseContractFile(f);
-                      }
-                    }}
-                    accept=".xlsx, .xls, .csv"
-                    className="hidden"
-                  />
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              <button
+                onClick={() => handleManualAssignSourceItem(activeSwapContractIndex, null)}
+                className="w-full text-left p-3 rounded-xl border border-[#26304A] hover:border-red-500/50 bg-[#111622]/50 text-xs text-red-400 font-semibold cursor-pointer"
+              >
+                Zerar quantitativo desta composição (Não alocar nenhum item da Planilha 1)
+              </button>
 
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold-500/10 text-gold-400 mb-2">
-                    <UploadCloud className="h-5 w-5" />
-                  </div>
-
-                  <span className="text-xs font-semibold text-white">
-                    {newContractFileName ? newContractFileName : "Clique para selecionar ou arraste o arquivo (.xlsx)"}
-                  </span>
-                  <span className="text-[10px] text-gray-500 mt-0.5">
-                    Leitura otimizada para planilhas grandes da engenharia civil
-                  </span>
-
-                  {/* Feedback de leitura do TOTAL GERAL */}
-                  {newContractTotalGeral > 0 && (
-                    <div className="mt-3 flex items-center space-x-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[11px] text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>{newContractTotalLabel}: R$ {newContractTotalGeral.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
-                      <span className="text-gray-400 text-[10px]">({newContractItems.length} composições)</span>
+              {(sheet1Study?.items || [])
+                .filter((it) => {
+                  if (!swapModalSearch.trim()) return true;
+                  const q = swapModalSearch.toLowerCase();
+                  return (
+                    it.description.toLowerCase().includes(q) ||
+                    (it.discipline || "").toLowerCase().includes(q) ||
+                    (it.stage_title || "").toLowerCase().includes(q)
+                  );
+                })
+                .map((sItem) => (
+                  <button
+                    key={sItem.id}
+                    onClick={() => handleManualAssignSourceItem(activeSwapContractIndex, sItem)}
+                    className="w-full text-left p-3.5 rounded-xl border border-[#1E2436] hover:border-[#D4AF37] bg-[#111622] transition-all cursor-pointer flex items-center justify-between gap-4"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#141A28] text-[#F97316]">
+                          {sItem.discipline || "GERAL"}
+                        </span>
+                        {sItem.stage_title && (
+                          <span className="text-[10px] text-[#9CA3AF] truncate">
+                            {sItem.stage_title}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs font-semibold text-white">{sItem.description}</div>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Form Metadados */}
-              <div className="space-y-3.5 mb-6">
-                <div>
-                  <label className="text-xs font-semibold text-white block mb-1">
-                    Nome / Título do Contrato:
-                  </label>
-                  <input
-                    type="text"
-                    value={newContractTitle}
-                    onChange={(e) => setNewContractTitle(e.target.value)}
-                    placeholder="Ex: Contrato Obras Civis e Estruturais - Construtora Prime"
-                    className="w-full rounded-xl border border-[#1E2638] bg-[#07090E] px-3.5 py-2 text-xs text-white placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-white block mb-1">
-                      Empresa Contratada:
-                    </label>
-                    <input
-                      type="text"
-                      value={newContractCompany}
-                      onChange={(e) => setNewContractCompany(e.target.value)}
-                      placeholder="Ex: Construtora Alfa S/A"
-                      className="w-full rounded-xl border border-[#1E2638] bg-[#07090E] px-3.5 py-2 text-xs text-white placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-white block mb-1">
-                      Número do Contrato:
-                    </label>
-                    <input
-                      type="text"
-                      value={newContractNumber}
-                      onChange={(e) => setNewContractNumber(e.target.value)}
-                      placeholder="Ex: CT-2026/015"
-                      className="w-full rounded-xl border border-[#1E2638] bg-[#07090E] px-3.5 py-2 text-xs text-white placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-white block mb-1">
-                    Percentual de B.D.I. Oficial (%):
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={newContractBdi}
-                    onChange={(e) => setNewContractBdi(e.target.value)}
-                    placeholder="25.50"
-                    className="w-full rounded-xl border border-[#1E2638] bg-[#07090E] px-3.5 py-2 text-xs text-white placeholder-gray-600 focus:border-gold-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-[#141A28]">
-                <button
-                  onClick={() => setIsCreateContractOpen(false)}
-                  className="rounded-xl px-4 py-2 text-xs font-medium text-gray-400 hover:text-white transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveContract}
-                  className="flex items-center space-x-1.5 rounded-xl bg-gradient-to-r from-gold-500 to-orange-500 px-5 py-2 text-xs font-bold text-[#07090E] hover:brightness-110 transition-all shadow-md shadow-gold-500/20"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Salvar Card de Contrato</span>
-                </button>
-              </div>
+                    <div className="text-right font-mono shrink-0">
+                      <div className="text-xs font-bold text-emerald-400">
+                        Qtd: {sItem.quantity} {sItem.unit}
+                      </div>
+                      <div className="text-[10px] text-[#9CA3AF]">
+                        Total Origem: R$ {sItem.total_value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </div>
+                    </div>
+                  </button>
+                ))}
             </div>
           </div>
-        )}
-
-        {/* MODAL: VER ITENS DO CONTRATO */}
-        {viewingContract && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
-            <div className="w-full max-w-3xl rounded-2xl border border-[#1E2638] bg-[#0B0F19] p-6 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[#141A28] pb-4 mb-4">
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    Composições do Contrato: {viewingContract.title}
-                  </h3>
-                  <p className="text-xs text-gray-400">
-                    {viewingContract.contractNumber} • BDI {viewingContract.bdi.toFixed(2)}% • Total Geral: {viewingContract.totalGeralValue ? viewingContract.totalGeralValue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setViewingContract(null)}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-[#141A28] hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="max-h-96 overflow-y-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="border-b border-[#141A28] bg-[#07090E] text-gray-400 font-semibold sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3">Código</th>
-                      <th className="px-4 py-3">Descrição da Composição</th>
-                      <th className="px-3 py-3 text-center">UN</th>
-                      <th className="px-4 py-3 text-right">Preço Unitário</th>
-                      <th className="px-4 py-3 text-right">Qtd Base</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#141A28]/60 font-mono">
-                    {viewingContract.items.map((it, idx) => (
-                      <tr key={idx} className="hover:bg-[#0E1424]">
-                        <td className="px-4 py-3 text-gold-400 font-bold">{it.code || it.id}</td>
-                        <td className="px-4 py-3 font-sans text-gray-200">{it.description}</td>
-                        <td className="px-3 py-3 text-center text-gray-400">{it.unit}</td>
-                        <td className="px-4 py-3 text-right text-white">
-                          {it.unit_price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                        </td>
-                        <td className="px-4 py-3 text-right text-gray-400">
-                          {it.quantity.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
+        </div>
+      )}
+    </div>
   );
 }

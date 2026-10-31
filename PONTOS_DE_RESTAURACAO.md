@@ -7,13 +7,13 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 ## 🔒 REGRA DE OURO DAS RESTAURAÇÕES
 - **Estrutura preservada:** Next.js, App Router, TypeScript, Tailwind CSS, Python Serverless, componentes e rotas.
 - **Identidade visual mantida:** Dark Industrial Luxury Minimalista (Fundo Deep Charcoal `#07090E`, Metallic Gold `#D4AF37`, Vibrant Orange `#F97316`).
-- **Engenharia de Excel:** `openpyxl` (Strict Mode) com suporte integral a fórmulas vivas e fidelidade de layout.
+- **Engenharia de Excel:** `openpyxl` (Strict Mode) com suporte integral a fórmulas vivas (`calcProperties.fullCalcOnLoad = True`) e fidelidade de layout.
 
 ---
 
-### [PR.007]
-- **Data/Hora:** 31/10/2026 17:41 (Horário Local)
-- **Tag Git:** `PR.007`
+### [PR.008]
+- **Data/Hora:** 31/10/2026 18:12 (Horário Local)
+- **Tag Git:** `PR.008`
 - **Status:** Ativo / Em Produção 24/7
 - **Links Oficiais:**
   - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
@@ -22,16 +22,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
   - Localhost de Desenvolvimento: http://localhost:3000
   - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
 
-#### 🖥️ Implementações Estruturais do PR.007:
-1. **Leitura Inteligente por IA da Aba de Orçamento & Busca do TOTAL GERAL:**
-   - Ao anexar a planilha do Contrato Base, o sistema varre o arquivo, localiza a aba de orçamento e rastreia no final da planilha o rótulo e o valor numérico do **TOTAL GERAL DO ORÇAMENTO**.
-   - O valor do Total Geral e o nome da aba são armazenados nos metadados do card e exibidos em destaque.
-2. **Compatibilização Semântica por IA com Injeção Exclusiva de Quantitativos:**
-   - A IA cruza palavras-chave e sinônimos da engenharia civil (ex: pintura de paredes externas, 15 m²) e localiza a composição correspondente na planilha do Contrato Base.
-   - Posiciona exatamente o quantitativo da Planilha 1 na coluna de quantidade da composição do Contrato Base.
-   - **Preservação Absoluta:** Nenhuma outra célula, texto, cabeçalho, BDI ou fórmula é alterada.
-3. **Download da Planilha Final Compatibilizada:**
-   - Botão para baixar a planilha clonada do Contrato Base com openpyxl preservando 100% de layout e fórmulas vivas (`calcProperties.fullCalcOnLoad = True`).
+#### 🖥️ Implementações Estruturais do PR.008:
+1. **Estudo Estrutural 100% Completo das Duas Planilhas (`src/lib/excelEngine.ts` + `api/index.py`):**
+   - Varredura de até 80 linhas para localização exata do cabeçalho (mesmo com células mescladas ou logotipos), inferência estatística de colunas (`Item`, `Código`, `Fonte`, `Descrição`, `Unidade`, **`Coluna Alvo de Quantitativo`**, `Preço Unitário`, `Total`), leitura de todas as abas (`sheetNames`) com seletor de aba, mapeamento de 100% das **Etapas/Grupos** e classificação por **Setor/Disciplina da Engenharia Civil** (`PINTURA`, `HIDRÁULICA`, `ELÉTRICA`, `ESTRUTURA`, `ALVENARIA`, `REVESTIMENTO`, `PISOS`, `COBERTURA`, `IMPERMEABILIZAÇÃO`, `ESQUADRIAS`, `DEMOLIÇÃO`, `TERRAPLENAGEM`, `PRELIMINARES`).
+   - Armazenamento binário via **IndexedDB** (`saveContractBinary`, `getContractBinary`) para preservar arquivos `.xlsx` grandes sem estourar o limite do `localStorage`.
+   - Correção definitiva da substituição/anexação de planilha diretamente nos Cards existentes na aba **Configurações**.
+2. **Área de Trabalho Dupla e Alocação Semântica Contextual na Coluna de Quantitativo:**
+   - Cruzamento entre a **Planilha 1 (Origem dos Quantitativos)** e a **Planilha 2 (Contrato Base Destino)** considerando Código, Disciplina/Setor onde o serviço está localizado, Palavras-Chave técnicas, Especificações numéricas e Unidade de Medida.
+   - Dois botões independentes para escolha do usuário:
+     - **Opção 1 (`KEEP_TOTAL_VALUE` — Manter o Valor Final do Orçamento):** Posiciona cada quantitativo na composição correspondente da Planilha Base e reescalona proporcionalmente os quantitativos para que o Valor Total Final bata exatamente com o valor da Planilha 1 (ou qualquer Valor Alvo definido pelo usuário).
+     - **Opção 2 (`KEEP_QUANTITY` — Manter o Quantitativo Exato da Planilha 1):** Mantém exatamente a quantidade física da Planilha 1 na coluna de quantitativo da composição correspondente do Contrato Base.
+3. **Download Infalível via Blob + `openpyxl` com Preservação 100% do Layout:**
+   - O arquivo `.xlsx` baixado clona integralmente a Planilha Base do Contrato (cores, fontes, bordas, cabeçalhos, BDI e fórmulas vivas), alterando **UNICAMENTE os números na coluna de Quantitativo** nas linhas das composições, com download via `Uint8Array` $\rightarrow$ `Blob` $\rightarrow$ `URL.createObjectURL`.
+
+---
+
+### [PR.007]
+- **Data/Hora:** 31/10/2026 17:41 (Horário Local)
+- **Tag Git:** `PR.007`
+- **Status:** Concluído
+- **Implementações:** Leitura inteligente por IA da aba de orçamento, busca do TOTAL GERAL e injeção de quantitativos.
 
 ---
 
