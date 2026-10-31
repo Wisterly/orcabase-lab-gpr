@@ -1,7 +1,7 @@
 # 📘 BLUEPRINT TÉCNICO OFICIAL — OrçaBase.lab - GPR
 
 > **Módulo:** `OrçaBase.lab - GPR`  
-> **Versão:** 1.0.0 (`PR.001` implantado e ativo)  
+> **Versão:** 1.1.0 (`PR.002` implantado e ativo)  
 > **Ambiente de Produção 24/7:** [https://orcabase-lab-gpr.vercel.app](https://orcabase-lab-gpr.vercel.app)  
 > **Backend Python Serverless:** [https://orcabase-lab-gpr.vercel.app/api](https://orcabase-lab-gpr.vercel.app/api)  
 > **Repositório GitHub:** [https://github.com/Wisterly/orcabase-lab-gpr](https://github.com/Wisterly/orcabase-lab-gpr)  
@@ -16,9 +16,10 @@
 | **Frontend** | Next.js 15+ (App Router, TypeScript) | Client Components reativos, Server Components quando aplicável |
 | **Estilização** | Tailwind CSS | **Dark Industrial Luxury Mode**: Fundo Navy Blue (`#060B14`, `#0A1124`) e Dark Charcoal (`#111827`), destaques em Metallic Gold (`#D4AF37`) e Vibrant Orange (`#F97316`) |
 | **Responsividade** | Mobile-First para Desktop | Adaptação estrita em Grid/Flexbox com rolagem horizontal nas tabelas |
-| **Backend** | Python Serverless Functions | Localizado em `/api/*.py`, executado na infraestrutura Vercel Edge/Serverless |
-| **Motor de Excel** | `openpyxl` (Strict Mode) | **REQUISITO ESTRITO:** Pandas é usado exclusivamente para extração e manipulação tabular rápida em memória, **NUNCA** para geração ou gravação de planilhas. A geração é 100% `openpyxl`, preservando fórmulas vivas (`calcProperties.fullCalcOnLoad`) |
-| **Motor de IA** | Embeddings / Cosine Similarity | Suporte a `sentence-transformers`, vetores Qdrant e OpenAI Embeddings |
+| **Backend** | Python Serverless Functions | Localizado em `/api/index.py`, executado na infraestrutura Vercel Edge/Serverless |
+| **Motor de Excel** | `openpyxl` (Strict Mode) | **REQUISITO ESTRITO:** Geração 100% `openpyxl`, preservando fórmulas vivas de multiplicação e soma (`calcProperties.fullCalcOnLoad = True`) |
+| **Motor de IA** | Matching Semântico & Vetorial | Heurística ponderada com tokens de especificações técnicas (ex: 30 MPa, 10mm, traços), Jaccard e bônus de compatibilidade de unidade |
+| **Catálogo de Referência** | SINAPI / SICRO Embutido | Insumos e composições oficiais para correspondência instantânea e busca livre |
 | **Persistência** | Postgres / Supabase + LocalStorage | Persistência resiliente de De-Para e memórias de mapeamento |
 | **CI/CD** | GitHub + Vercel | Repositório conectado e sincronizado a cada tag de restauração (`PR.001`, `PR.002`, etc.) |
 
@@ -35,11 +36,21 @@ export interface CalculationStrategy {
 
 export interface ItemBase {
   id: string;
+  code?: string;
   description: string;
   unit: string;
   quantity: number;
   unit_price: number;
   total_value: number;
+}
+
+export interface CatalogItem {
+  code: string;
+  description: string;
+  unit: string;
+  unit_price: number;
+  source: 'SINAPI' | 'SICRO' | 'PROPRIA';
+  category?: string;
 }
 
 export interface MappingMemory {
@@ -71,33 +82,41 @@ export interface MatchingResultItem {
   calculated_total_value: number;
   status: 'PENDING' | 'MATCHED' | 'MANUAL_REQUIRED';
 }
+
+export interface MatchingStatistics {
+  total_items: number;
+  matched_count: number;
+  manual_count: number;
+  original_total_value: number;
+  calculated_total_value: number;
+  variance_value: number;
+  variance_percentage: number;
+}
 ```
 
 ---
 
-## 3. 🎯 Funcionalidades e Pipeline de Execução
+## 3. 🎯 Funcionalidades e Pipeline Operacional (`PR.002`)
 
 1. **Ingestão de Planilhas Orçamentárias (`.xlsx`):**
-   - Upload com drag-and-drop.
-   - Extração estruturada de itens, composições, unidades, quantidades, preços unitários e totais.
-2. **Motor de Busca e Correspondência Vetorial (AI Matching):**
-   - Busca semântica entre itens da base do cliente e catálogos de referência (ex: SINAPI, SICRO, Bases Próprias).
-   - Cálculo de índice de similaridade (`confidence_score` de 0 a 100%).
-   - Classificação por `AI_SUGGESTION`, `HISTORICAL_MEMORY` e `MANUAL_OVERRIDE`.
-3. **Mesa De-Para Interativa:**
-   - Visualização lado a lado (Base vs Destino).
-   - Seletor de alternativas sugeridas por IA.
-   - Ajuste manual e memorização automática para contratos futuros.
-4. **Aplicação de Estratégia de Cálculo (`CalculationStrategy`):**
-   - **`KEEP_TOTAL_VALUE`**: Mantém o valor total original do item travado e recalcula a quantidade com base no novo preço unitário (`Qtd = ValorTotal / NovoPrecoUnitario`).
-   - **`KEEP_QUANTITY`**: Mantém a quantidade original travada e recalcula o valor total (`ValorTotal = Qtd * NovoPrecoUnitario`).
-5. **Geração e Exportação de Planilha Excel com `openpyxl`:**
-   - Preservação de cabeçalhos, cores, larguras de coluna e fórmulas vivas.
-   - Download imediato da planilha compatibilizada.
-
----
-
-## 4. 🔒 Política de Restaurações (`PONTOS_DE_RESTAURACAO.md`)
-- A cada ciclo de entrega de nova feature, um commit com tag `PR.00X` é gerado e registrado no arquivo `PONTOS_DE_RESTAURACAO.md`.
-- Deploy automático é disparado para a Vercel.
-- O histórico de dados em `localStorage` permanece desacoplado da estrutura do código.
+   - Upload com drag-and-drop ou seletor de arquivo no frontend.
+   - Processamento no backend via `openpyxl.load_workbook`.
+   - Botão para carregar Orçamento Modelo Realista com 1 clique.
+2. **Motor de IA e Matching Semântico:**
+   - Comparação semântica e técnica contra a base referencial SINAPI e SICRO.
+   - Cálculo do score de confiança de 0% a 100%.
+   - Ranqueamento dos 4 melhores candidatos por item.
+3. **Mesa De-Para Operacional Interativa:**
+   - Visualização lado a lado em tabela responsiva com cores de confiança (verde, âmbar, vermelho).
+   - Modal de ajuste manual com busca instantânea em catálogo SINAPI.
+   - Aplicação da `CalculationStrategy` em tempo real:
+     - `KEEP_TOTAL_VALUE`: Trava o valor total original do item e recalcula a quantidade com base no novo preço unitário (`Qtd = ValorTotal / NovoPrecoUnitario`).
+     - `KEEP_QUANTITY`: Trava a quantidade original e recalcula o valor total (`ValorTotal = Qtd * NovoPrecoUnitario`).
+4. **Painel de Métricas Financeiras:**
+   - Total Original vs Total Compatibilizado vs Variação Financeira (Delta R$ e %).
+5. **Geração e Exportação Excel com `openpyxl` (Strict Mode):**
+   - Criação via `api/index.py` com estilização Dark Industrial Luxury.
+   - Inclusão de Fórmulas Vivas de multiplicação (`=D{row}*E{row}` e `=K{row}*J{row}`).
+   - Fórmulas de recálculo dinâmico da estratégia no Excel.
+   - Fórmulas de totalização viva com `=SUM(...)`.
+   - `wb.calculation.calcPr.fullCalcOnLoad = True` garantido.

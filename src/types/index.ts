@@ -1,5 +1,5 @@
 /**
- * OrcaEng Lab AI Matching — Modelos de Dados Oficiais
+ * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.002)
  */
 
 export interface CalculationStrategy {
@@ -8,11 +8,21 @@ export interface CalculationStrategy {
 
 export interface ItemBase {
   id: string;
+  code?: string;
   description: string;
   unit: string;
   quantity: number;
   unit_price: number;
   total_value: number;
+}
+
+export interface CatalogItem {
+  code: string;
+  description: string;
+  unit: string;
+  unit_price: number;
+  source: 'SINAPI' | 'SICRO' | 'PROPRIA';
+  category?: string;
 }
 
 export interface MappingMemory {
@@ -43,4 +53,14 @@ export interface MatchingResultItem {
   calculated_unit_price: number;
   calculated_total_value: number;
   status: 'PENDING' | 'MATCHED' | 'MANUAL_REQUIRED';
+}
+
+export interface MatchingStatistics {
+  total_items: number;
+  matched_count: number;
+  manual_count: number;
+  original_total_value: number;
+  calculated_total_value: number;
+  variance_value: number;
+  variance_percentage: number;
 }

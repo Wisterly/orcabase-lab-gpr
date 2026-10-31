@@ -11,10 +11,9 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
-### [PR.001]
-- **Data/Hora:** 31/10/2026 16:46 (Horário Local)
-- **Tag Git:** `PR.001`
-- **Commit SHA:** Atualizado
+### [PR.002]
+- **Data/Hora:** 31/10/2026 16:56 (Horário Local)
+- **Tag Git:** `PR.002`
 - **Status:** Ativo / Em Produção 24/7
 - **Links Oficiais:**
   - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
@@ -23,11 +22,28 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
   - Localhost de Desenvolvimento: http://localhost:3000
   - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
 
-#### 🖥️ Implementações Estruturais do PR.001:
-1. **Inicialização do Sistema e CI/CD Concluídos:**
-   - Padronização do nome oficial para **OrçaBase.lab - GPR**.
-   - Criação da infraestrutura completa Next.js (App Router, TypeScript).
-   - Configuração do Tailwind CSS com paleta dark (Navy Blue, Dark Charcoal, Metallic Gold, Orange).
-   - Definição dos modelos de dados oficiais (`CalculationStrategy`, `ItemBase`, `MappingMemory`).
-   - Implementação do backend Python Serverless em `/api/index.py` com integração `openpyxl` v3.1.5 ativa.
-   - Conexão do repositório no GitHub (`Wisterly/orcabase-lab-gpr`) e deploy 24/7 online na Vercel gerado com sucesso.
+#### 🖥️ Implementações Estruturais do PR.002:
+1. **Mesa De-Para Operacional Interativa:**
+   - Visualização lado a lado de itens orçamentários originais x correspondências referenciais (SINAPI / SICRO).
+   - Badges coloridos de score de confiança (Verde >=80%, Âmbar >=50%, Vermelho <50%).
+   - Modal interativo para troca de candidatos e busca dinâmica no catálogo referencial.
+2. **Motor de IA e Matching Semântico:**
+   - Heurística com extração de especificações numéricas críticas (ex: 30 MPa, 10mm, traços).
+   - Ranqueamento dos top-4 candidatos com explicações e bônus por compatibilidade de unidade.
+3. **Ingestão e Parser de Planilhas:**
+   - Suporte a upload `.xlsx` via `openpyxl.load_workbook`.
+   - Botão para carregar Orçamento Modelo Realista com 1 clique.
+4. **Painel de Métricas Financeiras Consolidadas:**
+   - Comparativo em tempo real: Total Original x Total Compatibilizado x Variação Financeira (Delta R$ e %).
+5. **Exportação Excel com `openpyxl` (Strict Mode):**
+   - Criação de planilha executiva estilizada com Dark Industrial Luxury.
+   - Fórmulas vivas no Excel: `=D{row}*E{row}`, `=K{row}*J{row}`, `=SUM(...)` e fórmula da estratégia.
+   - Ativação de `calcProperties.fullCalcOnLoad = True`.
+
+---
+
+### [PR.001]
+- **Data/Hora:** 31/10/2026 16:46 (Horário Local)
+- **Tag Git:** `PR.001`
+- **Status:** Ativo / Em Produção 24/7
+- **Implementações:** Inicialização de infraestrutura, CI/CD, Next.js, App Router, TypeScript, Tailwind CSS, modelos de dados, backend Python serverless com openpyxl ativo.
