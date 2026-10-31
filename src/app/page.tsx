@@ -47,6 +47,9 @@ import {
   buildCompatibilityMatrix,
   applyCalculationStrategyToMatches,
   triggerBase64ExcelDownload,
+  triggerBlobDownload,
+  injectQuantitiesPreservingOriginalWorkbook,
+  colIndexToLetter,
   injectQuantitiesClientFallback,
   buildCompatOutputFileName,
   calculateItemSimilarity,
@@ -306,6 +309,7 @@ export default function OrcaBaseDashboard() {
 
   const initialFileInputRef = useRef<HTMLInputElement>(null);
   const contractFileInputRef = useRef<HTMLInputElement>(null);
+  const selectedContractQuickUploadRef = useRef<HTMLInputElement>(null);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -884,6 +888,7 @@ export default function OrcaBaseDashboard() {
 
   // ============================================================================
   // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX)
+  // Preserva 100% rigorosamente do layout, fontes, larguras de colunas, alturas e fórmulas da Planilha Base original!
   // ============================================================================
   const handleDownloadFinalSpreadsheet = async () => {
     if (compositionMatches.length === 0 || !selectedContract) {
@@ -900,53 +905,36 @@ export default function OrcaBaseDashboard() {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
 
-      const compositionPayload = compositionMatches.map((cm) => ({
-        contract_row_index: cm.contract_item.row_index,
-        contract_item_number: cm.contract_item.itemNumber,
-        contract_code: cm.contract_item.code,
-        contract_source: cm.contract_item.source,
-        contract_description: cm.contract_item.description,
-        contract_unit: cm.contract_item.unit,
-        contract_unit_price: cm.contract_unit_price,
-        final_injected_quantity: cm.final_injected_quantity,
-        stage_code: cm.contract_item.stage_code,
-        stage_title: cm.contract_item.stage_title,
-      }));
+      // 1. CLONAGEM CIRÚRGICA 100% FIEL NO ARQUIVO .XLSX ORIGINAL (JSZip OpenXML)
+      // Modifica EXCLUSIVAMENTE o número da célula de quantitativo mantendo 100% de layout, estilos, larguras e fórmulas intactos
+      if (contractBase64 && contractBase64.length > 50) {
+        const colQtyOneBased = selectedContract.detectedColumns?.colQty || 6;
+        const colQtyLetter = colIndexToLetter(colQtyOneBased);
 
-      const response = await fetch("/api", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "inject_quantities",
-          contract_base64: contractBase64 || "",
-          sheet_name: selectedContract.budgetSheetName,
-          col_qty: selectedContract.detectedColumns?.colQty,
-          col_price: selectedContract.detectedColumns?.colPrice,
-          col_total: selectedContract.detectedColumns?.colTotal,
-          qty_header_name: selectedContract.detectedColumns?.qtyHeaderName,
-          composition_matches: compositionPayload,
-          contract_meta: {
-            contractName: selectedContract.contractName,
-            contractNumber: selectedContract.contractNumber,
-            organization: selectedContract.organization,
-            referenceBase: selectedContract.referenceBase,
-            bdiPercent: selectedContract.bdiPercent,
-          },
-          filename: outputFilename,
-        }),
-      });
+        const outBlob = await injectQuantitiesPreservingOriginalWorkbook(contractBase64, {
+          budgetSheetName: selectedContract.budgetSheetName,
+          colQtyOneBased,
+          colQtyLetter,
+          compositionMatches: compositionMatches
+            .filter((cm) => cm.contract_item.row_index && cm.contract_item.row_index > 0)
+            .map((cm) => ({
+              contract_row_index: cm.contract_item.row_index,
+              final_injected_quantity: cm.final_injected_quantity,
+            })),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success" && data.file_base64) {
-          triggerBase64ExcelDownload(data.file_base64, outputFilename);
-          showToast(
-            `Download concluído! "${outputFilename}" gerada mantendo 100% da planilha original com os quantitativos ajustados.`
-          );
-          setIsDownloading(false);
-          return;
-        }
+        triggerBlobDownload(outBlob, outputFilename);
+        showToast(
+          `Download concluído! "${outputFilename}" gerada mantendo 100% da formatação e layout originais do Contrato Base!`
+        );
+        setIsDownloading(false);
+        return;
       }
+
+      // Caso o contrato atual seja fictício de demonstração inicial e não possua arquivo .xlsx bruto:
+      showToast(
+        "Dica: Para preservar o layout exato da sua empresa, anexe o arquivo .xlsx original deste contrato no botão abaixo!"
+      );
 
       injectQuantitiesClientFallback(
         contractBase64,
@@ -964,23 +952,8 @@ export default function OrcaBaseDashboard() {
       );
       showToast(`Download concluído! "${outputFilename}" baixada com sucesso.`);
     } catch (error) {
-      console.error("Usando motor local de contingência para download:", error);
-      const contractBase64 = await getContractBinary(selectedContract.id);
-      injectQuantitiesClientFallback(
-        contractBase64,
-        {
-          contractName: selectedContract.contractName,
-          contractNumber: selectedContract.contractNumber,
-          organization: selectedContract.organization,
-          referenceBase: selectedContract.referenceBase,
-          bdiPercent: selectedContract.bdiPercent,
-          budgetSheetName: selectedContract.budgetSheetName,
-          detectedColumns: selectedContract.detectedColumns,
-        },
-        compositionMatches,
-        outputFilename
-      );
-      showToast(`Download concluído! "${outputFilename}" baixada com sucesso.`);
+      console.error("Erro na geração da planilha compatibilizada:", error);
+      showToast("Não foi possível gerar a planilha com a formatação original. Verifique o console.");
     } finally {
       setIsDownloading(false);
     }
@@ -1478,6 +1451,36 @@ export default function OrcaBaseDashboard() {
                             </span>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Botão de Ação Rápida: Anexar / Substituir a Planilha Base (.xlsx) deste Contrato */}
+                      <div>
+                        <input
+                          type="file"
+                          accept=".xlsx,.xls"
+                          ref={selectedContractQuickUploadRef}
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file && selectedContract) {
+                              await handleUpdateExistingContractCardFile(selectedContract.id, file);
+                            }
+                            e.target.value = "";
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => selectedContractQuickUploadRef.current?.click()}
+                          disabled={updatingCardId === selectedContract.id}
+                          className="w-full py-2.5 px-3 rounded-xl bg-[#111622] hover:bg-[#141A28] border border-[#26304A] hover:border-[#D4AF37] text-xs text-[#D4AF37] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all"
+                        >
+                          <UploadCloud className="w-4 h-4 text-[#D4AF37]" />
+                          {updatingCardId === selectedContract.id
+                            ? "Gravando Planilha Base..."
+                            : selectedContract.fileName
+                            ? `Substituir Planilha Base (.xlsx): ${selectedContract.fileName}`
+                            : "Anexar Planilha Base (.xlsx) deste Contrato"}
+                        </button>
                       </div>
                     </div>
                   )}

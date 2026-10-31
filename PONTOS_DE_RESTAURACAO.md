@@ -11,6 +11,33 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.011]
+- **Data/Hora:** 31/10/2026 19:31 (Horário Local)
+- **Tag Git:** `PR.011`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.011 (Correção Definitiva da Preservação Física do Layout):
+1. **Eliminação do Descarte de Estilos do SheetJS e Adoção do Motor Purista OpenXML com JSZip:**
+   - O SheetJS (`XLSX.write`) na versão comunitária gratuita descartava e apagava 100% dos estilos, fontes, cores, larguras de colunas (`<cols>`), alturas de linhas (`<row ht="...">`) e bordas ao salvar o arquivo.
+   - Implementação do motor purista baseado em `JSZip` que atua diretamente sobre o contêiner ZIP (`.xlsx`) original do Contrato Base armazenado no IndexedDB.
+   - **Preservação de 100% dos bytes físicos do arquivo:** os arquivos `xl/styles.xml`, `xl/theme/`, `xl/drawings/`, cabeçalhos, logos, células mescladas e demais abas permanecem **intocados e idênticos byte a byte**.
+2. **Injeção Cirúrgica na Célula de Quantitativo da Aba de Orçamento:**
+   - O motor localiza o XML da aba de orçamento (`xl/worksheets/sheetX.xml`) e atualiza **estritamente e unicamente** o número `<v>...</v>` na coordenada da coluna de quantitativo (ex: `F15`), mantendo o atributo de estilo `s="..."` da célula, sua formatação numérica e alinhamento.
+   - Todas as outras colunas (Código, Discriminação, Unidade, Preço Unitário e Fórmulas de Total `=F15*G15`) permanecem 100% intactas.
+   - Ativação de `fullCalcOnLoad="1"` e `forceFullCalculation="1"` no `xl/workbook.xml` para que o Excel recalcule automaticamente todas as fórmulas de total e BDI ao abrir o arquivo.
+3. **Botão de Ação Rápida no Card da Tela Principal:**
+   - Adicionado no Card da Planilha 2 (Passo 1) um botão direto para anexar ou substituir o arquivo `.xlsx` do Contrato Base selecionado em 1 clique, garantindo que o arquivo correto do usuário esteja sempre ativo e gravado no IndexedDB.
+4. **Criação da Rota de API Gateway (`src/app/api/route.ts`):**
+   - Rota nativa do Next.js App Router implementada eliminando respostas 404 e garantindo comunicação total do gateway.
+
+---
+
 ### [PR.010]
 - **Data/Hora:** 31/10/2026 19:05 (Horário Local)
 - **Tag Git:** `PR.010`

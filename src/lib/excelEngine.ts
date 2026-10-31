@@ -5,6 +5,7 @@
  */
 
 import * as XLSX from "xlsx";
+import JSZip from "jszip";
 import {
   DetectedColumns,
   NamedColumnOption,
@@ -1349,6 +1350,291 @@ export function buildCompatOutputFileName(
   const cleanContract = cLabel.replace(/[\/\\:*?"<>|]/g, " ").trim();
 
   return `${cleanBase} (${cleanContract}).xlsx`;
+}
+
+// ============================================================================
+// 7. MOTOR OPENXML PURISTA COM JSZIP (PRESERVAÇÃO FÍSICA 100% DO ARQUIVO ORIGINAL)
+// ============================================================================
+
+/**
+ * Converte índice de coluna 1-based (1=A, 2=B, ..., 26=Z, 27=AA, ...) para a letra do Excel
+ */
+export function colIndexToLetter(colIndex: number): string {
+  let temp = colIndex;
+  let letter = "";
+  while (temp > 0) {
+    const remainder = (temp - 1) % 26;
+    letter = String.fromCharCode(65 + remainder) + letter;
+    temp = Math.floor((temp - 1) / 26);
+  }
+  return letter || "A";
+}
+
+/**
+ * Converte a letra da coluna (A, B, Z, AA, ...) para índice 1-based (1, 2, 26, 27, ...)
+ */
+export function letterToColIndex(letter: string): number {
+  let col = 0;
+  const upper = letter.toUpperCase();
+  for (let i = 0; i < upper.length; i++) {
+    col = col * 26 + (upper.charCodeAt(i) - 64);
+  }
+  return Math.max(1, col);
+}
+
+/**
+ * Localiza no JSZip o caminho relativo da worksheet correspondente à aba de orçamento (ex: "xl/worksheets/sheet1.xml")
+ */
+export async function findWorksheetPathInZip(
+  zip: JSZip,
+  preferredSheetName?: string
+): Promise<string> {
+  const wbFile = zip.file("xl/workbook.xml");
+  const relsFile = zip.file("xl/_rels/workbook.xml.rels");
+
+  if (wbFile && relsFile) {
+    const wbXml = await wbFile.async("string");
+    const relsXml = await relsFile.async("string");
+
+    // Mapeamento dos relacionamentos Id -> Target
+    const relTargetMap = new Map<string, string>();
+    const relRegex = /<Relationship\b[^>]*\bId="([^"]+)"[^>]*\bTarget="([^"]+)"/gi;
+    let rMatch: RegExpExecArray | null;
+    while ((rMatch = relRegex.exec(relsXml)) !== null) {
+      relTargetMap.set(rMatch[1], rMatch[2]);
+    }
+    const relRegexInv = /<Relationship\b[^>]*\bTarget="([^"]+)"[^>]*\bId="([^"]+)"/gi;
+    while ((rMatch = relRegexInv.exec(relsXml)) !== null) {
+      relTargetMap.set(rMatch[2], rMatch[1]);
+    }
+
+    // Lista de sheets no workbook.xml
+    const sheetsList: { name: string; rId: string }[] = [];
+    const sheetRegex = /<sheet\b[^>]*\bname="([^"]+)"[^>]*\br:id="([^"]+)"/gi;
+    let sMatch: RegExpExecArray | null;
+    while ((sMatch = sheetRegex.exec(wbXml)) !== null) {
+      sheetsList.push({ name: sMatch[1], rId: sMatch[2] });
+    }
+    const sheetRegexInv = /<sheet\b[^>]*\br:id="([^"]+)"[^>]*\bname="([^"]+)"/gi;
+    while ((sMatch = sheetRegexInv.exec(wbXml)) !== null) {
+      sheetsList.push({ name: sMatch[2], rId: sMatch[1] });
+    }
+
+    let targetRId = "";
+    if (preferredSheetName) {
+      const targetSheet = sheetsList.find(
+        (s) => s.name.trim().toLowerCase() === preferredSheetName.trim().toLowerCase()
+      );
+      if (targetSheet) targetRId = targetSheet.rId;
+    }
+
+    if (!targetRId) {
+      const budgetSheet = sheetsList.find((s) => {
+        const n = s.name.toLowerCase();
+        return (
+          n.includes("orçamento") ||
+          n.includes("orcamento") ||
+          n.includes("planilha") ||
+          n.includes("composições") ||
+          n.includes("composicoes") ||
+          n.includes("analítico")
+        );
+      });
+      if (budgetSheet) targetRId = budgetSheet.rId;
+    }
+
+    if (!targetRId && sheetsList.length > 0) {
+      targetRId = sheetsList[0].rId;
+    }
+
+    if (targetRId && relTargetMap.has(targetRId)) {
+      let targetPath = relTargetMap.get(targetRId)!;
+      if (!targetPath.startsWith("xl/")) {
+        targetPath = `xl/${targetPath.replace(/^\//, "")}`;
+      }
+      if (zip.file(targetPath)) {
+        return targetPath;
+      }
+    }
+  }
+
+  // Fallback: varre arquivos em xl/worksheets/
+  const foundSheets: string[] = [];
+  zip.forEach((path) => {
+    if (path.startsWith("xl/worksheets/sheet") && path.endsWith(".xml")) {
+      foundSheets.push(path);
+    }
+  });
+
+  if (foundSheets.length > 0) {
+    return foundSheets[0];
+  }
+
+  throw new Error("Nenhuma aba de planilha foi localizada no arquivo .xlsx fornecido.");
+}
+
+/**
+ * Atualiza o XML da aba de orçamento mantendo 100% dos estilos, larguras, alturas e fórmulas,
+ * modificando estritamente a tag de valor da célula de quantitativo.
+ */
+export function updateWorksheetXmlWithQuantities(
+  xmlContent: string,
+  colQtyLetter: string,
+  qtyByRow: Map<number, number>
+): string {
+  const qtyColIdx = letterToColIndex(colQtyLetter);
+
+  // Regex para capturar linhas de forma precisa e eficiente
+  const rowRegex = /(<row\b[^>]*\br="(\d+)"[^>]*>)([\s\S]*?)(<\/row>)|(<row\b[^>]*\br="(\d+)"[^>]*\/>)/g;
+
+  return xmlContent.replace(
+    rowRegex,
+    (match, rowOpen, rowNumStr1, rowBody, rowClose, selfClosingRow, rowNumStr2) => {
+      const rowNum = parseInt(rowNumStr1 || rowNumStr2, 10);
+      if (!qtyByRow.has(rowNum)) {
+        return match; // Linha não modificada, mantém exatamente igual
+      }
+
+      const newQty = qtyByRow.get(rowNum)!;
+      const formattedQty = Number(newQty.toFixed(4)).toString();
+      const cellRef = `${colQtyLetter}${rowNum}`;
+
+      // Linha autofechada: <row r="12"/>
+      if (selfClosingRow) {
+        const open = selfClosingRow.replace(/\/>$/, ">");
+        const newCell = `<c r="${cellRef}" t="n"><v>${formattedQty}</v></c>`;
+        return `${open}${newCell}</row>`;
+      }
+
+      let body = rowBody;
+      const cellRegex = new RegExp(
+        `(<c\\b[^>]*\\br="${cellRef}"[^>]*>)([\\s\\S]*?)(<\\/c>)|(<c\\b[^>]*\\br="${cellRef}"[^>]*\\/>)`,
+        "i"
+      );
+
+      const cellMatch = cellRegex.exec(body);
+      if (cellMatch) {
+        if (cellMatch[1]) {
+          // <c r="F12" s="8" t="s">...</c>
+          let openTag = cellMatch[1];
+          // Se for string ou outro tipo, garante tipo numérico t="n"
+          if (openTag.includes('t="s"') || openTag.includes("t='s'")) {
+            openTag = openTag.replace(/t=["']s["']/, 't="n"');
+          } else if (!openTag.includes("t=")) {
+            openTag = openTag.replace(/>$/, ' t="n">');
+          }
+          // Preserva o atributo de estilo s="..." intacto e atualiza apenas o valor
+          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
+          body = body.replace(cellMatch[0], updatedCell);
+        } else if (cellMatch[4]) {
+          // <c r="F12" s="8"/>
+          let openTag = cellMatch[4].replace(/\/>$/, ">");
+          if (!openTag.includes("t=")) {
+            openTag = openTag.replace(/>$/, ' t="n">');
+          }
+          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
+          body = body.replace(cellMatch[0], updatedCell);
+        }
+      } else {
+        // Célula omitida pelo Excel: insere na ordem correta das colunas
+        const newCell = `<c r="${cellRef}" t="n"><v>${formattedQty}</v></c>`;
+        const anyCellRegex = /<c\b[^>]*\br="([A-Z]+)\d+"/gi;
+        let cMatch: RegExpExecArray | null;
+        let insertIndex = -1;
+
+        while ((cMatch = anyCellRegex.exec(body)) !== null) {
+          const existingColLetter = cMatch[1];
+          const existingColIdx = letterToColIndex(existingColLetter);
+          if (existingColIdx > qtyColIdx) {
+            insertIndex = cMatch.index;
+            break;
+          }
+        }
+
+        if (insertIndex !== -1) {
+          body = body.slice(0, insertIndex) + newCell + body.slice(insertIndex);
+        } else {
+          body = body + newCell;
+        }
+      }
+
+      return `${rowOpen}${body}${rowClose}`;
+    }
+  );
+}
+
+/**
+ * Clona com precisão cirúrgica o arquivo .xlsx original do Contrato Base através de injeção direta no contêiner ZIP (OpenXML).
+ * PRESERVA 100% de fontes, cores, larguras de colunas, alturas de linhas, fórmulas, abas e logotipos!
+ */
+export async function injectQuantitiesPreservingOriginalWorkbook(
+  contractBase64: string,
+  options: {
+    budgetSheetName?: string;
+    colQtyOneBased?: number;
+    colQtyLetter?: string;
+    compositionMatches: {
+      contract_row_index?: number;
+      final_injected_quantity: number;
+    }[];
+  }
+): Promise<Blob> {
+  const cleanB64 = contractBase64.includes(",") ? contractBase64.split(",")[1] : contractBase64;
+  const binaryString = window.atob(cleanB64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+
+  const zip = await JSZip.loadAsync(bytes);
+
+  // 1. Localiza a worksheet da aba de orçamento
+  const sheetPath = await findWorksheetPathInZip(zip, options.budgetSheetName);
+  const sheetXmlFile = zip.file(sheetPath);
+  if (!sheetXmlFile) {
+    throw new Error(`Arquivo da aba "${sheetPath}" não encontrado no arquivo .xlsx.`);
+  }
+
+  let sheetXml = await sheetXmlFile.async("string");
+
+  // 2. Determina a letra da coluna de quantitativo
+  const colLetter =
+    options.colQtyLetter ||
+    (options.colQtyOneBased ? colIndexToLetter(options.colQtyOneBased) : "F");
+
+  // 3. Mapeia as linhas e quantitativos
+  const qtyByRow = new Map<number, number>();
+  for (const cm of options.compositionMatches) {
+    if (cm.contract_row_index && cm.contract_row_index > 0) {
+      qtyByRow.set(cm.contract_row_index, cm.final_injected_quantity);
+    }
+  }
+
+  // 4. Injeta cirurgicamente no XML mantendo todo o restante do arquivo intocado
+  sheetXml = updateWorksheetXmlWithQuantities(sheetXml, colLetter, qtyByRow);
+  zip.file(sheetPath, sheetXml);
+
+  // 5. Ativa recálculo automático de fórmulas no Excel (fullCalcOnLoad = true)
+  const wbFile = zip.file("xl/workbook.xml");
+  if (wbFile) {
+    let wbXml = await wbFile.async("string");
+    if (wbXml.includes("<calcPr")) {
+      wbXml = wbXml.replace(/<calcPr\b[^>]*\/>/, '<calcPr fullCalcOnLoad="1" forceFullCalculation="1"/>');
+      wbXml = wbXml.replace(/<calcPr\b[^>]*>/, '<calcPr fullCalcOnLoad="1" forceFullCalculation="1">');
+    } else if (wbXml.includes("</workbook>")) {
+      wbXml = wbXml.replace("</workbook>", '<calcPr fullCalcOnLoad="1" forceFullCalculation="1"/></workbook>');
+    }
+    zip.file("xl/workbook.xml", wbXml);
+  }
+
+  // 6. Gera o novo arquivo .xlsx (Blob)
+  return await zip.generateAsync({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
+  });
 }
 
 
