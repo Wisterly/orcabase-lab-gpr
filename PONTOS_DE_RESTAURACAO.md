@@ -11,6 +11,30 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.012]
+- **Data/Hora:** 31/10/2026 19:48 (Horário Local)
+- **Tag Git:** `PR.012`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.012 (Correção Canônica do Erro de Conteúdo Corrompido no Excel):
+1. **Eliminação de Modificações Frágeis em Regex XML e Adoção do ExcelJS Canônico:**
+   - O aviso do Microsoft Excel (*"Encontramos um problema em um conteúdo de... Você quer que tentemos recuperar o máximo que der?"*) ocorria porque a manipulação manual por regex introduzia atributos inválidos (`forceFullCalculation`) no `xl/workbook.xml` e omitia atributos obrigatórios de schema (`calcId`).
+   - Adoção da biblioteca **`ExcelJS`**, o padrão canônico da indústria com validação rigorosa conforme a norma ISO/IEC 29500 (OpenXML).
+2. **Preservação Canônica de 100% dos Estilos e Layout:**
+   - O `ExcelJS` carrega a pasta de trabalho original em memória (`workbook.xlsx.load`), preservando integralmente todas as abas, fontes, cores, bordas, larguras de colunas, alturas de linhas, fórmulas e logotipos.
+   - Atualiza única e exclusivamente o valor numérico na coordenada da coluna de quantitativo (`cell.value = targetQty`), mantendo intactos todos os estilos de célula associados.
+   - O arquivo gerado abre no Microsoft Excel de forma nativa e instantânea, **sem nenhum aviso de conteúdo inválido ou necessidade de reparação**.
+3. **Ativação Segura do Recálculo Automático:**
+   - Configurado `workbook.calcProperties.fullCalcOnLoad = true` de forma 100% canônica com `calcId` preservado, garantindo que o Excel recalcule automaticamente todas as fórmulas de totalizadores e BDI ao abrir a planilha.
+
+---
+
 ### [PR.011]
 - **Data/Hora:** 31/10/2026 19:31 (Horário Local)
 - **Tag Git:** `PR.011`

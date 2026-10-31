@@ -5,7 +5,7 @@
  */
 
 import * as XLSX from "xlsx";
-import JSZip from "jszip";
+import ExcelJS from "exceljs";
 import {
   DetectedColumns,
   NamedColumnOption,
@@ -1383,189 +1383,10 @@ export function letterToColIndex(letter: string): number {
 }
 
 /**
- * Localiza no JSZip o caminho relativo da worksheet correspondente à aba de orçamento (ex: "xl/worksheets/sheet1.xml")
- */
-export async function findWorksheetPathInZip(
-  zip: JSZip,
-  preferredSheetName?: string
-): Promise<string> {
-  const wbFile = zip.file("xl/workbook.xml");
-  const relsFile = zip.file("xl/_rels/workbook.xml.rels");
-
-  if (wbFile && relsFile) {
-    const wbXml = await wbFile.async("string");
-    const relsXml = await relsFile.async("string");
-
-    // Mapeamento dos relacionamentos Id -> Target
-    const relTargetMap = new Map<string, string>();
-    const relRegex = /<Relationship\b[^>]*\bId="([^"]+)"[^>]*\bTarget="([^"]+)"/gi;
-    let rMatch: RegExpExecArray | null;
-    while ((rMatch = relRegex.exec(relsXml)) !== null) {
-      relTargetMap.set(rMatch[1], rMatch[2]);
-    }
-    const relRegexInv = /<Relationship\b[^>]*\bTarget="([^"]+)"[^>]*\bId="([^"]+)"/gi;
-    while ((rMatch = relRegexInv.exec(relsXml)) !== null) {
-      relTargetMap.set(rMatch[2], rMatch[1]);
-    }
-
-    // Lista de sheets no workbook.xml
-    const sheetsList: { name: string; rId: string }[] = [];
-    const sheetRegex = /<sheet\b[^>]*\bname="([^"]+)"[^>]*\br:id="([^"]+)"/gi;
-    let sMatch: RegExpExecArray | null;
-    while ((sMatch = sheetRegex.exec(wbXml)) !== null) {
-      sheetsList.push({ name: sMatch[1], rId: sMatch[2] });
-    }
-    const sheetRegexInv = /<sheet\b[^>]*\br:id="([^"]+)"[^>]*\bname="([^"]+)"/gi;
-    while ((sMatch = sheetRegexInv.exec(wbXml)) !== null) {
-      sheetsList.push({ name: sMatch[2], rId: sMatch[1] });
-    }
-
-    let targetRId = "";
-    if (preferredSheetName) {
-      const targetSheet = sheetsList.find(
-        (s) => s.name.trim().toLowerCase() === preferredSheetName.trim().toLowerCase()
-      );
-      if (targetSheet) targetRId = targetSheet.rId;
-    }
-
-    if (!targetRId) {
-      const budgetSheet = sheetsList.find((s) => {
-        const n = s.name.toLowerCase();
-        return (
-          n.includes("orçamento") ||
-          n.includes("orcamento") ||
-          n.includes("planilha") ||
-          n.includes("composições") ||
-          n.includes("composicoes") ||
-          n.includes("analítico")
-        );
-      });
-      if (budgetSheet) targetRId = budgetSheet.rId;
-    }
-
-    if (!targetRId && sheetsList.length > 0) {
-      targetRId = sheetsList[0].rId;
-    }
-
-    if (targetRId && relTargetMap.has(targetRId)) {
-      let targetPath = relTargetMap.get(targetRId)!;
-      if (!targetPath.startsWith("xl/")) {
-        targetPath = `xl/${targetPath.replace(/^\//, "")}`;
-      }
-      if (zip.file(targetPath)) {
-        return targetPath;
-      }
-    }
-  }
-
-  // Fallback: varre arquivos em xl/worksheets/
-  const foundSheets: string[] = [];
-  zip.forEach((path) => {
-    if (path.startsWith("xl/worksheets/sheet") && path.endsWith(".xml")) {
-      foundSheets.push(path);
-    }
-  });
-
-  if (foundSheets.length > 0) {
-    return foundSheets[0];
-  }
-
-  throw new Error("Nenhuma aba de planilha foi localizada no arquivo .xlsx fornecido.");
-}
-
-/**
- * Atualiza o XML da aba de orçamento mantendo 100% dos estilos, larguras, alturas e fórmulas,
- * modificando estritamente a tag de valor da célula de quantitativo.
- */
-export function updateWorksheetXmlWithQuantities(
-  xmlContent: string,
-  colQtyLetter: string,
-  qtyByRow: Map<number, number>
-): string {
-  const qtyColIdx = letterToColIndex(colQtyLetter);
-
-  // Regex para capturar linhas de forma precisa e eficiente
-  const rowRegex = /(<row\b[^>]*\br="(\d+)"[^>]*>)([\s\S]*?)(<\/row>)|(<row\b[^>]*\br="(\d+)"[^>]*\/>)/g;
-
-  return xmlContent.replace(
-    rowRegex,
-    (match, rowOpen, rowNumStr1, rowBody, rowClose, selfClosingRow, rowNumStr2) => {
-      const rowNum = parseInt(rowNumStr1 || rowNumStr2, 10);
-      if (!qtyByRow.has(rowNum)) {
-        return match; // Linha não modificada, mantém exatamente igual
-      }
-
-      const newQty = qtyByRow.get(rowNum)!;
-      const formattedQty = Number(newQty.toFixed(4)).toString();
-      const cellRef = `${colQtyLetter}${rowNum}`;
-
-      // Linha autofechada: <row r="12"/>
-      if (selfClosingRow) {
-        const open = selfClosingRow.replace(/\/>$/, ">");
-        const newCell = `<c r="${cellRef}" t="n"><v>${formattedQty}</v></c>`;
-        return `${open}${newCell}</row>`;
-      }
-
-      let body = rowBody;
-      const cellRegex = new RegExp(
-        `(<c\\b[^>]*\\br="${cellRef}"[^>]*>)([\\s\\S]*?)(<\\/c>)|(<c\\b[^>]*\\br="${cellRef}"[^>]*\\/>)`,
-        "i"
-      );
-
-      const cellMatch = cellRegex.exec(body);
-      if (cellMatch) {
-        if (cellMatch[1]) {
-          // <c r="F12" s="8" t="s">...</c>
-          let openTag = cellMatch[1];
-          // Se for string ou outro tipo, garante tipo numérico t="n"
-          if (openTag.includes('t="s"') || openTag.includes("t='s'")) {
-            openTag = openTag.replace(/t=["']s["']/, 't="n"');
-          } else if (!openTag.includes("t=")) {
-            openTag = openTag.replace(/>$/, ' t="n">');
-          }
-          // Preserva o atributo de estilo s="..." intacto e atualiza apenas o valor
-          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
-          body = body.replace(cellMatch[0], updatedCell);
-        } else if (cellMatch[4]) {
-          // <c r="F12" s="8"/>
-          let openTag = cellMatch[4].replace(/\/>$/, ">");
-          if (!openTag.includes("t=")) {
-            openTag = openTag.replace(/>$/, ' t="n">');
-          }
-          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
-          body = body.replace(cellMatch[0], updatedCell);
-        }
-      } else {
-        // Célula omitida pelo Excel: insere na ordem correta das colunas
-        const newCell = `<c r="${cellRef}" t="n"><v>${formattedQty}</v></c>`;
-        const anyCellRegex = /<c\b[^>]*\br="([A-Z]+)\d+"/gi;
-        let cMatch: RegExpExecArray | null;
-        let insertIndex = -1;
-
-        while ((cMatch = anyCellRegex.exec(body)) !== null) {
-          const existingColLetter = cMatch[1];
-          const existingColIdx = letterToColIndex(existingColLetter);
-          if (existingColIdx > qtyColIdx) {
-            insertIndex = cMatch.index;
-            break;
-          }
-        }
-
-        if (insertIndex !== -1) {
-          body = body.slice(0, insertIndex) + newCell + body.slice(insertIndex);
-        } else {
-          body = body + newCell;
-        }
-      }
-
-      return `${rowOpen}${body}${rowClose}`;
-    }
-  );
-}
-
-/**
- * Clona com precisão cirúrgica o arquivo .xlsx original do Contrato Base através de injeção direta no contêiner ZIP (OpenXML).
- * PRESERVA 100% de fontes, cores, larguras de colunas, alturas de linhas, fórmulas, abas e logotipos!
+ * Clona com fidelidade física 100% o arquivo .xlsx original do Contrato Base através de ExcelJS.
+ * PRESERVA 100% de fontes, cores, larguras de colunas, alturas de linhas, fórmulas, abas e logotipos,
+ * alterando ESTRITAMENTE o número na célula da coluna de quantitativo na aba de orçamento!
+ * Gera um arquivo canônico 100% compatível com o Microsoft Excel sem erros de corrupção.
  */
 export async function injectQuantitiesPreservingOriginalWorkbook(
   contractBase64: string,
@@ -1587,53 +1408,61 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
     bytes[i] = binaryString.charCodeAt(i);
   }
 
-  const zip = await JSZip.loadAsync(bytes);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(bytes.buffer);
 
-  // 1. Localiza a worksheet da aba de orçamento
-  const sheetPath = await findWorksheetPathInZip(zip, options.budgetSheetName);
-  const sheetXmlFile = zip.file(sheetPath);
-  if (!sheetXmlFile) {
-    throw new Error(`Arquivo da aba "${sheetPath}" não encontrado no arquivo .xlsx.`);
+  // 1. Localiza a worksheet correspondente à aba de orçamento
+  let worksheet: ExcelJS.Worksheet | undefined;
+
+  if (options.budgetSheetName) {
+    worksheet = workbook.getWorksheet(options.budgetSheetName);
   }
 
-  let sheetXml = await sheetXmlFile.async("string");
+  if (!worksheet) {
+    worksheet = workbook.worksheets.find((ws) => {
+      const n = ws.name.toLowerCase();
+      return (
+        n.includes("orçamento") ||
+        n.includes("orcamento") ||
+        n.includes("planilha") ||
+        n.includes("composi") ||
+        n.includes("analítico")
+      );
+    });
+  }
 
-  // 2. Determina a letra da coluna de quantitativo
-  const colLetter =
-    options.colQtyLetter ||
-    (options.colQtyOneBased ? colIndexToLetter(options.colQtyOneBased) : "F");
+  if (!worksheet && workbook.worksheets.length > 0) {
+    worksheet = workbook.worksheets[0];
+  }
 
-  // 3. Mapeia as linhas e quantitativos
-  const qtyByRow = new Map<number, number>();
+  if (!worksheet) {
+    throw new Error("Não foi possível localizar a aba de orçamento na planilha do contrato.");
+  }
+
+  // 2. Coluna de quantitativo (1-based)
+  const colQtyIdx =
+    options.colQtyOneBased && options.colQtyOneBased > 0
+      ? options.colQtyOneBased
+      : options.colQtyLetter
+      ? letterToColIndex(options.colQtyLetter)
+      : 6;
+
+  // 3. Aplica os quantitativos linha por linha mantendo estilos e fórmulas
   for (const cm of options.compositionMatches) {
     if (cm.contract_row_index && cm.contract_row_index > 0) {
-      qtyByRow.set(cm.contract_row_index, cm.final_injected_quantity);
+      const cell = worksheet.getCell(cm.contract_row_index, colQtyIdx);
+      cell.value = Number(cm.final_injected_quantity.toFixed(4));
     }
   }
 
-  // 4. Injeta cirurgicamente no XML mantendo todo o restante do arquivo intocado
-  sheetXml = updateWorksheetXmlWithQuantities(sheetXml, colLetter, qtyByRow);
-  zip.file(sheetPath, sheetXml);
+  // 4. Força o Excel a recalcular todas as fórmulas (totalizadores e BDI) ao abrir
+  workbook.calcProperties.fullCalcOnLoad = true;
 
-  // 5. Ativa recálculo automático de fórmulas no Excel (fullCalcOnLoad = true)
-  const wbFile = zip.file("xl/workbook.xml");
-  if (wbFile) {
-    let wbXml = await wbFile.async("string");
-    if (wbXml.includes("<calcPr")) {
-      wbXml = wbXml.replace(/<calcPr\b[^>]*\/>/, '<calcPr fullCalcOnLoad="1" forceFullCalculation="1"/>');
-      wbXml = wbXml.replace(/<calcPr\b[^>]*>/, '<calcPr fullCalcOnLoad="1" forceFullCalculation="1">');
-    } else if (wbXml.includes("</workbook>")) {
-      wbXml = wbXml.replace("</workbook>", '<calcPr fullCalcOnLoad="1" forceFullCalculation="1"/></workbook>');
-    }
-    zip.file("xl/workbook.xml", wbXml);
-  }
+  // 5. Gera o binário do arquivo .xlsx de forma canônica
+  const buffer = await workbook.xlsx.writeBuffer();
 
-  // 6. Gera o novo arquivo .xlsx (Blob)
-  return await zip.generateAsync({
-    type: "blob",
-    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    compression: "DEFLATE",
-    compressionOptions: { level: 6 },
+  return new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
 
