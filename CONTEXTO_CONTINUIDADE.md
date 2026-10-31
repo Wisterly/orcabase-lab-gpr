@@ -1,13 +1,20 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.005
-O ciclo **`PR.005`** implementou a dinâmica 100% interativa sem dados pré-fabricados:
-1. **Estado Inicial Limpo (Standby):** Sistema inicia sem itens mockados, com KPIs zerados e tabelas prontas para receber os documentos reais do usuário.
-2. **Extração e Compatibilização em Tempo Real:** Ao arrastar ou selecionar uma planilha `.xlsx`, os dados são lidos na hora e preenchem a Mesa De-Para e a Curva ABC exclusivamente com base na planilha carregada.
-3. **openpyxl Strict Mode & Multi-Aba:** Exportação com fórmulas vivas preservadas.
+## 📍 Ponto Atual de Entrega — Ciclo PR.006
+O ciclo **`PR.006`** concretizou a arquitetura completa solicitada pelo usuário:
+1. **Página Inicial de Compatibilização:**
+   - **Local 1:** "Planilha Inicial" (upload drag-and-drop da planilha orçamentária do projeto a compatibilizar).
+   - **Local 2:** Seletor de Contrato Base (escolhe qual das planilhas bases cadastradas ditará a compatibilização).
+   - **Botões Centrais:** "Compatibilizar Planilhas" e "Baixar Planilha Final".
+2. **Aba de Configurações de Contratos (Fiel aos Prints):**
+   - Modal "Criar Novo Card de Contrato Base" (Planilha Oficial .xlsx, Título, Empresa, Número do Contrato e BDI).
+   - Grade de Cards de Contrato idênticos ao layout do print, com botão "Abrir Planilha", substituição de arquivo, contadores e botão "Usar no De-Para".
+3. **Regra de Ouro da Compatibilização:**
+   - A planilha final gerada preserva 100% do layout, configurações, composições, BDI e fórmulas do Contrato Base selecionado, alterando apenas os quantitativos correspondentes.
+4. **openpyxl Strict Mode Ativo.**
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.006)
-1. **Upload em Lote com Reconhecimento de Múltiplas Abas:** Suporte para planilhas complexas com abas sintéticas e analíticas.
-2. **Persistência em Nuvem (Postgres/Supabase):** Compartilhamento de memórias entre múltiplos computadores da equipe.
+## 🎯 Próximo Passo do Agente (Ciclo PR.007)
+1. **Persistência em Nuvem (Postgres / Supabase):** Sincronização dos cards de contratos em nuvem para que outros usuários da empresa acessem os mesmos contratos.
+2. **Suporte a Múltiplas Abas nas Planilhas Iniciais:** Reconhecimento automático de abas analíticas e sintéticas.

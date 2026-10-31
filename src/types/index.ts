@@ -1,5 +1,5 @@
 /**
- * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.003)
+ * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.006)
  */
 
 export interface CalculationStrategy {
@@ -14,6 +14,25 @@ export interface ItemBase {
   quantity: number;
   unit_price: number;
   total_value: number;
+  matched_code?: string;
+  matched_description?: string;
+  matched_unit?: string;
+  matched_price?: number;
+}
+
+export interface ContractBaseCard {
+  id: string;
+  title: string;
+  company: string;
+  contractNumber: string;
+  bdi: number;
+  fileName: string;
+  fileSize?: string;
+  fileBase64?: string;
+  compositionsCount: number;
+  stagesCount: number;
+  createdAt: string;
+  items: ItemBase[];
 }
 
 export interface CatalogItem {
@@ -21,7 +40,7 @@ export interface CatalogItem {
   description: string;
   unit: string;
   unit_price: number;
-  source: 'SINAPI' | 'SICRO' | 'PROPRIA';
+  source: 'SINAPI' | 'SICRO' | 'CONTRATO';
   category?: string;
 }
 

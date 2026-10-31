@@ -7,13 +7,13 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 ## 🔒 REGRA DE OURO DAS RESTAURAÇÕES
 - **Estrutura preservada:** Next.js, App Router, TypeScript, Tailwind CSS, Python Serverless, componentes e rotas.
 - **Identidade visual mantida:** Dark Industrial Luxury Minimalista (Fundo Deep Charcoal `#07090E`, Metallic Gold `#D4AF37`, Vibrant Orange `#F97316`).
-- **Engenharia de Excel:** `openpyxl` (Strict Mode) com suporte integral a fórmulas vivas.
+- **Engenharia de Excel:** `openpyxl` (Strict Mode) com suporte integral a fórmulas vivas e fidelidade de layout.
 
 ---
 
-### [PR.005]
-- **Data/Hora:** 31/10/2026 17:17 (Horário Local)
-- **Tag Git:** `PR.005`
+### [PR.006]
+- **Data/Hora:** 31/10/2026 17:30 (Horário Local)
+- **Tag Git:** `PR.006`
 - **Status:** Ativo / Em Produção 24/7
 - **Links Oficiais:**
   - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
@@ -22,18 +22,27 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
   - Localhost de Desenvolvimento: http://localhost:3000
   - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
 
-#### 🖥️ Implementações Estruturais do PR.005:
-1. **Eliminação Total de Dados Fictícios/Exemplos:**
-   - Remoção de qualquer mock de "Concreto usinado FCK 30", "Aço CA-50" pré-carregados.
-   - O sistema inicia em estado 100% limpo, aguardando o upload real do usuário.
-   - KPIs zerados (`R$ 0,00`) e tabelas em standby com mensagens elegantes de espera.
-2. **Compatibilização e Sincronização 100% Dinâmica e Interativa:**
-   - Ao arrastar ou selecionar uma planilha `.xlsx` real, o parser lê e extrai os itens genuínos do documento.
-   - A Mesa De-Para, os cálculos da estratégia (`KEEP_TOTAL_VALUE` e `KEEP_QUANTITY`) e a Curva ABC são gerados exclusivamente sobre a planilha carregada pelo usuário.
-3. **Botão de Limpeza Rápida:**
-   - Opção de remover a planilha com 1 clique, resetando o sistema instantaneamente para novo processamento.
-4. **Motor de Excel openpyxl (Strict Mode):**
-   - Preservação de fórmulas vivas na exportação multi-aba do `.xlsx`.
+#### 🖥️ Implementações Estruturais do PR.006:
+1. **Página Inicial de Compatibilização Reestruturada:**
+   - **Local 1 (Planilha Inicial):** Caixa de upload drag-and-drop para a planilha do projeto a ser compatibilizada.
+   - **Local 2 (Contrato Base):** Seletor dinâmico para escolher qual Contrato Base ditará a compatibilização.
+   - **Botão "Compatibilizar Planilhas":** Mapeia os quantitativos da Planilha Inicial para as posições correspondentes do Contrato Base.
+   - **Botão "Baixar Planilha Final":** Baixa a planilha clonada do Contrato Base mantendo 100% do layout, formatação, BDI, logos e fórmulas, manipulando exclusivamente os quantitativos injetados.
+2. **Aba de Configurações de Contratos (Design Fiel aos Prints):**
+   - **Modal "Criar Novo Card de Contrato Base":** Upload da planilha base oficial (.xlsx), Nome/Título, Empresa Contratada, Número do Contrato e Percentual de BDI Oficial.
+   - **Cards de Contrato Base:** Exibição detalhada com título, BDI, status "100% Compatibilizável", botão "Abrir Planilha", área de substituir planilha, contadores de composições e etapas, botão "Ver Itens" e botão dourado "Usar no De-Para".
+3. **Persistência de Contratos:**
+   - Gravação resiliente em `localStorage` para reaproveitamento permanente entre sessões.
+4. **Motor openpyxl (Strict Mode):**
+   - Rota Python Serverless com clonagem e injeção seletiva de quantitativos mantendo células, fórmulas e BDI originais da planilha do contrato.
+
+---
+
+### [PR.005]
+- **Data/Hora:** 31/10/2026 17:17 (Horário Local)
+- **Tag Git:** `PR.005`
+- **Status:** Concluído
+- **Implementações:** Sistema 100% interativo sem dados mock, standby limpo e extração real de planilhas.
 
 ---
 
