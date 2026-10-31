@@ -152,3 +152,18 @@ export interface ContractCompositionMatch {
   confidence_score: number;
   status: "MATCHED" | "MANUAL_OVERRIDE" | "ZEROED";
 }
+
+export interface SuggestedContractMatch {
+  contract_item: ItemBase;
+  score: number;
+  reason: string;
+}
+
+export interface PendingResolutionItem {
+  source_item: ItemBase;
+  is_resolved: boolean;
+  resolved_contract_item?: ItemBase;
+  confidence_score: number;
+  suggested_contract_matches: SuggestedContractMatch[];
+}
+

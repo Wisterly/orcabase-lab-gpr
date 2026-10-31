@@ -11,6 +11,36 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.010]
+- **Data/Hora:** 31/10/2026 19:05 (Horário Local)
+- **Tag Git:** `PR.010`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Serverless Python (Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.010:
+1. **Regra Estrita de Nomenclatura no Salvar Como (`Nome da Planilha 1 (Nome do Contrato).xlsx`):**
+   - A planilha gerada e baixada assume automaticamente e com exatidão o nome da **Planilha 1 (Planilha Inicial)** anexada pelo usuário, acrescida do nome do Contrato Base selecionado entre parênteses ao final.
+   - Exemplo fiel do usuário: `12ª GRE, 7º Deputado Francisco Antônio Paz Landim Neto, São João do Piauí - Inauguração (DESENVOLVA).xlsx`.
+   - Limpeza automática de caracteres proibidos em sistemas de arquivos mantendo integridade perfeita do nome original.
+2. **Cópia Fiel Físico-Digital da Planilha Base do Contrato:**
+   - O processo de geração realiza um "Salvar Como" autêntico: o binário original da Planilha Base do Contrato (preservado no IndexedDB) é clonado integralmente.
+   - O motor `openpyxl` abre o clone com fórmulas vivas (`calcProperties.fullCalcOnLoad = True`), preserva 100% das fontes, cores, larguras de colunas, células mescladas, cabeçalhos, rodapés e fórmulas de BDI/Totalização, alterando **unicamente** as células numéricas da coluna de quantitativo identificada.
+3. **Indicador de Taxa Percentual de Compatibilização (%):**
+   - Card luxury com progresso visual exibindo a porcentagem exata de assertividade e cobertura da compatibilização (ex: `88%`, `96%`, `100%`).
+   - Apresenta o quantitativo de itens alocados versus itens totais da Planilha 1 e alerta em tempo real quando há serviços que necessitam de atenção.
+4. **Mesa Interativa de Resolução de Pendências (Itens sem Similaridade Direta):**
+   - Visualização dedicada para itens da Planilha 1 onde o sistema encontrou correspondência com menor confiança ou múltiplas opções no contrato base.
+   - Cartões com sugestões inteligentes do contrato base e botão direto de vínculo (*"Alocar X un Aqui"*).
+   - Modal completo de busca interativa em tempo real com filtro por código, discriminação ou disciplina de qualquer composição do Contrato Base.
+   - Ao vincular, o quantitativo é posicionado imediatamente na linha correspondente do contrato, a porcentagem de compatibilização sobe em tempo real e a planilha é atualizada.
+
+---
+
 ### [PR.009]
 - **Data/Hora:** 31/10/2026 18:37 (Horário Local)
 - **Tag Git:** `PR.009`

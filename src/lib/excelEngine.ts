@@ -1321,3 +1321,34 @@ export function injectQuantitiesClientFallback(
   triggerBlobDownload(blob, filename);
 }
 
+/**
+ * Constrói o nome exato do arquivo compatibilizado conforme a regra:
+ * [Nome da Planilha Inicial] ([Nome do Contrato Escolhido]).xlsx
+ * Exemplo real:
+ * Planilha 1: 12ª GRE, 7º Deputado Francisco Antônio Paz Landim Neto, São João do Piauí - Inauguração.xlsx
+ * Contrato Escolhido: DESENVOLVA
+ * Nome de saída: 12ª GRE, 7º Deputado Francisco Antônio Paz Landim Neto, São João do Piauí - Inauguração (DESENVOLVA).xlsx
+ */
+export function buildCompatOutputFileName(
+  initialFileName: string | null,
+  contractName: string,
+  contractNumber?: string
+): string {
+  let base = initialFileName ? initialFileName.trim() : "Planilha_Inicial";
+  base = base.replace(/\.(xlsx|xls|csv)$/i, "").trim();
+
+  let cLabel = contractName ? contractName.replace(/\.(xlsx|xls|csv)$/i, "").trim() : "";
+  if (!cLabel && contractNumber) {
+    cLabel = contractNumber.replace(/\.(xlsx|xls|csv)$/i, "").trim();
+  }
+  if (!cLabel) {
+    cLabel = "CONTRATO";
+  }
+
+  const cleanBase = base.replace(/[\/\\:*?"<>|]/g, "_").trim();
+  const cleanContract = cLabel.replace(/[\/\\:*?"<>|]/g, " ").trim();
+
+  return `${cleanBase} (${cleanContract}).xlsx`;
+}
+
+

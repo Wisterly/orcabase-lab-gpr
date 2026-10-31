@@ -26,6 +26,7 @@ import {
   ChevronDown,
   ChevronUp,
   Tag,
+  AlertCircle,
 } from "lucide-react";
 import {
   ItemBase,
@@ -35,6 +36,7 @@ import {
   SpreadsheetStudy,
   CustomColumnKeywords,
   ExplicitColumnOverrides,
+  PendingResolutionItem,
 } from "../types";
 import {
   studySpreadsheetFromBuffer,
@@ -46,6 +48,8 @@ import {
   applyCalculationStrategyToMatches,
   triggerBase64ExcelDownload,
   injectQuantitiesClientFallback,
+  buildCompatOutputFileName,
+  calculateItemSimilarity,
 } from "../lib/excelEngine";
 
 const STORAGE_KEY_CONTRACTS = "orcabase_gpr_contracts_v9";
@@ -259,10 +263,15 @@ export default function OrcaBaseDashboard() {
   const [searchFilter, setSearchFilter] = useState("");
   const [disciplineFilter, setDisciplineFilter] = useState<string>("ALL");
   const [showOnlyMatched, setShowOnlyMatched] = useState<boolean>(false);
+  const [activeResultTab, setActiveResultTab] = useState<"CONTRACT_VIEW" | "DIFFICULTY_VIEW">("CONTRACT_VIEW");
 
   // Modal de Troca Manual de Item da Planilha 1 para uma Composição do Contrato
   const [activeSwapContractIndex, setActiveSwapContractIndex] = useState<number | null>(null);
   const [swapModalSearch, setSwapModalSearch] = useState<string>("");
+
+  // Modal de Resolução de Composição sem Similaridade Direta (Atenção Necessária)
+  const [resolvingSourceItem, setResolvingSourceItem] = useState<ItemBase | null>(null);
+  const [resolvingSearchText, setResolvingSearchText] = useState<string>("");
 
   // Modal de Criação de Novo Contrato na Aba Configurações
   const [isAddingContract, setIsAddingContract] = useState(false);
@@ -790,6 +799,89 @@ export default function OrcaBaseDashboard() {
     showToast("Alocação de quantitativo atualizada com sucesso!");
   };
 
+  // Aloca diretamente um item com dificuldade da Planilha 1 em uma composição escolhida pelo usuário no Contrato Base
+  const handleAssignUnmatchedSourceToContract = (
+    sourceItem: ItemBase,
+    targetContractItem: ItemBase
+  ) => {
+    setCompositionMatches((prev) => {
+      const targetIdx = prev.findIndex(
+        (m) =>
+          m.contract_item.id === targetContractItem.id ||
+          (m.contract_item.code === targetContractItem.code &&
+            m.contract_item.row_index === targetContractItem.row_index)
+      );
+
+      if (targetIdx === -1) return prev;
+
+      const updated = prev.map((m, idx) => {
+        if (idx === targetIdx) {
+          const currentSources = [
+            ...m.matched_source_items.filter((it) => it.id !== sourceItem.id),
+            sourceItem,
+          ];
+          const newBaseQty = currentSources.reduce((s, it) => s + (it.quantity || 0), 0);
+          return {
+            ...m,
+            matched_source_items: currentSources,
+            best_candidate: {
+              source_item_id: currentSources.map((i) => i.id).join(" + "),
+              source_item_number: sourceItem.itemNumber,
+              source_description: currentSources.map((i) => i.description).join(" | "),
+              source_unit: sourceItem.unit,
+              source_quantity: newBaseQty,
+              source_unit_price: sourceItem.unit_price,
+              source_total_value: currentSources.reduce((s, i) => s + (i.total_value || 0), 0),
+              source_stage: sourceItem.stage_title,
+              source_discipline: sourceItem.discipline,
+              confidence_score: 100,
+              match_reason: `Alocado manualmente pelo orçamentista para "${sourceItem.description}"`,
+            },
+            base_quantity_from_sheet1: newBaseQty,
+            final_injected_quantity: newBaseQty,
+            calculated_total_value: Number((newBaseQty * m.contract_unit_price).toFixed(2)),
+            confidence_score: 100,
+            status: "MANUAL_OVERRIDE" as const,
+          };
+        }
+
+        const hadSource = m.matched_source_items.some((it) => it.id === sourceItem.id);
+        if (hadSource) {
+          const filteredSources = m.matched_source_items.filter((it) => it.id !== sourceItem.id);
+          const newBaseQty = filteredSources.reduce((s, it) => s + (it.quantity || 0), 0);
+          return {
+            ...m,
+            matched_source_items: filteredSources,
+            base_quantity_from_sheet1: newBaseQty,
+            final_injected_quantity: newBaseQty,
+            calculated_total_value: Number((newBaseQty * m.contract_unit_price).toFixed(2)),
+            status: newBaseQty > 0 ? m.status : ("ZEROED" as const),
+          };
+        }
+
+        return m;
+      });
+
+      return applyCalculationStrategyToMatches(updated, calcStrategy, effectiveTargetTotal);
+    });
+
+    setResolvingSourceItem(null);
+    setResolvingSearchText("");
+    showToast(
+      `Quantitativo de ${sourceItem.quantity} ${sourceItem.unit} alocado em "${targetContractItem.description.slice(0, 36)}..."!`
+    );
+  };
+
+  // Nome oficial do arquivo final baixado conforme a regra estrita do usuário:
+  // [Nome da Planilha 1 sem extensão] ([Nome do Contrato Escolhido]).xlsx
+  const outputCompatFilename = useMemo(() => {
+    return buildCompatOutputFileName(
+      initialFileName,
+      selectedContract?.contractName || "",
+      selectedContract?.contractNumber
+    );
+  }, [initialFileName, selectedContract]);
+
   // ============================================================================
   // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX)
   // ============================================================================
@@ -800,8 +892,7 @@ export default function OrcaBaseDashboard() {
     }
 
     setIsDownloading(true);
-    const safeContractNumber = selectedContract.contractNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
-    const outputFilename = `Planilha_Compatibilizada_${safeContractNumber}.xlsx`;
+    const outputFilename = outputCompatFilename;
 
     try {
       let contractBase64 = await getContractBinary(selectedContract.id);
@@ -850,9 +941,7 @@ export default function OrcaBaseDashboard() {
         if (data.status === "success" && data.file_base64) {
           triggerBase64ExcelDownload(data.file_base64, outputFilename);
           showToast(
-            `Download concluído! "${outputFilename}" gerada ajustando a coluna "${
-              selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"
-            }".`
+            `Download concluído! "${outputFilename}" gerada mantendo 100% da planilha original com os quantitativos ajustados.`
           );
           setIsDownloading(false);
           return;
@@ -916,6 +1005,69 @@ export default function OrcaBaseDashboard() {
     });
     return Array.from(set);
   }, [selectedContract]);
+
+  // Serviços da Planilha 1 com quantidade física > 0
+  const sourceItemsWithQty = useMemo(() => {
+    return (sheet1Study?.items || []).filter((it) => (it.quantity || 0) > 0);
+  }, [sheet1Study]);
+
+  // Status de alocação de cada serviço da Planilha 1 e Taxa de Compatibilização (%)
+  const sourceAllocationStatus = useMemo(() => {
+    if (!sheet1Study || sourceItemsWithQty.length === 0) {
+      return {
+        items: [],
+        matchedCount: 0,
+        totalCount: 0,
+        percentage: 0,
+        pendingItems: [],
+      };
+    }
+
+    const items = sourceItemsWithQty.map((sItem) => {
+      const matchInContract = compositionMatches.find(
+        (m) =>
+          m.final_injected_quantity > 0 &&
+          (m.matched_source_items.some((it) => it.id === sItem.id) ||
+            m.best_candidate?.source_item_id?.includes(sItem.id))
+      );
+
+      const suggestedMatches = (selectedContract?.items || [])
+        .map((c) => {
+          const sim = calculateItemSimilarity(sItem, c);
+          return { contractItem: c, score: sim.score, reason: sim.reason };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+
+      const isResolved = Boolean(
+        matchInContract &&
+          (matchInContract.confidence_score >= 40 || matchInContract.status === "MANUAL_OVERRIDE")
+      );
+
+      return {
+        sourceItem: sItem,
+        isResolved,
+        allocatedContractItem: matchInContract?.contract_item,
+        confidenceScore: matchInContract
+          ? matchInContract.confidence_score
+          : (suggestedMatches[0]?.score || 0),
+        suggestedMatches,
+      };
+    });
+
+    const matchedCount = items.filter((it) => it.isResolved).length;
+    const totalCount = items.length;
+    const percentage = totalCount > 0 ? Math.round((matchedCount / totalCount) * 100) : 0;
+    const pendingItems = items.filter((it) => !it.isResolved);
+
+    return {
+      items,
+      matchedCount,
+      totalCount,
+      percentage,
+      pendingItems,
+    };
+  }, [sheet1Study, sourceItemsWithQty, compositionMatches, selectedContract]);
 
   // Filtro da Mesa de Alocação
   const filteredMatches = useMemo(() => {
@@ -1545,10 +1697,81 @@ export default function OrcaBaseDashboard() {
                 >
                   <Download className="w-5 h-5" />
                   {isDownloading
-                    ? "Gerando Planilha Final (.XLSX)..."
+                    ? "Gerando Cópia do Contrato (.XLSX)..."
                     : "Baixar Planilha Final (.XLSX)"}
                 </button>
               </div>
+
+              {/* BARRA SUPERIOR DE TAXA DE COMPATIBILIZAÇÃO E NOMENCLATURA OFICIAL DA CÓPIA */}
+              {compositionMatches.length > 0 && (
+                <div className="pt-2 grid grid-cols-1 lg:grid-cols-12 gap-4 border-t border-[#1E2436]/80">
+                  {/* Taxa de Compatibilização (%) com Barra Visual */}
+                  <div className="lg:col-span-5 bg-[#111622] border border-[#1E2436] rounded-xl p-4 flex flex-col justify-between space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
+                        <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" /> Taxa de Compatibilização:
+                      </span>
+                      <span
+                        className={`text-xs font-bold font-mono px-2.5 py-0.5 rounded-lg border ${
+                          sourceAllocationStatus.percentage >= 85
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                            : sourceAllocationStatus.percentage >= 60
+                            ? "bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30"
+                            : "bg-[#F97316]/15 text-[#F97316] border-[#F97316]/30"
+                        }`}
+                      >
+                        {sourceAllocationStatus.percentage}% Concluído
+                      </span>
+                    </div>
+
+                    <div className="w-full h-2.5 rounded-full bg-[#07090E] overflow-hidden border border-[#1E2436]">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#D4AF37] via-[#F97316] to-emerald-400 transition-all duration-500 rounded-full"
+                        style={{ width: `${sourceAllocationStatus.percentage}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-[#9CA3AF]">
+                      <span>
+                        <strong className="text-white">{sourceAllocationStatus.matchedCount}</strong> de{" "}
+                        <strong className="text-white">{sourceAllocationStatus.totalCount}</strong> serviços alocados
+                      </span>
+                      {sourceAllocationStatus.pendingItems.length > 0 ? (
+                        <button
+                          onClick={() => setActiveResultTab("DIFFICULTY_VIEW")}
+                          className="text-[#F97316] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          ⚠️ {sourceAllocationStatus.pendingItems.length} sem similaridade direta
+                        </button>
+                      ) : (
+                        <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> 100% dos serviços alocados
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Nomenclatura Oficial do Arquivo Final (Salvar Como) */}
+                  <div className="lg:col-span-7 bg-[#111622] border border-[#1E2436] rounded-xl p-4 flex flex-col justify-between space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5 font-semibold">
+                        <FileSpreadsheet className="w-3.5 h-3.5 text-[#D4AF37]" /> Cópia Salvar Como • Nome do Arquivo Final:
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        Layout 100% Idêntico ao Contrato
+                      </span>
+                    </div>
+                    <div className="bg-[#07090E] border border-[#26304A] rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+                      <span className="text-xs font-mono font-bold text-white truncate" title={outputCompatFilename}>
+                        {outputCompatFilename}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#9CA3AF]">
+                      Copia a planilha do contrato <strong className="text-white">{selectedContract.contractName}</strong>, renomeia com o nome da Planilha 1 + <strong className="text-[#D4AF37]">({selectedContract.contractName})</strong> e ajusta unicamente os quantitativos.
+                    </p>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* =====================================================================
@@ -1556,202 +1779,378 @@ export default function OrcaBaseDashboard() {
                ===================================================================== */}
             {compositionMatches.length > 0 && (
               <section className="rounded-2xl border border-[#1E2436] bg-[#0B0F19] overflow-hidden shadow-2xl">
+                {/* Abas Superiores de Alternância entre Visão Geral e Itens com Dificuldade */}
                 <div className="p-6 border-b border-[#1E2436] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="w-5 h-5 text-[#D4AF37]" />
-                      <h2 className="text-base font-bold text-white">
-                        Mapeamento de Quantitativos na Planilha Base ({selectedContract.contractNumber})
-                      </h2>
-                    </div>
-                    <p className="text-xs text-[#9CA3AF] mt-1">
-                      Os quantitativos abaixo serão gravados na coluna de nome{" "}
-                      <strong className="text-emerald-400">
-                        &ldquo;{selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
-                      </strong>{" "}
-                      de cada composição correspondente.
-                    </p>
-                  </div>
-
-                  {/* Controles de Filtro da Tabela */}
-                  <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-3">
                     <button
-                      onClick={() => setShowOnlyMatched(!showOnlyMatched)}
-                      className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                        showOnlyMatched
-                          ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]"
-                          : "bg-[#111622] border-[#26304A] text-[#9CA3AF] hover:text-white"
+                      onClick={() => setActiveResultTab("CONTRACT_VIEW")}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        activeResultTab === "CONTRACT_VIEW"
+                          ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_15px_rgba(212,175,55,0.25)]"
+                          : "bg-[#111622] text-[#9CA3AF] hover:text-white border border-[#1E2436]"
                       }`}
                     >
-                      {showOnlyMatched
-                        ? `Exibindo Ativas (${activeCompositionsCount})`
-                        : `Todas as Composições (${compositionMatches.length})`}
+                      <Layers className="w-4 h-4" />
+                      Planilha Base do Contrato ({compositionMatches.length} composições)
                     </button>
 
-                    <select
-                      value={disciplineFilter}
-                      onChange={(e) => setDisciplineFilter(e.target.value)}
-                      className="bg-[#111622] border border-[#26304A] rounded-xl px-3 py-2 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
+                    <button
+                      onClick={() => setActiveResultTab("DIFFICULTY_VIEW")}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                        activeResultTab === "DIFFICULTY_VIEW"
+                          ? "bg-[#F97316] text-black shadow-[0_0_20px_rgba(249,115,22,0.35)]"
+                          : "bg-[#111622] text-[#9CA3AF] hover:text-white border border-[#1E2436]"
+                      }`}
                     >
-                      <option value="ALL">Todos os Setores / Disciplinas</option>
-                      {availableDisciplines.map((d) => (
-                        <option key={d} value={d}>
-                          Setor: {d}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="relative w-64">
-                      <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={searchFilter}
-                        onChange={(e) => setSearchFilter(e.target.value)}
-                        placeholder="Buscar composição ou etapa..."
-                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                      />
-                    </div>
+                      <ShieldCheck className="w-4 h-4" />
+                      Composições sem Similaridade Direta / Atenção
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          sourceAllocationStatus.pendingItems.length > 0
+                            ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                            : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        }`}
+                      >
+                        {sourceAllocationStatus.pendingItems.length}
+                      </span>
+                    </button>
                   </div>
+
+                  {/* Controles de Filtro (somente ativos na visão geral) */}
+                  {activeResultTab === "CONTRACT_VIEW" && (
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <button
+                        onClick={() => setShowOnlyMatched(!showOnlyMatched)}
+                        className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          showOnlyMatched
+                            ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]"
+                            : "bg-[#111622] border-[#26304A] text-[#9CA3AF] hover:text-white"
+                        }`}
+                      >
+                        {showOnlyMatched
+                          ? `Exibindo Ativas (${activeCompositionsCount})`
+                          : `Todas as Composições (${compositionMatches.length})`}
+                      </button>
+
+                      <select
+                        value={disciplineFilter}
+                        onChange={(e) => setDisciplineFilter(e.target.value)}
+                        className="bg-[#111622] border border-[#26304A] rounded-xl px-3 py-2 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
+                      >
+                        <option value="ALL">Todos os Setores / Disciplinas</option>
+                        {availableDisciplines.map((d) => (
+                          <option key={d} value={d}>
+                            Setor: {d}
+                          </option>
+                        ))}
+                      </select>
+
+                      <div className="relative w-64">
+                        <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={searchFilter}
+                          onChange={(e) => setSearchFilter(e.target.value)}
+                          placeholder="Buscar composição ou etapa..."
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 z-10 bg-[#080B12] border-b border-[#1E2436] text-[10px] font-mono uppercase text-[#9CA3AF]">
-                      <tr>
-                        <th className="py-3.5 px-4">Linha / Setor</th>
-                        <th className="py-3.5 px-4">
-                          {selectedContract.detectedColumns?.descHeaderName || "Composição / Descrição"} (Base)
-                        </th>
-                        <th className="py-3.5 px-4">Serviço Alocado da Planilha 1 (Origem)</th>
-                        <th className="py-3.5 px-4 text-right">Qtd. Planilha 1</th>
-                        <th className="py-3.5 px-4 text-right text-emerald-400">
-                          {selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"} (Injetado)
-                        </th>
-                        <th className="py-3.5 px-4 text-right">Preço Unit. Base</th>
-                        <th className="py-3.5 px-4 text-right text-[#D4AF37]">Novo Subtotal</th>
-                        <th className="py-3.5 px-4 text-center">Ação</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#1E2436] text-xs">
-                      {filteredMatches.map(({ m, originalIndex }) => {
-                        const cItem = m.contract_item;
-                        const hasMatch = m.final_injected_quantity > 0;
-                        return (
-                          <tr
-                            key={`${cItem.id}_${originalIndex}`}
-                            className={`transition-colors ${
-                              hasMatch
-                                ? "bg-[#111622]/60 hover:bg-[#141A28]"
-                                : "bg-[#07090E]/40 opacity-60 hover:opacity-100"
-                            }`}
-                          >
-                            <td className="py-3.5 px-4 whitespace-nowrap">
-                              <div className="flex flex-col gap-1">
-                                <span className="font-mono text-[11px] text-[#D4AF37] font-bold">
-                                  Linha {cItem.row_index || originalIndex + 1} • Item{" "}
-                                  {cItem.itemNumber || cItem.code}
-                                </span>
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-[#141A28] border border-[#26304A] text-[#F97316] font-mono w-fit">
-                                  {cItem.discipline || "GERAL"}
-                                </span>
-                              </div>
-                            </td>
+                {/* CONTEÚDO DA ABA 1: VISÃO GERAL DA PLANILHA BASE DO CONTRATO */}
+                {activeResultTab === "CONTRACT_VIEW" && (
+                  <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 z-10 bg-[#080B12] border-b border-[#1E2436] text-[10px] font-mono uppercase text-[#9CA3AF]">
+                        <tr>
+                          <th className="py-3.5 px-4">Linha / Setor</th>
+                          <th className="py-3.5 px-4">
+                            {selectedContract.detectedColumns?.descHeaderName || "Composição / Descrição"} (Base)
+                          </th>
+                          <th className="py-3.5 px-4">Serviço Alocado da Planilha 1 (Origem)</th>
+                          <th className="py-3.5 px-4 text-right">Qtd. Planilha 1</th>
+                          <th className="py-3.5 px-4 text-right text-emerald-400">
+                            {selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"} (Injetado)
+                          </th>
+                          <th className="py-3.5 px-4 text-right">Preço Unit. Base</th>
+                          <th className="py-3.5 px-4 text-right text-[#D4AF37]">Novo Subtotal</th>
+                          <th className="py-3.5 px-4 text-center">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#1E2436] text-xs">
+                        {filteredMatches.map(({ m, originalIndex }) => {
+                          const cItem = m.contract_item;
+                          const hasMatch = m.final_injected_quantity > 0;
+                          return (
+                            <tr
+                              key={`${cItem.id}_${originalIndex}`}
+                              className={`transition-colors ${
+                                hasMatch
+                                  ? "bg-[#111622]/60 hover:bg-[#141A28]"
+                                  : "bg-[#07090E]/40 opacity-60 hover:opacity-100"
+                              }`}
+                            >
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-mono text-[11px] text-[#D4AF37] font-bold">
+                                    Linha {cItem.row_index || originalIndex + 1} • Item{" "}
+                                    {cItem.itemNumber || cItem.code}
+                                  </span>
+                                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#141A28] border border-[#26304A] text-[#F97316] font-mono w-fit">
+                                    {cItem.discipline || "GERAL"}
+                                  </span>
+                                </div>
+                              </td>
 
-                            <td className="py-3.5 px-4 max-w-xs">
-                              <div className="font-semibold text-white leading-snug">
-                                {cItem.description}
-                              </div>
-                              <div className="text-[10px] text-[#9CA3AF] font-mono mt-1">
-                                Cód: {cItem.code} • Unid:{" "}
-                                <strong className="text-white">{cItem.unit}</strong>
-                                {cItem.stage_title ? ` • Etapa: ${cItem.stage_title}` : ""}
-                              </div>
-                            </td>
+                              <td className="py-3.5 px-4 max-w-xs">
+                                <div className="font-semibold text-white leading-snug">
+                                  {cItem.description}
+                                </div>
+                                <div className="text-[10px] text-[#9CA3AF] font-mono mt-1">
+                                  Cód: {cItem.code} • Unid:{" "}
+                                  <strong className="text-white">{cItem.unit}</strong>
+                                  {cItem.stage_title ? ` • Etapa: ${cItem.stage_title}` : ""}
+                                </div>
+                              </td>
 
-                            <td className="py-3.5 px-4 max-w-xs">
-                              {m.best_candidate ? (
-                                <div>
-                                  <div className="text-gray-200 font-medium leading-snug">
-                                    {m.best_candidate.source_description}
+                              <td className="py-3.5 px-4 max-w-xs">
+                                {m.best_candidate ? (
+                                  <div>
+                                    <div className="text-gray-200 font-medium leading-snug">
+                                      {m.best_candidate.source_description}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                        {m.confidence_score}% • {m.best_candidate.match_reason}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                      {m.confidence_score}% • {m.best_candidate.match_reason}
+                                ) : (
+                                  <span className="text-[11px] text-[#6B7280] italic">
+                                    Nenhum quantitativo alocado (ficará 0,00)
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right font-mono text-[#9CA3AF]">
+                                {m.base_quantity_from_sheet1 > 0
+                                  ? `${m.base_quantity_from_sheet1.toLocaleString("pt-BR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })} ${m.best_candidate?.source_unit || cItem.unit}`
+                                  : "—"}
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="inline-flex items-center justify-end gap-1.5">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={m.final_injected_quantity}
+                                    onChange={(e) =>
+                                      handleManualQuantityChange(originalIndex, e.target.value)
+                                    }
+                                    className={`w-24 text-right font-mono font-bold text-xs px-2.5 py-1.5 rounded-lg border focus:outline-none ${
+                                      hasMatch
+                                        ? "bg-[#07090E] border-emerald-500/50 text-emerald-400 focus:border-[#D4AF37]"
+                                        : "bg-[#07090E] border-[#1E2436] text-[#6B7280]"
+                                    }`}
+                                  />
+                                  <span className="text-[10px] font-mono text-[#9CA3AF]">
+                                    {cItem.unit}
+                                  </span>
+                                </div>
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right font-mono text-gray-300">
+                                R${" "}
+                                {m.contract_unit_price.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </td>
+
+                              <td className="py-3.5 px-4 text-right font-mono font-bold text-[#D4AF37]">
+                                R${" "}
+                                {m.calculated_total_value.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}
+                              </td>
+
+                              <td className="py-3.5 px-4 text-center">
+                                <button
+                                  onClick={() => {
+                                    setActiveSwapContractIndex(originalIndex);
+                                    setSwapModalSearch("");
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-lg bg-[#141A28] hover:bg-[#1E2436] border border-[#26304A] text-[11px] text-[#D4AF37] font-medium inline-flex items-center gap-1 cursor-pointer"
+                                  title="Escolher qual serviço da Planilha 1 vai para esta composição"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  Vincular
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* CONTEÚDO DA ABA 2: COMPOSIÇÕES SEM SIMILARIDADE DIRETA / ATENÇÃO NECESSÁRIA */}
+                {activeResultTab === "DIFFICULTY_VIEW" && (
+                  <div className="p-6 space-y-4">
+                    <div className="bg-[#111622] border border-[#F97316]/40 rounded-xl p-4 flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#F97316]/20 border border-[#F97316]/40 flex items-center justify-center shrink-0 mt-0.5">
+                        <ShieldCheck className="w-4 h-4 text-[#F97316]" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-white">
+                          Composições da Planilha 1 sem Similaridade Direta no Contrato ({selectedContract.contractName})
+                        </h3>
+                        <p className="text-xs text-[#9CA3AF] mt-0.5 leading-relaxed">
+                          Estes serviços da sua Planilha Inicial não encontraram uma composição com nome 100% idêntico no Contrato Base. Para cada um deles, você pode clicar em uma das sugestões mais próximas abaixo ou clicar em <strong>&ldquo;Escolher Outra Composição no Contrato&rdquo;</strong> para apontar a melhor composição onde o quantitativo deve ser inserido.
+                        </p>
+                      </div>
+                    </div>
+
+                    {sourceAllocationStatus.pendingItems.length === 0 ? (
+                      <div className="py-12 px-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 text-center flex flex-col items-center">
+                        <CheckCircle2 className="w-12 h-12 text-emerald-400 mb-2" />
+                        <h4 className="text-base font-bold text-white">
+                          Parabéns! 100% dos serviços foram compatibilizados
+                        </h4>
+                        <p className="text-xs text-[#9CA3AF] mt-1 max-w-md">
+                          Todos os serviços da Planilha 1 possuem composições correspondentes definidas na Planilha Base. Você já pode baixar o arquivo final compatibilizado com precisão total.
+                        </p>
+                        <button
+                          onClick={handleDownloadFinalSpreadsheet}
+                          className="mt-4 px-6 py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs flex items-center gap-2 cursor-pointer"
+                        >
+                          <Download className="w-4 h-4" /> Baixar Planilha Final ({outputCompatFilename})
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {sourceAllocationStatus.pendingItems.map((pending, pIdx) => {
+                          const sItem = pending.sourceItem;
+                          return (
+                            <div
+                              key={`${sItem.id}_${pIdx}`}
+                              className="rounded-xl border border-[#1E2436] bg-[#111622] p-5 space-y-4 hover:border-[#D4AF37]/50 transition-colors"
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1E2436] pb-3">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30 font-semibold">
+                                      Item {sItem.itemNumber || pIdx + 1} • {sItem.discipline || "GERAL"}
+                                    </span>
+                                    {sItem.stage_title && (
+                                      <span className="text-[11px] text-[#9CA3AF]">
+                                        Etapa: {sItem.stage_title}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h4 className="text-sm font-bold text-white leading-snug">
+                                    {sItem.description}
+                                  </h4>
+                                </div>
+
+                                <div className="flex items-center gap-4 shrink-0 bg-[#07090E] px-4 py-2 rounded-xl border border-[#26304A]">
+                                  <div>
+                                    <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                                      Quantitativo Original
+                                    </span>
+                                    <span className="text-sm font-bold text-emerald-400 font-mono">
+                                      {sItem.quantity.toLocaleString("pt-BR", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}{" "}
+                                      {sItem.unit}
+                                    </span>
+                                  </div>
+                                  <div className="h-6 w-[1px] bg-[#1E2436]" />
+                                  <div>
+                                    <span className="text-[10px] text-[#9CA3AF] uppercase block">
+                                      Total Origem
+                                    </span>
+                                    <span className="text-xs font-bold text-gray-300 font-mono">
+                                      R${" "}
+                                      {sItem.total_value.toLocaleString("pt-BR", {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                      })}
                                     </span>
                                   </div>
                                 </div>
-                              ) : (
-                                <span className="text-[11px] text-[#6B7280] italic">
-                                  Nenhum quantitativo alocado (ficará 0,00)
-                                </span>
-                              )}
-                            </td>
-
-                            <td className="py-3.5 px-4 text-right font-mono text-[#9CA3AF]">
-                              {m.base_quantity_from_sheet1 > 0
-                                ? `${m.base_quantity_from_sheet1.toLocaleString("pt-BR", {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  })} ${m.best_candidate?.source_unit || cItem.unit}`
-                                : "—"}
-                            </td>
-
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="inline-flex items-center justify-end gap-1.5">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={m.final_injected_quantity}
-                                  onChange={(e) =>
-                                    handleManualQuantityChange(originalIndex, e.target.value)
-                                  }
-                                  className={`w-24 text-right font-mono font-bold text-xs px-2.5 py-1.5 rounded-lg border focus:outline-none ${
-                                    hasMatch
-                                      ? "bg-[#07090E] border-emerald-500/50 text-emerald-400 focus:border-[#D4AF37]"
-                                      : "bg-[#07090E] border-[#1E2436] text-[#6B7280]"
-                                  }`}
-                                />
-                                <span className="text-[10px] font-mono text-[#9CA3AF]">
-                                  {cItem.unit}
-                                </span>
                               </div>
-                            </td>
 
-                            <td className="py-3.5 px-4 text-right font-mono text-gray-300">
-                              R${" "}
-                              {m.contract_unit_price.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
+                              {/* Sugestões de Composições mais Próximas no Contrato Base */}
+                              <div className="space-y-2">
+                                <span className="text-[11px] font-mono uppercase text-[#D4AF37] block font-semibold">
+                                  Composições Similares Sugeridas no Contrato Base ({selectedContract.contractName}):
+                                </span>
 
-                            <td className="py-3.5 px-4 text-right font-mono font-bold text-[#D4AF37]">
-                              R${" "}
-                              {m.calculated_total_value.toLocaleString("pt-BR", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                                  {pending.suggestedMatches.map((sug, sIdx) => (
+                                    <button
+                                      key={`${sug.contractItem.id}_${sIdx}`}
+                                      onClick={() =>
+                                        handleAssignUnmatchedSourceToContract(sItem, sug.contractItem)
+                                      }
+                                      className="text-left p-3 rounded-xl border border-[#26304A] hover:border-emerald-500/60 bg-[#07090E] transition-all cursor-pointer flex flex-col justify-between group"
+                                    >
+                                      <div>
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#141A28] text-gray-300">
+                                            Cód: {sug.contractItem.code} • Linha {sug.contractItem.row_index}
+                                          </span>
+                                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400">
+                                            {sug.score}% similar
+                                          </span>
+                                        </div>
+                                        <div className="text-xs font-semibold text-white group-hover:text-emerald-300 leading-snug">
+                                          {sug.contractItem.description}
+                                        </div>
+                                      </div>
 
-                            <td className="py-3.5 px-4 text-center">
-                              <button
-                                onClick={() => {
-                                  setActiveSwapContractIndex(originalIndex);
-                                  setSwapModalSearch("");
-                                }}
-                                className="px-2.5 py-1.5 rounded-lg bg-[#141A28] hover:bg-[#1E2436] border border-[#26304A] text-[11px] text-[#D4AF37] font-medium inline-flex items-center gap-1 cursor-pointer"
-                                title="Escolher qual serviço da Planilha 1 vai para esta composição"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                                Vincular
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                                      <div className="mt-2.5 pt-2 border-t border-[#1E2436] flex items-center justify-between text-[11px]">
+                                        <span className="font-mono text-gray-400">
+                                          {sug.contractItem.unit} • R$ {sug.contractItem.unit_price.toFixed(2)}
+                                        </span>
+                                        <span className="text-xs font-bold text-emerald-400 group-hover:underline flex items-center gap-1">
+                                          <Check className="w-3.5 h-3.5" />
+                                          Alocar {sItem.quantity} {sItem.unit} Aqui
+                                        </span>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+
+                                <div className="pt-2 flex justify-end">
+                                  <button
+                                    onClick={() => {
+                                      setResolvingSourceItem(sItem);
+                                      setResolvingSearchText("");
+                                    }}
+                                    className="px-4 py-2 rounded-xl bg-[#141A28] hover:bg-[#1E2436] border border-[#26304A] text-xs text-[#D4AF37] font-semibold flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Search className="w-3.5 h-3.5" />
+                                    Buscar Outra Composição no Contrato Base...
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </section>
             )}
           </>
@@ -2512,6 +2911,118 @@ export default function OrcaBaseDashboard() {
                       <div className="text-[10px] text-[#9CA3AF]">
                         Total Origem: R$ {sItem.total_value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </div>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL DE RESOLUÇÃO INTERATIVA PARA COMPOSIÇÃO COM DIFICULDADE (ATENÇÃO NECESSÁRIA)
+         ===================================================================== */}
+      {resolvingSourceItem !== null && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#0B0F19] border border-[#F97316]/50 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[88vh] flex flex-col">
+            <div className="flex items-start justify-between gap-4 border-b border-[#1E2436] pb-3">
+              <div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-[#F97316] font-bold flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 text-[#F97316]" />
+                  Atenção Necessária • Selecionar Composição no Contrato Base
+                </span>
+                <h3 className="text-sm font-bold text-white mt-1">
+                  Item da Planilha 1: {resolvingSourceItem.description}
+                </h3>
+                <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[#9CA3AF]">
+                  <span>
+                    Quantitativo a Alocar:{" "}
+                    <strong className="text-emerald-400 font-mono text-xs">
+                      {resolvingSourceItem.quantity} {resolvingSourceItem.unit}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Etapa Origem:{" "}
+                    <strong className="text-gray-300">
+                      {resolvingSourceItem.stage_title || resolvingSourceItem.discipline || "GERAL"}
+                    </strong>
+                  </span>
+                  <span>•</span>
+                  <span>
+                    Valor na Planilha 1:{" "}
+                    <strong className="text-[#D4AF37] font-mono">
+                      R$ {resolvingSourceItem.total_value.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setResolvingSourceItem(null);
+                  setResolvingSearchText("");
+                }}
+                className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#141A28] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={resolvingSearchText}
+                onChange={(e) => setResolvingSearchText(e.target.value)}
+                placeholder="Pesquisar por código ou descrição na Planilha Base do Contrato..."
+                className="w-full bg-[#111622] border border-[#26304A] focus:border-[#F97316] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none transition-colors"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+              {(compositionMatches.length > 0
+                ? compositionMatches.map((m) => m.contract_item)
+                : selectedContract?.items || []
+              )
+                .filter((cItem) => {
+                  if (!resolvingSearchText.trim()) return true;
+                  const q = resolvingSearchText.toLowerCase();
+                  return (
+                    cItem.description.toLowerCase().includes(q) ||
+                    (cItem.code || "").toLowerCase().includes(q) ||
+                    (cItem.discipline || "").toLowerCase().includes(q) ||
+                    (cItem.stage_title || "").toLowerCase().includes(q)
+                  );
+                })
+                .slice(0, 100)
+                .map((compItem) => (
+                  <button
+                    key={`${compItem.id}_${compItem.row_index}`}
+                    onClick={() => handleAssignUnmatchedSourceToContract(resolvingSourceItem, compItem)}
+                    className="w-full text-left p-3.5 rounded-xl border border-[#1E2436] hover:border-emerald-500/60 bg-[#111622] hover:bg-[#141A28] transition-all cursor-pointer flex items-center justify-between gap-4 group"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#07090E] text-gray-300">
+                          Cód: {compItem.code || "S/C"} • L{compItem.row_index}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#141A28] text-[#F97316]">
+                          {compItem.discipline || "GERAL"}
+                        </span>
+                      </div>
+                      <div className="text-xs font-semibold text-white group-hover:text-emerald-300 transition-colors leading-snug">
+                        {compItem.description}
+                      </div>
+                    </div>
+                    <div className="text-right font-mono shrink-0 flex flex-col items-end gap-1">
+                      <span className="text-xs font-bold text-white">
+                        {compItem.unit} • R$ {compItem.unit_price.toFixed(2)}
+                      </span>
+                      <span className="text-[11px] font-bold text-emerald-400 group-hover:underline flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" />
+                        Alocar {resolvingSourceItem.quantity} {resolvingSourceItem.unit}
+                      </span>
                     </div>
                   </button>
                 ))}
