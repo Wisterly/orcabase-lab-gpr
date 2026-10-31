@@ -5,7 +5,7 @@
 > **Ambiente de Produção 24/7:** [https://orcaeng-lab-ai-matching.vercel.app](https://orcaeng-lab-ai-matching.vercel.app)  
 > **Backend Python Serverless:** [https://orcaeng-lab-ai-matching.vercel.app/api](https://orcaeng-lab-ai-matching.vercel.app/api)  
 > **Repositório GitHub:** [https://github.com/Wisterly/orcaeng-lab-ai-matching](https://github.com/Wisterly/orcaeng-lab-ai-matching)  
-> **Caminho Local da Pasta Base:** `C:\Users\Lenovo\Documents\antigravity\OrcaEng_Lab_AI_Matching`
+> **Caminho Local da Pasta Oficial:** `C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR`
 
 ---
 

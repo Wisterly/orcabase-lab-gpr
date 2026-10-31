@@ -21,6 +21,7 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
   - Backend Serverless Python (Vercel): https://orcaeng-lab-ai-matching.vercel.app/api
   - Repositório GitHub: https://github.com/Wisterly/orcaeng-lab-ai-matching
   - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
 
 #### 🖥️ Implementações Estruturais do PR.001:
 1. **Inicialização do Sistema e CI/CD Concluídos:**
