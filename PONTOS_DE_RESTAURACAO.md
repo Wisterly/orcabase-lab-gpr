@@ -11,9 +11,9 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
-### [PR.004]
-- **Data/Hora:** 31/10/2026 17:12 (Horário Local)
-- **Tag Git:** `PR.004`
+### [PR.005]
+- **Data/Hora:** 31/10/2026 17:17 (Horário Local)
+- **Tag Git:** `PR.005`
 - **Status:** Ativo / Em Produção 24/7
 - **Links Oficiais:**
   - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
@@ -22,20 +22,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
   - Localhost de Desenvolvimento: http://localhost:3000
   - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
 
-#### 🖥️ Implementações Estruturais do PR.004:
-1. **Redesign Minimalista e Sofisticado (Clean & Dark Industrial Luxury):**
-   - Eliminação completa de textos longos e poluição visual.
-   - Fundo em preto profundo `#07090E` com destaques nobres em Ouro Metálico (`#D4AF37`) e Laranja Vibrante (`#F97316`).
-2. **Caixas Duplas de Upload Drag & Drop em Destaque:**
-   - **Caixa 1 (Planilha Base):** Área ampla e responsiva com suporte a arrastar/soltar arquivos `.xlsx` ou clicar para abrir o gerenciador de arquivos.
-   - **Caixa 2 (Base de Referência):** Dropzone elegante indicando o catálogo SINAPI/SICRO ativo e aceitando bases customizadas.
-3. **Barra de Controle Compacta & KPIs Executivos:**
-   - Seletor limpo de estratégia matemática (`Travar Valor Total` vs `Travar Quantidade`).
-   - Indicadores financeiros elegantes em linha (Total Base, Total Compatibilizado e Variação %).
-4. **Tabelas Refinadas:**
-   - Mesa De-Para, Curva ABC e Memória do Sistema reorganizadas com tipografia refinada e espaçamento moderno.
-5. **Exportação Excel Multi-Aba via openpyxl:**
-   - Preservação de fórmulas vivas em ambas as abas com `calcProperties.fullCalcOnLoad = True`.
+#### 🖥️ Implementações Estruturais do PR.005:
+1. **Eliminação Total de Dados Fictícios/Exemplos:**
+   - Remoção de qualquer mock de "Concreto usinado FCK 30", "Aço CA-50" pré-carregados.
+   - O sistema inicia em estado 100% limpo, aguardando o upload real do usuário.
+   - KPIs zerados (`R$ 0,00`) e tabelas em standby com mensagens elegantes de espera.
+2. **Compatibilização e Sincronização 100% Dinâmica e Interativa:**
+   - Ao arrastar ou selecionar uma planilha `.xlsx` real, o parser lê e extrai os itens genuínos do documento.
+   - A Mesa De-Para, os cálculos da estratégia (`KEEP_TOTAL_VALUE` e `KEEP_QUANTITY`) e a Curva ABC são gerados exclusivamente sobre a planilha carregada pelo usuário.
+3. **Botão de Limpeza Rápida:**
+   - Opção de remover a planilha com 1 clique, resetando o sistema instantaneamente para novo processamento.
+4. **Motor de Excel openpyxl (Strict Mode):**
+   - Preservação de fórmulas vivas na exportação multi-aba do `.xlsx`.
+
+---
+
+### [PR.004]
+- **Data/Hora:** 31/10/2026 17:12 (Horário Local)
+- **Tag Git:** `PR.004`
+- **Status:** Concluído
+- **Implementações:** Redesign clean minimalista com caixas duplas de upload drag-and-drop.
 
 ---
 
