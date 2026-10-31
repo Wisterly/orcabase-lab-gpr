@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OrcaEng Lab AI Matching | Engenharia de Orçamentos",
+  title: "OrçaBase.lab - GPR | Engenharia de Orçamentos e AI Matching",
   description: "Módulo Inteligente de Compatibilização Semântica e AI Matching com openpyxl",
 };
 

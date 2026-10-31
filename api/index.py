@@ -11,7 +11,7 @@ class handler(BaseHTTPRequestHandler):
         
         response = {
             "status": "online",
-            "module": "OrcaEng_Lab_AI_Matching",
+            "module": "OrçaBase.lab - GPR",
             "backend": "Python Serverless (Vercel)",
             "excel_engine": "openpyxl (Strict Mode)",
             "openpyxl_version": getattr(openpyxl, "__version__", "active"),
@@ -36,6 +36,6 @@ class handler(BaseHTTPRequestHandler):
         response = {
             "status": "success",
             "received": body,
-            "processed_by": "OrcaEng Python Serverless Engine"
+            "processed_by": "OrçaBase.lab - GPR Python Serverless Engine"
         }
         self.wfile.write(json.dumps(response, indent=2).encode('utf-8'))

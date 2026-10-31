@@ -79,7 +79,7 @@ export default function Home() {
             <div>
               <div className="flex items-center space-x-2">
                 <span className="text-lg font-bold tracking-tight text-white">
-                  OrcaEng <span className="bg-gradient-to-r from-gold-400 to-orange-400 bg-clip-text text-transparent">Lab AI</span>
+                  OrçaBase<span className="bg-gradient-to-r from-gold-400 to-orange-400 bg-clip-text text-transparent">.lab - GPR</span>
                 </span>
                 <span className="rounded-full bg-navy-800 px-2 py-0.5 text-xs font-semibold text-gold-400 border border-gold-500/30">
                   AI Matching v1.0
@@ -315,7 +315,7 @@ export default function Home() {
         <footer className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-navy-800 pt-6 text-xs text-gray-500 sm:flex-row">
           <div className="flex items-center space-x-2">
             <Globe className="h-4 w-4 text-gold-400" />
-            <span>OrcaEng Lab AI Matching • Infraestrutura Vercel Serverless & GitHub CI/CD</span>
+            <span>OrçaBase.lab - GPR • Infraestrutura Vercel Serverless & GitHub CI/CD</span>
           </div>
           <div>
             <span>Engenharia GPR 2026 • Design System Dark Industrial Luxury</span>

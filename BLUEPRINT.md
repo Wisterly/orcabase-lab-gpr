@@ -1,10 +1,10 @@
-# 📘 BLUEPRINT TÉCNICO OFICIAL — OrcaEng Lab AI Matching
+# 📘 BLUEPRINT TÉCNICO OFICIAL — OrçaBase.lab - GPR
 
-> **Módulo:** `OrcaEng_Lab_AI_Matching`  
+> **Módulo:** `OrçaBase.lab - GPR`  
 > **Versão:** 1.0.0 (`PR.001` implantado e ativo)  
-> **Ambiente de Produção 24/7:** [https://orcaeng-lab-ai-matching.vercel.app](https://orcaeng-lab-ai-matching.vercel.app)  
-> **Backend Python Serverless:** [https://orcaeng-lab-ai-matching.vercel.app/api](https://orcaeng-lab-ai-matching.vercel.app/api)  
-> **Repositório GitHub:** [https://github.com/Wisterly/orcaeng-lab-ai-matching](https://github.com/Wisterly/orcaeng-lab-ai-matching)  
+> **Ambiente de Produção 24/7:** [https://orcabase-lab-gpr.vercel.app](https://orcabase-lab-gpr.vercel.app)  
+> **Backend Python Serverless:** [https://orcabase-lab-gpr.vercel.app/api](https://orcabase-lab-gpr.vercel.app/api)  
+> **Repositório GitHub:** [https://github.com/Wisterly/orcabase-lab-gpr](https://github.com/Wisterly/orcabase-lab-gpr)  
 > **Caminho Local da Pasta Oficial:** `C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR`
 
 ---
@@ -26,7 +26,7 @@
 
 ## 2. 📊 Modelos de Dados Oficiais (TypeScript)
 
-Localizados em [`src/types/index.ts`](file:///C:/Users/Lenovo/Documents/antigravity/OrcaEng_Lab_AI_Matching/src/types/index.ts):
+Localizados em [`src/types/index.ts`](file:///C:/Users/Lenovo/Documents/antigravity/LAB%20-%20GPR/OrçaBase.lab%20-%20GPR/src/types/index.ts):
 
 ```typescript
 export interface CalculationStrategy {

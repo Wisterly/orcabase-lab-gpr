@@ -1,15 +1,17 @@
-# OrcaEng Lab — AI Matching
+# OrçaBase.lab - GPR
 
 Módulo de Compatibilização Semântica e Mapeamento Inteligente (De-Para) de Planilhas Orçamentárias da Engenharia Civil.
 
 ## 🚀 Arquitetura e Stack Tecnológica
-- **Frontend:** Next.js (App Router, TypeScript)
+- **Frontend:** Next.js 15 (App Router, TypeScript)
 - **Estilização:** Tailwind CSS (Dark Mode com tons Navy Blue & Dark Charcoal, acentos em Metallic Gold & Orange vibrante)
 - **Backend:** Python (Vercel Serverless Functions) em `/api`
 - **Manipulação de Excel:** `openpyxl` (Requisito estrito: Pandas apenas para extração de dados, geração exclusiva via openpyxl)
 - **Motor de IA:** sentence-transformers / Vector Embeddings & Cosine Similarity
 - **Banco de Dados:** Vercel Postgres / Supabase
 - **Hospedagem & CI/CD:** GitHub Actions + Vercel 24/7 Online
+- **Repositório:** [https://github.com/Wisterly/orcabase-lab-gpr](https://github.com/Wisterly/orcabase-lab-gpr)
+- **Produção:** [https://orcabase-lab-gpr.vercel.app](https://orcabase-lab-gpr.vercel.app)
 
 ## 📋 Modelos de Dados Oficiais
 - `CalculationStrategy`: Modos `KEEP_QUANTITY` e `KEEP_TOTAL_VALUE`
