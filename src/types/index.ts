@@ -1,5 +1,5 @@
 /**
- * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.006)
+ * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.007)
  */
 
 export interface CalculationStrategy {
@@ -14,6 +14,7 @@ export interface ItemBase {
   quantity: number;
   unit_price: number;
   total_value: number;
+  row_index?: number;
   matched_code?: string;
   matched_description?: string;
   matched_unit?: string;
@@ -29,10 +30,14 @@ export interface ContractBaseCard {
   fileName: string;
   fileSize?: string;
   fileBase64?: string;
+  budgetSheetName?: string;
+  totalGeralValue?: number;
+  totalGeralLabel?: string;
   compositionsCount: number;
   stagesCount: number;
   createdAt: string;
   items: ItemBase[];
+  rawWorkbookBase64?: string;
 }
 
 export interface CatalogItem {
@@ -75,6 +80,7 @@ export interface MatchingResultItem {
   calculated_unit_price: number;
   calculated_total_value: number;
   status: 'PENDING' | 'MATCHED' | 'MANUAL_REQUIRED';
+  contract_row_index?: number;
 }
 
 export interface MatchingStatistics {
@@ -85,16 +91,4 @@ export interface MatchingStatistics {
   calculated_total_value: number;
   variance_value: number;
   variance_percentage: number;
-}
-
-export interface ABCItem {
-  id: string;
-  description: string;
-  unit: string;
-  quantity: number;
-  unit_price: number;
-  total_value: number;
-  percentage_of_total: number;
-  accumulated_percentage: number;
-  classification: 'A' | 'B' | 'C';
 }
