@@ -212,6 +212,70 @@ export function detectDiscipline(description: string, stageTitle?: string): stri
   return bestDisc;
 }
 
+/**
+ * Valida se uma linha da planilha possui um Código de Composição válido (acompanhado ou não de Banco).
+ * Linhas de cabeçalhos, notas explicativas ou etapas sem código de serviço não são composições.
+ */
+export function hasValidCompositionCode(rawCode: string, rawSource?: string, rawDesc?: string): boolean {
+  const code = (rawCode || "").trim();
+  const source = (rawSource || "").trim();
+
+  // Se não há código nem fonte
+  if (!code && !source) {
+    // Verifica se a descrição começa com padrão típico de código SINAPI/ORSE (ex: "88489 - Pintura...")
+    if (rawDesc) {
+      const match = rawDesc.trim().match(/^(\d{4,8}|[A-Z]{2,6}-\d{2,6})\b/);
+      if (match) return true;
+    }
+    return false;
+  }
+
+  const lower = code.toLowerCase();
+  // Ignora se for palavra de cabeçalho
+  if (
+    [
+      "codigo",
+      "código",
+      "cod",
+      "cód",
+      "cod.",
+      "item",
+      "it",
+      "it.",
+      "fonte",
+      "banco",
+      "base",
+      "discriminacao",
+      "discriminação",
+      "descricao",
+      "descrição",
+      "total",
+      "subtotal",
+      "unidade",
+      "unid",
+      "bdi",
+      "servico",
+      "serviço",
+    ].includes(lower)
+  ) {
+    return false;
+  }
+
+  // Não é código se for apenas número de etapa pura como "1.0", "2.0", "3.0" sem banco/fonte
+  if (/^\d+\.0+$/.test(code) && !source) {
+    return false;
+  }
+
+  // É código se tiver dígitos (ex: 94965, 87495, 1205, 01.02.03) ou código alfanumérico (ex: COMP-01, PR-01)
+  const hasDigits = /\d/.test(code);
+  const hasValidChars = code.length >= 2;
+
+  if (hasDigits && hasValidChars) return true;
+  if (source && hasValidChars) return true;
+
+  return false;
+}
+
 // ============================================================================
 // 3. PARSER DE NÚMEROS E UNIDADES BRASILEIRAS
 // ============================================================================
@@ -691,6 +755,8 @@ export function studySpreadsheetFromBuffer(
   if (explicitOverrides?.colQty && explicitOverrides.colQty > 0) colQty = explicitOverrides.colQty - 1;
   if (explicitOverrides?.colPrice && explicitOverrides.colPrice > 0) colUnitPrice = explicitOverrides.colPrice - 1;
   if (explicitOverrides?.colTotal && explicitOverrides.colTotal > 0) colTotal = explicitOverrides.colTotal - 1;
+  if (explicitOverrides?.colCode && explicitOverrides.colCode > 0) colCode = explicitOverrides.colCode - 1;
+  if (explicitOverrides?.colSource && explicitOverrides.colSource > 0) colSource = explicitOverrides.colSource - 1;
 
   // Monta a lista de todas as colunas nomeadas da planilha para exibição e seleção pelo nome na UI
   const allNamedColumns: NamedColumnOption[] = [];
@@ -707,57 +773,67 @@ export function studySpreadsheetFromBuffer(
     }
   }
 
-  // 4. Varredura de 100% das linhas para identificar Etapas, Composições e TOTAL GERAL
-  const stages: StageGroup[] = [];
-  const compositions: ItemBase[] = [];
-  let currentStage: StageGroup | null = null;
-
+  // 3.7 Identifica previamente o Total Geral / Rodapé da planilha
   let totalGeralValue = 0;
   let totalGeralLabel = "TOTAL GERAL DO ORÇAMENTO";
   let totalGeralRow = -1;
   let totalSemBdi = 0;
   let detectedBdi = 0;
 
-  for (let r = sampleStart; r < rows.length; r++) {
+  for (let r = rows.length - 1; r >= Math.max(0, rows.length - 60); r--) {
     const row = rows[r];
-    if (!row || row.every((c) => c === "" || c === null || c === undefined)) continue;
-
+    if (!row) continue;
     const rowJoined = normalizeText(row.map((c) => String(c || "")).join(" "));
-
-    // Verifica se é linha de TOTAL GERAL / BDI no fechamento
     if (
       rowJoined.includes("total geral") ||
       rowJoined.includes("total do orcamento") ||
       rowJoined.includes("valor total da obra") ||
       rowJoined.includes("preco total") ||
       rowJoined.includes("total com bdi") ||
-      (r > rows.length - 25 && (rowJoined.startsWith("total ") || rowJoined.includes(" total ")))
+      rowJoined.startsWith("total ")
     ) {
-      // Pega o maior número positivo nesta linha como o Total
       let maxNumInRow = 0;
       for (let c = 0; c < row.length; c++) {
         const n = parseBrazilianNumber(row[c]);
         if (n > maxNumInRow) maxNumInRow = n;
       }
-      if (maxNumInRow > 0) {
-        if (rowJoined.includes("sem bdi")) {
-          totalSemBdi = maxNumInRow;
-        } else if (maxNumInRow >= totalGeralValue) {
-          totalGeralValue = maxNumInRow;
-          totalGeralRow = r + 1; // 1-based
-          const rawLabel = row.find((c) => normalizeText(String(c || "")).includes("total"));
-          if (rawLabel) totalGeralLabel = String(rawLabel).trim().toUpperCase();
-        }
+      if (maxNumInRow > 0 && totalGeralRow === -1) {
+        totalGeralValue = maxNumInRow;
+        totalGeralRow = r + 1; // 1-based
+        const rawLabel = row.find((c) => normalizeText(String(c || "")).includes("total"));
+        if (rawLabel) totalGeralLabel = String(rawLabel).trim().toUpperCase();
+        break;
       }
-      continue;
     }
+  }
 
-    if (rowJoined.includes("bdi") && !row[colUnit]) {
-      for (let c = 0; c < row.length; c++) {
-        const n = parseBrazilianNumber(row[c]);
-        if (n > 5 && n < 60 && detectedBdi === 0) detectedBdi = n;
-      }
-    }
+  // Define os limites padrão inteligentes da planilha:
+  // - Linha Inicial: primeira linha logo abaixo do cabeçalho
+  // - Linha Final: linha imediatamente antes do Total Geral (ou final da planilha)
+  const autoStartRow = Math.max(1, bestHeaderRow + 2);
+  const autoEndRow = totalGeralRow > 0 ? Math.max(autoStartRow, totalGeralRow - 1) : rows.length;
+
+  const effectiveStartRow =
+    explicitOverrides?.startRow && explicitOverrides.startRow > 0
+      ? explicitOverrides.startRow
+      : autoStartRow;
+
+  const effectiveEndRow =
+    explicitOverrides?.endRow && explicitOverrides.endRow >= effectiveStartRow
+      ? explicitOverrides.endRow
+      : autoEndRow;
+
+  // 4. Varredura estrita dentro do intervalo [effectiveStartRow, effectiveEndRow]
+  // Filtrando unicamente as linhas que possuem CÓDIGO DE COMPOSIÇÃO e BANCO
+  const stages: StageGroup[] = [];
+  const compositions: ItemBase[] = [];
+  let currentStage: StageGroup | null = null;
+
+  for (let r = 0; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.every((c) => c === "" || c === null || c === undefined)) continue;
+
+    const excelRow = r + 1; // 1-based Excel row
 
     const rawDesc = String(row[colDesc] || "").trim();
     const rawItem = colItem !== -1 ? String(row[colItem] || "").trim() : "";
@@ -770,14 +846,26 @@ export function studySpreadsheetFromBuffer(
     const priceBdiVal = colUnitPriceBdi !== -1 ? parseBrazilianNumber(row[colUnitPriceBdi]) : 0;
     const totVal = colTotal !== -1 ? parseBrazilianNumber(row[colTotal]) : 0;
 
-    // Ignora se repetir cabeçalho no meio da planilha
-    if (normalizeText(rawDesc) === "descricao" || normalizeText(rawDesc).includes("descricao dos servicos")) {
-      continue;
+    // Detecta BDI em linhas secundárias se existir
+    const rowJoined = normalizeText(row.map((c) => String(c || "")).join(" "));
+    if (rowJoined.includes("bdi") && !row[colUnit] && detectedBdi === 0) {
+      for (let c = 0; c < row.length; c++) {
+        const n = parseBrazilianNumber(row[c]);
+        if (n > 5 && n < 60) {
+          detectedBdi = n;
+          break;
+        }
+      }
     }
 
-    // Verifica se é uma Linha de Etapa / Grupo (ex: tem descrição e número de item como "1", "1.0", "2.0", mas não tem Unidade nem Preço Unitário)
+    // Se estiver fora do intervalo definido pelo usuário:
+    // Se for uma linha antes da linha inicial que define uma Etapa, captura a etapa para contexto
     const hasValidUnit = isLikelyUnit(rawUnit) || (rawUnit.length >= 1 && rawUnit.length <= 6 && priceVal > 0);
+    const hasCode = hasValidCompositionCode(rawCode, rawSource, rawDesc);
+
+    // Linha de Etapa / Grupo (sem código nem unidade)
     const isStageLine =
+      !hasCode &&
       rawDesc.length >= 3 &&
       !hasValidUnit &&
       priceVal === 0 &&
@@ -791,7 +879,7 @@ export function studySpreadsheetFromBuffer(
         itemNumber: rawItem || `${stages.length + 1}.0`,
         title: rawDesc,
         discipline: stageDisc,
-        rowIndex: r + 1,
+        rowIndex: excelRow,
         itemsCount: 0,
         subtotalValue: totVal,
       };
@@ -799,29 +887,42 @@ export function studySpreadsheetFromBuffer(
       continue;
     }
 
-    // Verifica se é uma Linha de Composição / Serviço válida
-    if (rawDesc.length >= 3 && (hasValidUnit || priceVal > 0 || qtyVal > 0 || rawCode !== "")) {
+    // Se a linha estiver FORA do intervalo definido pelo usuário, NÃO inclui como composição
+    if (excelRow < effectiveStartRow || excelRow > effectiveEndRow) {
+      continue;
+    }
+
+    // Ignora se for repetição de cabeçalho
+    if (normalizeText(rawDesc) === "descricao" || normalizeText(rawDesc).includes("descricao dos servicos")) {
+      continue;
+    }
+
+    // FILTRO ESTRITO: Somente linhas com CÓDIGO de Composição dentro do intervalo
+    if (rawDesc.length >= 3 && hasCode) {
       const effectivePrice = priceBdiVal > 0 ? priceBdiVal : priceVal;
       const effectiveTotal = totVal > 0 ? totVal : Number((qtyVal * effectivePrice).toFixed(2));
       const disc = detectDiscipline(rawDesc, currentStage?.title);
 
-      // Verifica se a célula de quantidade ou total possui fórmula no Excel
       const totalCellAddress = XLSX.utils.encode_cell({ r, c: colTotal });
       const cellObj = worksheet[totalCellAddress];
       const hasFormula = Boolean(cellObj && cellObj.f);
 
+      // Extrai código e banco limpos
+      const codeClean = rawCode || (rawDesc.match(/^(\d{4,8}|[A-Z]{2,6}-\d{2,6})\b/)?.[1] || `COMP-${compositions.length + 1}`);
+      const sourceClean = rawSource || (currentStage?.title.includes("SINAPI") ? "SINAPI" : "BASE");
+
       const compItem: ItemBase = {
-        id: rawCode || rawItem || `L-${r + 1}`,
+        id: `${codeClean}_${excelRow}`,
         itemNumber: rawItem || `${compositions.length + 1}`,
-        code: rawCode || rawItem || `COMP-${compositions.length + 1}`,
-        source: rawSource || "BASE",
+        code: codeClean,
+        source: sourceClean,
         description: rawDesc,
-        unit: normalizeUnit(rawUnit),
+        unit: normalizeUnit(rawUnit) || "UN",
         quantity: qtyVal,
         unit_price: effectivePrice,
         unit_price_bdi: priceBdiVal > 0 ? priceBdiVal : undefined,
         total_value: effectiveTotal,
-        row_index: r + 1, // 1-based Excel row!
+        row_index: excelRow, // Linha real 1-based no Excel!
         stage_id: currentStage?.id,
         stage_title: currentStage?.title || "GERAL",
         discipline: disc,
@@ -843,6 +944,8 @@ export function studySpreadsheetFromBuffer(
   const qtyLetter = XLSX.utils.encode_col(colQty);
   const detectedColumns: DetectedColumns = {
     headerRow: bestHeaderRow + 1,
+    startRow: effectiveStartRow,
+    endRow: effectiveEndRow,
     colItem: colItem !== -1 ? colItem + 1 : 1,
     colCode: colCode !== -1 ? colCode + 1 : 2,
     colSource: colSource !== -1 ? colSource + 1 : 0,
@@ -861,6 +964,7 @@ export function studySpreadsheetFromBuffer(
     priceHeaderName: rawHeaderTitles[colUnitPrice] || "PREÇO UNITÁRIO",
     totalHeaderName: rawHeaderTitles[colTotal] || "TOTAL",
     codeHeaderName: colCode !== -1 ? rawHeaderTitles[colCode] || "CÓDIGO" : "CÓDIGO",
+    sourceHeaderName: colSource !== -1 ? rawHeaderTitles[colSource] || "BANCO" : "BANCO",
     allNamedColumns,
   };
 
@@ -873,6 +977,8 @@ export function studySpreadsheetFromBuffer(
     totalRows,
     totalCols,
     detectedColumns,
+    startRow: effectiveStartRow,
+    endRow: effectiveEndRow,
     stages,
     compositions,
     items: compositions,

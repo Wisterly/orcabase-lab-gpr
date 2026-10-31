@@ -28,10 +28,16 @@ export interface ExplicitColumnOverrides {
   colQty?: number;        // 1-based override escolhido pelo nome da coluna
   colPrice?: number;      // 1-based override escolhido pelo nome da coluna
   colTotal?: number;      // 1-based override escolhido pelo nome da coluna
+  colCode?: number;       // 1-based override para coluna de Código
+  colSource?: number;     // 1-based override para coluna de Fonte/Banco
+  startRow?: number;      // 1-based linha inicial das composições
+  endRow?: number;        // 1-based linha final das composições
 }
 
 export interface DetectedColumns {
   headerRow: number;          // 1-based row index in Excel
+  startRow?: number;          // 1-based linha inicial das composições com código
+  endRow?: number;            // 1-based linha final das composições com código
   colItem: number;            // 1-based col index (Item: 1.1, 1.2)
   colCode: number;            // 1-based col index (Código SINAPI/Próprio)
   colSource?: number;         // 1-based col index (Fonte/Banco)
@@ -51,6 +57,7 @@ export interface DetectedColumns {
   priceHeaderName?: string;   // Ex: "PREÇO UNITÁRIO"
   totalHeaderName?: string;   // Ex: "VALOR TOTAL"
   codeHeaderName?: string;    // Ex: "CÓDIGO"
+  sourceHeaderName?: string;  // Ex: "BANCO" ou "FONTE"
   allNamedColumns?: NamedColumnOption[]; // Todas as colunas da planilha com seus nomes reais
 }
 
@@ -94,6 +101,8 @@ export interface SpreadsheetStudy {
   totalRows: number;
   totalCols: number;
   detectedColumns: DetectedColumns;
+  startRow?: number;
+  endRow?: number;
   stages: StageGroup[];
   compositions: ItemBase[];
   items: ItemBase[];
@@ -116,6 +125,8 @@ export interface ContractBaseCard {
   fileSize?: string;
   budgetSheetName?: string;
   sheetNames?: string[];
+  startRow?: number;
+  endRow?: number;
   totalGeralValue?: number;
   totalGeralLabel?: string;
   detectedColumns?: DetectedColumns;

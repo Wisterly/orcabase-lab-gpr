@@ -287,6 +287,8 @@ export default function OrcaBaseDashboard() {
   const [newContractFileName, setNewContractFileName] = useState<string | null>(null);
   const [newContractBuffer, setNewContractBuffer] = useState<ArrayBuffer | null>(null);
   const [newContractStudy, setNewContractStudy] = useState<SpreadsheetStudy | null>(null);
+  const [newContractStartRow, setNewContractStartRow] = useState<number | string>("");
+  const [newContractEndRow, setNewContractEndRow] = useState<number | string>("");
   const [isDraggingContract, setIsDraggingContract] = useState(false);
 
   // Palavras-chave personalizadas no cadastro do contrato (busca por Nome da Coluna)
@@ -457,8 +459,10 @@ export default function OrcaBaseDashboard() {
         overrides
       );
       setNewContractStudy(study);
+      setNewContractStartRow(study.detectedColumns.startRow || 2);
+      setNewContractEndRow(study.detectedColumns.endRow || study.items.length + 10);
       showToast(
-        `Colunas localizadas por nome: Composição="${study.detectedColumns.descHeaderName}" | Quantitativo="${study.detectedColumns.qtyHeaderName}" | Unidade="${study.detectedColumns.unitHeaderName}" (${study.items.length} composições)`
+        `Colunas localizadas por nome: Composição="${study.detectedColumns.descHeaderName}" | Quantitativo="${study.detectedColumns.qtyHeaderName}" | Unidade="${study.detectedColumns.unitHeaderName}" (${study.items.length} composições filtradas)`
       );
     } catch (err) {
       console.error(err);
@@ -563,6 +567,8 @@ export default function OrcaBaseDashboard() {
         colQty: overrides?.colQty || currentCard?.detectedColumns?.colQty,
         colPrice: overrides?.colPrice || currentCard?.detectedColumns?.colPrice,
         colTotal: overrides?.colTotal || currentCard?.detectedColumns?.colTotal,
+        startRow: overrides?.startRow || currentCard?.detectedColumns?.startRow,
+        endRow: overrides?.endRow || currentCard?.detectedColumns?.endRow,
       };
 
       const study = studySpreadsheetFromBuffer(
@@ -579,6 +585,8 @@ export default function OrcaBaseDashboard() {
         return {
           ...c,
           budgetSheetName: study.selectedSheetName,
+          startRow: study.detectedColumns.startRow,
+          endRow: study.detectedColumns.endRow,
           totalGeralValue: study.totalGeralValue,
           totalGeralLabel: study.totalGeralLabel,
           detectedColumns: study.detectedColumns,
@@ -601,6 +609,104 @@ export default function OrcaBaseDashboard() {
     }
   };
 
+  // Ajusta o intervalo de linhas inicial e final das composições com código em um contrato
+  const handleUpdateContractRowRange = async (
+    contractId: string,
+    startRow: number,
+    endRow: number
+  ) => {
+    if (!startRow || !endRow || endRow < startRow) {
+      showToast("A Linha Final deve ser maior ou igual à Linha Inicial.");
+      return;
+    }
+    setUpdatingCardId(contractId);
+    try {
+      const b64 = await getContractBinary(contractId);
+      const currentCard = contracts.find((c) => c.id === contractId);
+
+      if (!b64) {
+        const updatedList = contracts.map((c) => {
+          if (c.id !== contractId) return c;
+          const filtered = (c.items || []).filter((it) => {
+            const r = it.row_index || 0;
+            return r >= startRow && r <= endRow;
+          });
+          return {
+            ...c,
+            startRow,
+            endRow,
+            detectedColumns: {
+              ...c.detectedColumns!,
+              startRow,
+              endRow,
+            },
+            itemsCount: filtered.length,
+            items: filtered,
+          };
+        });
+        persistContracts(updatedList);
+        if (selectedContractId === contractId) {
+          setCompositionMatches([]);
+        }
+        showToast(`Intervalo atualizado: Linhas ${startRow} a ${endRow} selecionadas!`);
+        return;
+      }
+
+      const binaryString = window.atob(b64.includes(",") ? b64.split(",")[1] : b64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const currentOverrides: ExplicitColumnOverrides = {
+        colDesc: currentCard?.detectedColumns?.colDesc,
+        colUnit: currentCard?.detectedColumns?.colUnit,
+        colQty: currentCard?.detectedColumns?.colQty,
+        colPrice: currentCard?.detectedColumns?.colPrice,
+        colTotal: currentCard?.detectedColumns?.colTotal,
+        colCode: currentCard?.detectedColumns?.colCode,
+        colSource: currentCard?.detectedColumns?.colSource,
+        startRow,
+        endRow,
+      };
+
+      const study = studySpreadsheetFromBuffer(
+        bytes.buffer,
+        currentCard?.budgetSheetName,
+        currentCard?.fileName || "Contrato.xlsx",
+        "0 KB",
+        buildCustomKeywordsObject(),
+        currentOverrides
+      );
+
+      const updatedList = contracts.map((c) => {
+        if (c.id !== contractId) return c;
+        return {
+          ...c,
+          startRow,
+          endRow,
+          detectedColumns: study.detectedColumns,
+          stages: study.stages,
+          itemsCount: study.items.length,
+          items: study.items,
+        };
+      });
+
+      persistContracts(updatedList);
+      if (selectedContractId === contractId) {
+        setCompositionMatches([]);
+      }
+      showToast(
+        `Intervalo atualizado com sucesso! ${study.items.length} composições com código filtradas entre a Linha ${startRow} e Linha ${endRow}.`
+      );
+    } catch (e) {
+      console.error(e);
+      showToast("Erro ao filtrar o intervalo de composições.");
+    } finally {
+      setUpdatingCardId(null);
+    }
+  };
+
   const handleSaveNewContract = async () => {
     if (!newContractName.trim() || !newContractNumber.trim()) {
       showToast("Preencha o Nome do Contrato e o Número do Contrato.");
@@ -617,6 +723,9 @@ export default function OrcaBaseDashboard() {
       await saveContractBinary(newId, b64);
     }
 
+    const finalStartRow = Number(newContractStartRow) || newContractStudy.detectedColumns?.startRow;
+    const finalEndRow = Number(newContractEndRow) || newContractStudy.detectedColumns?.endRow;
+
     const newCard: ContractBaseCard = {
       id: newId,
       contractName: newContractName.trim(),
@@ -628,9 +737,15 @@ export default function OrcaBaseDashboard() {
       fileName: newContractFileName || "Planilha_Base.xlsx",
       sheetNames: newContractStudy.sheetNames,
       budgetSheetName: newContractStudy.selectedSheetName,
+      startRow: finalStartRow,
+      endRow: finalEndRow,
       totalGeralValue: newContractStudy.totalGeralValue,
       totalGeralLabel: newContractStudy.totalGeralLabel,
-      detectedColumns: newContractStudy.detectedColumns,
+      detectedColumns: {
+        ...newContractStudy.detectedColumns,
+        startRow: finalStartRow,
+        endRow: finalEndRow,
+      },
       customKeywords: buildCustomKeywordsObject(),
       stages: newContractStudy.stages,
       itemsCount: newContractStudy.items.length,
@@ -1451,6 +1566,22 @@ export default function OrcaBaseDashboard() {
                             </span>
                           ))}
                         </div>
+                      </div>
+
+                      {/* Indicador do Intervalo de Linhas das Composições com Código */}
+                      <div className="bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <Sliders className="w-3.5 h-3.5 text-[#D4AF37]" />
+                          <span className="text-[#9CA3AF]">
+                            Intervalo Ativo com Código:
+                          </span>
+                          <strong className="text-white font-mono">
+                            Linhas {selectedContract.detectedColumns?.startRow || selectedContract.startRow || 1} até {selectedContract.detectedColumns?.endRow || selectedContract.endRow || selectedContract.itemsCount}
+                          </strong>
+                        </div>
+                        <span className="text-emerald-400 font-mono font-bold text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                          {selectedContract.itemsCount} composições
+                        </span>
                       </div>
 
                       {/* Botão de Ação Rápida: Anexar / Substituir a Planilha Base (.xlsx) deste Contrato */}
@@ -2528,6 +2659,62 @@ export default function OrcaBaseDashboard() {
                             </select>
                           </div>
                         </div>
+
+                        {/* Intervalo de Linhas das Composições no Novo Contrato */}
+                        <div className="pt-3 border-t border-[#26304A] space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-[#D4AF37] flex items-center gap-1.5">
+                              <Sliders className="w-3.5 h-3.5 text-[#D4AF37]" />
+                              Intervalo Exclusivo das Composições (com Código e Banco):
+                            </span>
+                            <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded">
+                              {newContractStudy.items.length} itens filtrados
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                                Linha Inicial das Composições:
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={newContractStartRow}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setNewContractStartRow(val);
+                                  handleChangeNewContractModalTabOrCols(undefined, {
+                                    startRow: val,
+                                    endRow: Number(newContractEndRow) || undefined,
+                                  });
+                                }}
+                                className="w-full bg-[#07090E] border border-[#26304A] focus:border-[#D4AF37] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono font-bold"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                                Linha Final das Composições:
+                              </label>
+                              <input
+                                type="number"
+                                min={1}
+                                value={newContractEndRow}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setNewContractEndRow(val);
+                                  handleChangeNewContractModalTabOrCols(undefined, {
+                                    startRow: Number(newContractStartRow) || undefined,
+                                    endRow: val,
+                                  });
+                                }}
+                                className="w-full bg-[#07090E] border border-[#26304A] focus:border-[#D4AF37] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono font-bold"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-[#9CA3AF]">
+                            O sistema filtrará unicamente as linhas que possuem Código e Banco entre a Linha {newContractStartRow || 1} e a Linha {newContractEndRow || 100}.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2726,6 +2913,65 @@ export default function OrcaBaseDashboard() {
                         </div>
                       )}
 
+                      {/* Intervalo Exclusivo das Linhas com Composições (Linha Inicial e Linha Final) */}
+                      <div className="mb-3 p-3.5 rounded-xl bg-[#07090E] border border-[#D4AF37]/40 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-[#D4AF37] flex items-center gap-1.5">
+                            <Sliders className="w-3.5 h-3.5 text-[#D4AF37]" />
+                            Intervalo de Linhas das Composições (com Código e Banco):
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                            {c.itemsCount} itens com código
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 text-xs items-end">
+                          <div className="sm:col-span-4">
+                            <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                              Linha Inicial das Composições:
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              defaultValue={c.detectedColumns?.startRow || c.startRow || 2}
+                              id={`start-row-${c.id}`}
+                              className="w-full bg-[#111622] border border-[#26304A] focus:border-[#D4AF37] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono font-bold"
+                            />
+                          </div>
+                          <div className="sm:col-span-4">
+                            <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                              Linha Final das Composições:
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              defaultValue={c.detectedColumns?.endRow || c.endRow || 100}
+                              id={`end-row-${c.id}`}
+                              className="w-full bg-[#111622] border border-[#26304A] focus:border-[#D4AF37] rounded-lg px-2.5 py-1.5 text-xs text-white font-mono font-bold"
+                            />
+                          </div>
+                          <div className="sm:col-span-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sInput = document.getElementById(`start-row-${c.id}`) as HTMLInputElement;
+                                const eInput = document.getElementById(`end-row-${c.id}`) as HTMLInputElement;
+                                const sVal = parseInt(sInput?.value || "1", 10);
+                                const eVal = parseInt(eInput?.value || "100", 10);
+                                handleUpdateContractRowRange(c.id, sVal, eVal);
+                              }}
+                              className="w-full py-1.5 px-3 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-bold text-xs cursor-pointer hover:opacity-95 transition-all shadow-[0_0_12px_rgba(212,175,55,0.2)]"
+                            >
+                              Filtrar Intervalo
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] text-[#9CA3AF] leading-relaxed">
+                          O sistema filtra estritamente as linhas que possuem <strong>Código de Composição</strong> e <strong>Banco</strong> entre as linhas indicadas. Apenas essas linhas receberão injeção na coluna de quantitativo.
+                        </p>
+                      </div>
+
                       {/* Dropzone / Botão para Substituir ou Atualizar a Planilha dentro do próprio Card */}
                       <label className="mb-3 flex items-center justify-between px-4 py-3 rounded-xl border border-dashed border-[#26304A] hover:border-[#D4AF37] bg-[#07090E]/70 cursor-pointer transition-colors text-xs">
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -2789,7 +3035,7 @@ export default function OrcaBaseDashboard() {
                             >
                               <div className="min-w-0">
                                 <span className="text-[#F97316] font-mono text-[10px] mr-1.5">
-                                  [L{it.row_index || idx + 1} • {it.discipline || "GERAL"}]
+                                  [L{it.row_index || idx + 1} • {it.source || "SINAPI"} {it.code || "S/C"}]
                                 </span>
                                 <span className="text-gray-200">{it.description}</span>
                               </div>

@@ -11,6 +11,33 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.013]
+- **Data/Hora:** 31/10/2026 20:20 (Horário Local)
+- **Tag Git:** `PR.013`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.013 (Seleção de Linhas de Composições e Filtragem Estrita por Código e Banco):
+1. **Seleção Interativa de Intervalo de Linhas (`startRow` e `endRow`):**
+   - Adicionada configuração de Linha Inicial e Linha Final tanto no Modal de Criação de Contrato quanto no Card de Contrato existente (aba de Configurações).
+   - O usuário pode delimitar com precisão onde começam e terminam os serviços da planilha de orçamento, evitando que cabeçalhos, etapas de síntese ou assinaturas interfiram.
+2. **Filtragem Estrita por Código de Composição e Banco:**
+   - Implementada a função de validação `hasValidCompositionCode`, que rejeita linhas de etapas puras (ex: "1.0 SERVIÇOS PRELIMINARES"), notas explicativas, subtotais e textos descritivos que não tenham código de composição associado a um banco (ex: SINAPI, ORSE, SEINFRA, SEDOP, PRÓPRIO).
+   - Garantia de que somente itens com código e banco identificados sejam considerados composições válidas.
+3. **Injeção Cirúrgica de Quantitativos Restrita às Composições Filtradas:**
+   - Apenas as composições que atendem ao intervalo e à validação de código/banco recebem o ajuste do quantitativo compatibilizado na planilha final gerada via `ExcelJS`.
+4. **Interface e Transparência Operacional:**
+   - Exibição de badge com o intervalo de linhas no Card da Planilha 2 (Passo 1 da Área de Trabalho).
+   - Acordeão de composições na aba de configurações destacando a linha de cada item: `[L{row_index} • {banco} {código}]`.
+   - Botão *"Filtrar Intervalo"* para reestudo instantâneo da planilha em memória sem necessidade de recarregar a página.
+
+---
+
 ### [PR.012]
 - **Data/Hora:** 31/10/2026 19:48 (Horário Local)
 - **Tag Git:** `PR.012`
