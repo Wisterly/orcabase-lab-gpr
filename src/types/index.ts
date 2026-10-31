@@ -1,26 +1,57 @@
 /**
- * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.008)
- * Estudo Estrutural 100% Completo de Planilhas e Injeção Fiel de Quantitativos
+ * OrçaBase.lab - GPR — Modelos de Dados Oficiais (PR.009)
+ * Detecção Inteligente Baseada nos Nomes dos Cabeçalhos ("Quantitativo", "Descrição", "Composição", "Discriminação", "Unidade", "Total Geral")
  */
 
 export interface CalculationStrategy {
   mode: "KEEP_QUANTITY" | "KEEP_TOTAL_VALUE";
 }
 
+export interface NamedColumnOption {
+  colIndex: number;       // 1-based column index
+  colLetter: string;      // Ex: "C", "D", "E"
+  headerTitle: string;    // Nome real lido no cabeçalho da planilha (ex: "QUANTITATIVO", "DISCRIMINAÇÃO")
+  sampleValue?: string;   // Exemplo de valor abaixo do cabeçalho para facilitar identificação
+}
+
+export interface CustomColumnKeywords {
+  descKeyword?: string;   // Ex: "discriminação", "composição", "descrição"
+  unitKeyword?: string;   // Ex: "unid", "unidade", "und"
+  qtyKeyword?: string;    // Ex: "quantitativo", "quant.", "qtd"
+  priceKeyword?: string;  // Ex: "unitário", "preço unit"
+  totalKeyword?: string;  // Ex: "total geral", "valor total"
+}
+
+export interface ExplicitColumnOverrides {
+  colDesc?: number;       // 1-based override escolhido pelo nome da coluna
+  colUnit?: number;       // 1-based override escolhido pelo nome da coluna
+  colQty?: number;        // 1-based override escolhido pelo nome da coluna
+  colPrice?: number;      // 1-based override escolhido pelo nome da coluna
+  colTotal?: number;      // 1-based override escolhido pelo nome da coluna
+}
+
 export interface DetectedColumns {
-  headerRow: number;        // 1-based row index in Excel
-  colItem: number;          // 1-based col index (Item: 1.1, 1.2)
-  colCode: number;          // 1-based col index (Código SINAPI/Próprio)
-  colSource?: number;       // 1-based col index (Fonte/Banco)
-  colDesc: number;          // 1-based col index (Descrição/Composição)
-  colUnit: number;          // 1-based col index (Unidade)
-  colQty: number;           // 1-based col index (Quantitativo - COLUNA ALVO)
-  colUnitPrice?: number;    // 1-based col index (Preço Unitário)
-  colPrice?: number;        // Alias para Preço Unitário
-  colUnitPriceBdi?: number; // 1-based col index (Preço Unitário com BDI, se existir)
-  colTotal: number;         // 1-based col index (Valor Total da linha)
-  qtyColLetter?: string;    // Letra da coluna de Quantitativo (ex: 'E', 'F')
-  colQtyLetter?: string;    // Alias da letra da coluna de Quantitativo
+  headerRow: number;          // 1-based row index in Excel
+  colItem: number;            // 1-based col index (Item: 1.1, 1.2)
+  colCode: number;            // 1-based col index (Código SINAPI/Próprio)
+  colSource?: number;         // 1-based col index (Fonte/Banco)
+  colDesc: number;            // 1-based col index (Descrição/Composição/Discriminação)
+  colUnit: number;            // 1-based col index (Unidade)
+  colQty: number;             // 1-based col index (Quantitativo - COLUNA ALVO)
+  colUnitPrice?: number;      // 1-based col index (Preço Unitário)
+  colPrice?: number;          // Alias para Preço Unitário
+  colUnitPriceBdi?: number;   // 1-based col index (Preço Unitário com BDI, se existir)
+  colTotal: number;           // 1-based col index (Valor Total da linha)
+  qtyColLetter?: string;      // Letra da coluna de Quantitativo
+  colQtyLetter?: string;      // Alias da letra da coluna de Quantitativo
+  // Nomes reais encontrados no cabeçalho da planilha
+  descHeaderName?: string;    // Ex: "DISCRIMINAÇÃO DOS SERVIÇOS" ou "COMPOSIÇÃO"
+  unitHeaderName?: string;    // Ex: "UNID."
+  qtyHeaderName?: string;     // Ex: "QUANTITATIVO" ou "QUANT."
+  priceHeaderName?: string;   // Ex: "PREÇO UNITÁRIO"
+  totalHeaderName?: string;   // Ex: "VALOR TOTAL"
+  codeHeaderName?: string;    // Ex: "CÓDIGO"
+  allNamedColumns?: NamedColumnOption[]; // Todas as colunas da planilha com seus nomes reais
 }
 
 export interface StageGroup {
@@ -88,6 +119,7 @@ export interface ContractBaseCard {
   totalGeralValue?: number;
   totalGeralLabel?: string;
   detectedColumns?: DetectedColumns;
+  customKeywords?: CustomColumnKeywords;
   stages?: StageGroup[];
   itemsCount: number;
   items: ItemBase[];

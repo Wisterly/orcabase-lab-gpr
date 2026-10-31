@@ -11,6 +11,33 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.009]
+- **Data/Hora:** 31/10/2026 18:37 (Horário Local)
+- **Tag Git:** `PR.009`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Serverless Python (Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.009:
+1. **Busca Dinâmica Guiada Exclusivamente pelo Nome da Coluna (Sem Fixação de Letras Rígidas):**
+   - Eliminação completa de suposições rígidas de colunas (como "Coluna F" ou "Coluna G"). O sistema varre as linhas de cabeçalho (linhas 1 a 120) identificando as colunas pelo **nome escrito no cabeçalho**:
+     - **Coluna de Quantitativo:** busca por `quantitativo`, `quantidade`, `quant.`, `quant`, `qtd.`, `qtd`, `qtde`, `qte`, etc.
+     - **Coluna de Composição / Descrição / Discriminação:** busca por `descrição`, `discriminação`, `composição`, `especificação`, `serviço`, etc.
+     - **Coluna de Unidade:** busca por `unidade`, `unid.`, `und.`, `un.`, etc.
+     - **Total Geral do Orçamento:** busca por `total geral`, `valor total`, `total do orçamento`, etc.
+2. **Opção de Configuração e Confirmação de Nomes de Coluna na Aba de Configurações:**
+   - No modal de cadastro de novo contrato, o usuário dispõe de campos explícitos para definir ou refinar as palavras-chave procuradas pelo sistema.
+   - Assim que a planilha `.xlsx` é anexada, o sistema exibe dropdowns contendo **todas as colunas da planilha identificadas pelos seus nomes reais**, permitindo ao usuário confirmar ou selecionar qualquer coluna pelo nome (ex: `Nome: "QUANTITATIVO" (Ex: 120,00)` ou `Nome: "DISCRIMINAÇÃO DOS SERVIÇOS"`).
+   - Nos cards existentes, o usuário também pode ajustar o mapeamento das colunas pelo nome a qualquer momento.
+3. **Injeção Fiel de Quantitativo por Nome no openpyxl:**
+   - O backend Python serverless (`api/index.py`) e o motor local recebem o nome real da coluna de quantitativo (`qty_header_name`) e localizam a célula correspondente diretamente no cabeçalho da planilha original antes de gravar os quantitativos, garantindo precisão milimétrica em qualquer planilha.
+
+---
+
 ### [PR.008]
 - **Data/Hora:** 31/10/2026 18:12 (Horário Local)
 - **Tag Git:** `PR.008`

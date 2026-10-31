@@ -14,22 +14,18 @@ import {
   Trash2,
   Settings,
   Plus,
-  Building2,
-  Calendar,
-  Percent,
   Check,
   Search,
   Layers,
   Edit3,
   X,
   Eye,
-  FileCheck2,
   Cpu,
   Scale,
   Calculator,
-  FolderKanban,
   ChevronDown,
   ChevronUp,
+  Tag,
 } from "lucide-react";
 import {
   ItemBase,
@@ -37,6 +33,8 @@ import {
   ContractCompositionMatch,
   CalculationStrategy,
   SpreadsheetStudy,
+  CustomColumnKeywords,
+  ExplicitColumnOverrides,
 } from "../types";
 import {
   studySpreadsheetFromBuffer,
@@ -50,7 +48,7 @@ import {
   injectQuantitiesClientFallback,
 } from "../lib/excelEngine";
 
-const STORAGE_KEY_CONTRACTS = "orcabase_gpr_contracts_v8";
+const STORAGE_KEY_CONTRACTS = "orcabase_gpr_contracts_v9";
 
 const INITIAL_CONTRACTS: ContractBaseCard[] = [
   {
@@ -74,9 +72,17 @@ const INITIAL_CONTRACTS: ContractBaseCard[] = [
       colDesc: 4,
       colUnit: 5,
       colQty: 6,
+      colUnitPrice: 7,
       colPrice: 7,
       colTotal: 8,
+      qtyColLetter: "F",
       colQtyLetter: "F",
+      descHeaderName: "DISCRIMINAÇÃO / COMPOSIÇÃO",
+      unitHeaderName: "UNID.",
+      qtyHeaderName: "QUANTITATIVO",
+      priceHeaderName: "PREÇO UNITÁRIO",
+      totalHeaderName: "VALOR TOTAL",
+      codeHeaderName: "CÓDIGO",
     },
     stages: [
       { code: "1.0", title: "SERVIÇOS DE PINTURA E ACABAMENTOS", discipline: "PINTURA", rowIndex: 5, itemsCount: 2, subtotal: 45200 },
@@ -271,6 +277,18 @@ export default function OrcaBaseDashboard() {
   const [newContractStudy, setNewContractStudy] = useState<SpreadsheetStudy | null>(null);
   const [isDraggingContract, setIsDraggingContract] = useState(false);
 
+  // Palavras-chave personalizadas no cadastro do contrato (busca por Nome da Coluna)
+  const [customDescKeyword, setCustomDescKeyword] = useState(
+    "Descrição, Composição, Discriminação, Especificação, Serviço"
+  );
+  const [customUnitKeyword, setCustomUnitKeyword] = useState("Unidade, Unid., Und, Un");
+  const [customQtyKeyword, setCustomQtyKeyword] = useState(
+    "Quantitativo, Quantidade, Quant., Qtd, Qtde"
+  );
+  const [customTotalKeyword, setCustomTotalKeyword] = useState(
+    "Total Geral, Valor Total, Total do Orçamento"
+  );
+
   // Estado de atualização de card existente na Aba Configurações
   const [updatingCardId, setUpdatingCardId] = useState<string | null>(null);
 
@@ -312,7 +330,7 @@ export default function OrcaBaseDashboard() {
       });
       localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(lightCopy));
     } catch {
-      // Se ainda assim exceder, mantém em memória
+      // Mantém em memória
     }
   };
 
@@ -331,15 +349,26 @@ export default function OrcaBaseDashboard() {
   }, [customTargetTotal, sheet1Study]);
 
   // ============================================================================
-  // 1. LEITURA E ESTUDO 100% DA PLANILHA 1 (ORIGEM DOS QUANTITATIVOS)
+  // 1. LEITURA E ESTUDO 100% DA PLANILHA 1 PELOS NOMES DAS COLUNAS
   // ============================================================================
-  const handleProcessSheet1File = async (file: File, preferredSheet?: string) => {
+  const handleProcessSheet1File = async (
+    file: File,
+    preferredSheet?: string,
+    overrides?: ExplicitColumnOverrides
+  ) => {
     setInitialFileName(file.name);
     setIsProcessing(true);
     try {
       const buf = await file.arrayBuffer();
       setSheet1RawBuffer(buf);
-      const study = studySpreadsheetFromBuffer(buf, preferredSheet);
+      const study = studySpreadsheetFromBuffer(
+        buf,
+        preferredSheet,
+        file.name,
+        `${Math.round(file.size / 1024)} KB`,
+        undefined,
+        overrides
+      );
       setSheet1Study(study);
       setCustomTargetTotal(
         study.totalGeralValue.toLocaleString("pt-BR", {
@@ -349,10 +378,7 @@ export default function OrcaBaseDashboard() {
       );
       setCompositionMatches([]);
       showToast(
-        `Estudo da Planilha 1 concluído: ${study.items.length} serviços em ${study.stages.length} etapas | Total: R$ ${study.totalGeralValue.toLocaleString(
-          "pt-BR",
-          { minimumFractionDigits: 2 }
-        )}`
+        `Planilha 1 lida pelos nomes das colunas: Composição ("${study.detectedColumns.descHeaderName}"), Quantitativo ("${study.detectedColumns.qtyHeaderName}") | ${study.items.length} itens!`
       );
     } catch (err) {
       console.error(err);
@@ -362,9 +388,20 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  const handleChangeSheet1Tab = (newSheetName: string) => {
+  const handleChangeSheet1TabOrColumns = (
+    newSheetName?: string,
+    overrides?: ExplicitColumnOverrides
+  ) => {
     if (!sheet1RawBuffer) return;
-    const study = studySpreadsheetFromBuffer(sheet1RawBuffer, newSheetName);
+    const targetSheet = newSheetName || sheet1Study?.selectedSheetName;
+    const study = studySpreadsheetFromBuffer(
+      sheet1RawBuffer,
+      targetSheet,
+      initialFileName || "Planilha_1.xlsx",
+      "0 KB",
+      undefined,
+      overrides
+    );
     setSheet1Study(study);
     setCustomTargetTotal(
       study.totalGeralValue.toLocaleString("pt-BR", {
@@ -373,25 +410,42 @@ export default function OrcaBaseDashboard() {
       })
     );
     setCompositionMatches([]);
-    showToast(`Aba "${newSheetName}" analisada: ${study.items.length} serviços extraídos.`);
+    showToast(
+      `Colunas remapeadas por nome: Composição="${study.detectedColumns.descHeaderName}", Quantitativo="${study.detectedColumns.qtyHeaderName}" (${study.items.length} serviços).`
+    );
   };
 
   // ============================================================================
-  // 2. LEITURA E ESTUDO 100% DA PLANILHA 2 (CONTRATO BASE NAS CONFIGURAÇÕES)
+  // 2. LEITURA E ESTUDO 100% DA PLANILHA 2 (CONTRATO BASE NAS CONFIGURAÇÕES) POR NOME DE COLUNA
   // ============================================================================
-  const inspectNewContractModalFile = async (file: File, preferredSheet?: string) => {
+  const buildCustomKeywordsObject = (): CustomColumnKeywords => ({
+    descKeyword: customDescKeyword.split(",")[0]?.trim() || "",
+    unitKeyword: customUnitKeyword.split(",")[0]?.trim() || "",
+    qtyKeyword: customQtyKeyword.split(",")[0]?.trim() || "",
+    totalKeyword: customTotalKeyword.split(",")[0]?.trim() || "",
+  });
+
+  const inspectNewContractModalFile = async (
+    file: File,
+    preferredSheet?: string,
+    overrides?: ExplicitColumnOverrides
+  ) => {
     setIsInspectingContract(true);
     setNewContractFileName(file.name);
     try {
       const buf = await file.arrayBuffer();
       setNewContractBuffer(buf);
-      const study = studySpreadsheetFromBuffer(buf, preferredSheet);
+      const study = studySpreadsheetFromBuffer(
+        buf,
+        preferredSheet,
+        file.name,
+        `${Math.round(file.size / 1024)} KB`,
+        buildCustomKeywordsObject(),
+        overrides
+      );
       setNewContractStudy(study);
       showToast(
-        `Estudo do Contrato concluído: ${study.items.length} composições (${study.stages.length} etapas) | Total Geral: R$ ${study.totalGeralValue.toLocaleString(
-          "pt-BR",
-          { minimumFractionDigits: 2 }
-        )}`
+        `Colunas localizadas por nome: Composição="${study.detectedColumns.descHeaderName}" | Quantitativo="${study.detectedColumns.qtyHeaderName}" | Unidade="${study.detectedColumns.unitHeaderName}" (${study.items.length} composições)`
       );
     } catch (err) {
       console.error(err);
@@ -401,21 +455,40 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  const handleChangeNewContractModalTab = (sheetName: string) => {
+  const handleChangeNewContractModalTabOrCols = (
+    sheetName?: string,
+    overrides?: ExplicitColumnOverrides
+  ) => {
     if (!newContractBuffer) return;
-    const study = studySpreadsheetFromBuffer(newContractBuffer, sheetName);
+    const targetSheet = sheetName || newContractStudy?.selectedSheetName;
+    const study = studySpreadsheetFromBuffer(
+      newContractBuffer,
+      targetSheet,
+      newContractFileName || "Contrato.xlsx",
+      "0 KB",
+      buildCustomKeywordsObject(),
+      overrides
+    );
     setNewContractStudy(study);
+    showToast(
+      `Mapeamento atualizado pelo nome da coluna: Quantitativo="${study.detectedColumns.qtyHeaderName}", Composição="${study.detectedColumns.descHeaderName}" (${study.items.length} itens)`
+    );
   };
 
-  // Corrige definitivamente a substituição/atualização de planilha direto num Card existente!
+  // Atualiza planilha direto num Card existente na aba Configurações
   const handleUpdateExistingContractCardFile = async (contractId: string, file: File) => {
     setUpdatingCardId(contractId);
     try {
       const buf = await file.arrayBuffer();
       const b64 = arrayBufferToBase64(buf);
-      const study = studySpreadsheetFromBuffer(buf);
+      const study = studySpreadsheetFromBuffer(
+        buf,
+        undefined,
+        file.name,
+        `${Math.round(file.size / 1024)} KB`,
+        buildCustomKeywordsObject()
+      );
 
-      // Salva o binário original completo no IndexedDB
       await saveContractBinary(contractId, b64);
 
       const updatedList = contracts.map((c) => {
@@ -441,10 +514,7 @@ export default function OrcaBaseDashboard() {
         setCompositionMatches([]);
       }
       showToast(
-        `Planilha "${file.name}" estudada 100%: ${study.items.length} composições, ${study.stages.length} etapas e Total R$ ${study.totalGeralValue.toLocaleString(
-          "pt-BR",
-          { minimumFractionDigits: 2 }
-        )} salvos no contrato!`
+        `Planilha "${file.name}" lida pelos nomes das colunas: Quantitativo="${study.detectedColumns.qtyHeaderName}", Composição="${study.detectedColumns.descHeaderName}" (${study.items.length} composições)!`
       );
     } catch (err) {
       console.error(err);
@@ -454,13 +524,17 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  // Permite trocar a aba ativa de um contrato já salvo caso o Excel tenha múltiplas abas
-  const handleSwitchExistingContractSheet = async (contractId: string, newSheetName: string) => {
+  // Permite trocar a aba ou o nome da coluna de Quantitativo/Composição/Unidade em um Card já salvo
+  const handleRemapExistingContractCard = async (
+    contractId: string,
+    newSheetName?: string,
+    overrides?: ExplicitColumnOverrides
+  ) => {
     setUpdatingCardId(contractId);
     try {
       const b64 = await getContractBinary(contractId);
       if (!b64) {
-        showToast("Anexe novamente o arquivo .xlsx neste card para alternar entre suas abas.");
+        showToast("Anexe o arquivo .xlsx neste card para alternar abas ou colunas pelo nome.");
         return;
       }
       const binaryString = window.atob(b64.includes(",") ? b64.split(",")[1] : b64);
@@ -468,7 +542,24 @@ export default function OrcaBaseDashboard() {
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      const study = studySpreadsheetFromBuffer(bytes.buffer, newSheetName);
+
+      const currentCard = contracts.find((c) => c.id === contractId);
+      const currentOverrides: ExplicitColumnOverrides = {
+        colDesc: overrides?.colDesc || currentCard?.detectedColumns?.colDesc,
+        colUnit: overrides?.colUnit || currentCard?.detectedColumns?.colUnit,
+        colQty: overrides?.colQty || currentCard?.detectedColumns?.colQty,
+        colPrice: overrides?.colPrice || currentCard?.detectedColumns?.colPrice,
+        colTotal: overrides?.colTotal || currentCard?.detectedColumns?.colTotal,
+      };
+
+      const study = studySpreadsheetFromBuffer(
+        bytes.buffer,
+        newSheetName || currentCard?.budgetSheetName,
+        currentCard?.fileName || "Contrato.xlsx",
+        "0 KB",
+        buildCustomKeywordsObject(),
+        newSheetName ? undefined : currentOverrides
+      );
 
       const updatedList = contracts.map((c) => {
         if (c.id !== contractId) return c;
@@ -484,11 +575,11 @@ export default function OrcaBaseDashboard() {
         };
       });
       persistContracts(updatedList);
+      if (selectedContractId === contractId) {
+        setCompositionMatches([]);
+      }
       showToast(
-        `Aba "${newSheetName}" selecionada: ${study.items.length} composições | Total: R$ ${study.totalGeralValue.toLocaleString(
-          "pt-BR",
-          { minimumFractionDigits: 2 }
-        )}`
+        `Colunas atualizadas pelo nome: Quantitativo="${study.detectedColumns.qtyHeaderName}", Composição="${study.detectedColumns.descHeaderName}" (${study.items.length} composições).`
       );
     } catch (e) {
       console.error(e);
@@ -527,6 +618,7 @@ export default function OrcaBaseDashboard() {
       totalGeralValue: newContractStudy.totalGeralValue,
       totalGeralLabel: newContractStudy.totalGeralLabel,
       detectedColumns: newContractStudy.detectedColumns,
+      customKeywords: buildCustomKeywordsObject(),
       stages: newContractStudy.stages,
       itemsCount: newContractStudy.items.length,
       items: newContractStudy.items,
@@ -544,7 +636,7 @@ export default function OrcaBaseDashboard() {
     setNewContractStudy(null);
     setIsAddingContract(false);
     showToast(
-      `Contrato "${newCard.contractNumber}" salvo com ${newCard.itemsCount} composições estudadas e layout 100% preservado!`
+      `Contrato "${newCard.contractNumber}" salvo! Ajuste será feito na coluna de nome "${newCard.detectedColumns?.qtyHeaderName}".`
     );
   };
 
@@ -597,15 +689,13 @@ export default function OrcaBaseDashboard() {
       const matchedCount = matrix.filter((m) => m.final_injected_quantity > 0).length;
       const finalSum = matrix.reduce((s, m) => s + m.calculated_total_value, 0);
       showToast(
-        `Compatibilização concluída! ${matchedCount} composições receberam quantitativos | Novo Total na Base: R$ ${finalSum.toLocaleString(
-          "pt-BR",
-          { minimumFractionDigits: 2 }
-        )}`
+        `Compatibilização concluída! ${matchedCount} composições receberam quantitativos na coluna "${
+          selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"
+        }" | Novo Total: R$ ${finalSum.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
       );
     }, 250);
   };
 
-  // Quando o usuário alterna entre os 2 botões (KEEP_QUANTITY vs KEEP_TOTAL_VALUE), recalcula na hora!
   const handleSelectStrategyMode = (newMode: CalculationStrategy["mode"]) => {
     setCalcStrategy(newMode);
     if (compositionMatches.length > 0) {
@@ -618,7 +708,6 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  // Recalcula ao alterar o valor alvo manualmente no modo KEEP_TOTAL_VALUE
   const handleApplyCustomTargetTotal = () => {
     if (compositionMatches.length > 0 && calcStrategy === "KEEP_TOTAL_VALUE") {
       const updated = applyCalculationStrategyToMatches(
@@ -636,7 +725,6 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  // Permite editar manualmente o quantitativo injetado de qualquer composição na tabela
   const handleManualQuantityChange = (contractIdx: number, rawVal: string) => {
     const num = parseFloat(rawVal.replace(",", "."));
     const validQty = isNaN(num) || num < 0 ? 0 : num;
@@ -654,7 +742,6 @@ export default function OrcaBaseDashboard() {
     );
   };
 
-  // Permite vincular manualmente qualquer item da Planilha 1 a uma composição da Planilha Base
   const handleManualAssignSourceItem = (contractIdx: number, sourceItem: ItemBase | null) => {
     setCompositionMatches((prev) => {
       const updated = prev.map((m, idx) => {
@@ -717,13 +804,11 @@ export default function OrcaBaseDashboard() {
     const outputFilename = `Planilha_Compatibilizada_${safeContractNumber}.xlsx`;
 
     try {
-      // 1. Recupera o binário .xlsx original do Contrato Base no IndexedDB (ou do objeto em memória)
       let contractBase64 = await getContractBinary(selectedContract.id);
       if (!contractBase64 && selectedContract.rawWorkbookBase64) {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
 
-      // Prepara payload leve com todas as linhas e quantitativos injetados
       const compositionPayload = compositionMatches.map((cm) => ({
         contract_row_index: cm.contract_item.row_index,
         contract_item_number: cm.contract_item.itemNumber,
@@ -737,7 +822,6 @@ export default function OrcaBaseDashboard() {
         stage_title: cm.contract_item.stage_title,
       }));
 
-      // 2. Chama o motor Python openpyxl (/api) para clonar 100% a planilha original injetando só a coluna de Quantitativo
       const response = await fetch("/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -748,6 +832,7 @@ export default function OrcaBaseDashboard() {
           col_qty: selectedContract.detectedColumns?.colQty,
           col_price: selectedContract.detectedColumns?.colPrice,
           col_total: selectedContract.detectedColumns?.colTotal,
+          qty_header_name: selectedContract.detectedColumns?.qtyHeaderName,
           composition_matches: compositionPayload,
           contract_meta: {
             contractName: selectedContract.contractName,
@@ -765,14 +850,15 @@ export default function OrcaBaseDashboard() {
         if (data.status === "success" && data.file_base64) {
           triggerBase64ExcelDownload(data.file_base64, outputFilename);
           showToast(
-            `Download concluído! "${outputFilename}" gerada mantendo 100% do layout do contrato com os novos quantitativos.`
+            `Download concluído! "${outputFilename}" gerada ajustando a coluna "${
+              selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"
+            }".`
           );
           setIsDownloading(false);
           return;
         }
       }
 
-      // 3. Fallback local imediato se /api não responder (ex: modo offline ou dev local sem servidor Python)
       injectQuantitiesClientFallback(
         contractBase64,
         {
@@ -878,7 +964,7 @@ export default function OrcaBaseDashboard() {
                 </span>
               </div>
               <p className="text-xs text-[#9CA3AF] mt-0.5">
-                Estudo Estrutural de Planilhas & Alocação Inteligente de Quantitativos
+                Busca Inteligente por Nome de Coluna & Alocação de Quantitativos
               </p>
             </div>
           </div>
@@ -922,7 +1008,7 @@ export default function OrcaBaseDashboard() {
         {activeTab === "WORKSPACE" ? (
           <>
             {/* =====================================================================
-                PASSO 1: ÁREA DE TRABALHO DUPLA — ESTUDO DAS DUAS PLANILHAS
+                PASSO 1: ÁREA DE TRABALHO DUPLA — ESTUDO DAS DUAS PLANILHAS POR NOME DE COLUNA
                ===================================================================== */}
             <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
               {/* CARD ESQUERDO: PLANILHA 1 (ORIGEM DOS QUANTITATIVOS E VALOR DO ORÇAMENTO) */}
@@ -986,7 +1072,13 @@ export default function OrcaBaseDashboard() {
                         Anexar Planilha Inicial (Planilha 1)
                       </h3>
                       <p className="text-xs text-[#9CA3AF] max-w-sm">
-                        Arraste seu arquivo <span className="text-white font-medium">.XLSX</span> ou clique para abrir. O sistema lerá 100% dos quantitativos, etapas, disciplinas e o valor total do orçamento.
+                        Arraste seu arquivo <span className="text-white font-medium">.XLSX</span> ou clique para abrir. O sistema procura automaticamente pelas colunas de nome{" "}
+                        <strong className="text-[#D4AF37]">
+                          Descrição/Composição/Discriminação
+                        </strong>
+                        , <strong className="text-[#D4AF37]">Unidade</strong>,{" "}
+                        <strong className="text-[#D4AF37]">Quantitativo</strong> e{" "}
+                        <strong className="text-[#D4AF37]">Total Geral</strong>.
                       </p>
                     </div>
                   ) : (
@@ -999,11 +1091,8 @@ export default function OrcaBaseDashboard() {
                               {initialFileName}
                             </h4>
                             <p className="text-[11px] text-[#9CA3AF]">
-                              Coluna de Quantitativo lida:{" "}
-                              <span className="text-[#D4AF37] font-mono font-bold">
-                                Coluna {sheet1Study.detectedColumns.colQtyLetter}
-                              </span>{" "}
-                              • Cabeçalho na linha {sheet1Study.detectedColumns.headerRow}
+                              Colunas identificadas pelo{" "}
+                              <strong className="text-emerald-400">Nome no Cabeçalho</strong>
                             </p>
                           </div>
                         </div>
@@ -1011,7 +1100,7 @@ export default function OrcaBaseDashboard() {
                         {sheet1Study.sheetNames.length > 1 && (
                           <select
                             value={sheet1Study.selectedSheetName}
-                            onChange={(e) => handleChangeSheet1Tab(e.target.value)}
+                            onChange={(e) => handleChangeSheet1TabOrColumns(e.target.value)}
                             className="bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
                             title="Escolher aba da Planilha 1"
                           >
@@ -1022,6 +1111,81 @@ export default function OrcaBaseDashboard() {
                             ))}
                           </select>
                         )}
+                      </div>
+
+                      {/* Nomes das Colunas Encontradas na Planilha 1 (Permite trocar pelo nome se necessário) */}
+                      <div className="bg-[#07090E] border border-[#1E2436] rounded-xl p-3 space-y-2">
+                        <span className="text-[10px] font-mono uppercase text-[#D4AF37] block font-semibold">
+                          Colunas Localizadas por Nome na Planilha 1:
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                              Composição / Descrição:
+                            </label>
+                            <select
+                              value={sheet1Study.detectedColumns.colDesc}
+                              onChange={(e) =>
+                                handleChangeSheet1TabOrColumns(undefined, {
+                                  colDesc: Number(e.target.value),
+                                  colUnit: sheet1Study.detectedColumns.colUnit,
+                                  colQty: sheet1Study.detectedColumns.colQty,
+                                })
+                              }
+                              className="w-full bg-[#111622] border border-[#26304A] rounded-lg px-2 py-1 text-[11px] text-white font-semibold"
+                            >
+                              {(sheet1Study.detectedColumns.allNamedColumns || []).map((col) => (
+                                <option key={col.colIndex} value={col.colIndex}>
+                                  {col.headerTitle}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                              Unidade:
+                            </label>
+                            <select
+                              value={sheet1Study.detectedColumns.colUnit}
+                              onChange={(e) =>
+                                handleChangeSheet1TabOrColumns(undefined, {
+                                  colDesc: sheet1Study.detectedColumns.colDesc,
+                                  colUnit: Number(e.target.value),
+                                  colQty: sheet1Study.detectedColumns.colQty,
+                                })
+                              }
+                              className="w-full bg-[#111622] border border-[#26304A] rounded-lg px-2 py-1 text-[11px] text-white font-semibold"
+                            >
+                              {(sheet1Study.detectedColumns.allNamedColumns || []).map((col) => (
+                                <option key={col.colIndex} value={col.colIndex}>
+                                  {col.headerTitle}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-emerald-400 block mb-1 font-semibold">
+                              Quantitativo:
+                            </label>
+                            <select
+                              value={sheet1Study.detectedColumns.colQty}
+                              onChange={(e) =>
+                                handleChangeSheet1TabOrColumns(undefined, {
+                                  colDesc: sheet1Study.detectedColumns.colDesc,
+                                  colUnit: sheet1Study.detectedColumns.colUnit,
+                                  colQty: Number(e.target.value),
+                                })
+                              }
+                              className="w-full bg-[#111622] border border-emerald-500/40 rounded-lg px-2 py-1 text-[11px] text-emerald-400 font-bold"
+                            >
+                              {(sheet1Study.detectedColumns.allNamedColumns || []).map((col) => (
+                                <option key={col.colIndex} value={col.colIndex}>
+                                  {col.headerTitle}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Métricas do Estudo da Planilha 1 */}
@@ -1055,30 +1219,12 @@ export default function OrcaBaseDashboard() {
                           </span>
                         </div>
                       </div>
-
-                      {/* Resumo dos Setores/Disciplinas identificados na Planilha 1 */}
-                      <div className="bg-[#07090E]/90 border border-[#1E2436] rounded-xl p-3">
-                        <span className="text-[10px] font-mono uppercase text-[#9CA3AF] block mb-2">
-                          Setores e Etapas Mapeados na Planilha 1:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                          {sheet1Study.stages.map((st, idx) => (
-                            <span
-                              key={idx}
-                              className="text-[10px] px-2 py-0.5 rounded bg-[#141A28] border border-[#26304A] text-gray-300"
-                            >
-                              <strong className="text-[#F97316]">{st.discipline}:</strong>{" "}
-                              {st.title.slice(0, 32)} ({st.itemsCount})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
                     </div>
                   )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-[#1E2436] flex items-center justify-between text-[11px] text-[#9CA3AF]">
-                  <span>O sistema extrai os quantitativos desta planilha</span>
+                  <span>Leitura guiada pelos nomes das colunas</span>
                   <span className="text-[#D4AF37] font-mono">100% Lido em Memória</span>
                 </div>
               </div>
@@ -1095,7 +1241,7 @@ export default function OrcaBaseDashboard() {
                       onClick={() => setActiveTab("SETTINGS")}
                       className="text-xs text-[#F97316] hover:text-[#D4AF37] transition-colors flex items-center gap-1 font-medium cursor-pointer"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Gerenciar / Anexar nas Configurações
+                      <Plus className="w-3.5 h-3.5" /> Configurar / Cadastrar Contratos
                     </button>
                   </div>
 
@@ -1114,8 +1260,7 @@ export default function OrcaBaseDashboard() {
                     >
                       {contracts.map((c) => (
                         <option key={c.id} value={c.id}>
-                          [{c.contractNumber}] {c.contractName} — ({c.itemsCount} composições |{" "}
-                          {c.fileName || "Base Padrão"})
+                          [{c.contractNumber}] {c.contractName} — ({c.itemsCount} composições)
                         </option>
                       ))}
                     </select>
@@ -1126,25 +1271,25 @@ export default function OrcaBaseDashboard() {
                       <div className="grid grid-cols-3 gap-2.5">
                         <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
                           <span className="text-[10px] text-[#9CA3AF] uppercase block">
-                            Composições na Base
+                            Coluna de Composição
                           </span>
-                          <span className="text-base font-bold text-white font-mono">
-                            {selectedContract.itemsCount} linhas
+                          <span className="text-xs font-bold text-white font-mono truncate block">
+                            &ldquo;{selectedContract.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}&rdquo;
                           </span>
                         </div>
-                        <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
-                          <span className="text-[10px] text-[#9CA3AF] uppercase block">
-                            Coluna Alvo (Qtd)
+                        <div className="bg-[#111622] border border-emerald-500/30 rounded-xl p-3">
+                          <span className="text-[10px] text-emerald-400 uppercase block font-semibold">
+                            Coluna de Quantitativo
                           </span>
-                          <span className="text-base font-bold text-emerald-400 font-mono">
-                            Coluna {selectedContract.detectedColumns?.colQtyLetter || "F"}
+                          <span className="text-xs font-bold text-emerald-400 font-mono truncate block">
+                            &ldquo;{selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
                           </span>
                         </div>
                         <div className="bg-[#111622] border border-[#1E2436] rounded-xl p-3">
                           <span className="text-[10px] text-[#9CA3AF] uppercase block">
                             Valor Total do Contrato
                           </span>
-                          <span className="text-sm font-bold text-[#D4AF37] font-mono">
+                          <span className="text-xs font-bold text-[#D4AF37] font-mono">
                             R${" "}
                             {(selectedContract.totalGeralValue || 0).toLocaleString("pt-BR", {
                               minimumFractionDigits: 2,
@@ -1157,14 +1302,17 @@ export default function OrcaBaseDashboard() {
                       <div className="bg-[#07090E]/90 border border-[#1E2436] rounded-xl p-3">
                         <div className="flex items-center justify-between text-[11px] text-[#9CA3AF] mb-1.5">
                           <span>
-                            Arquivo Molde:{" "}
+                            Arquivo:{" "}
                             <strong className="text-white">
                               {selectedContract.fileName || "Modelo Padrão"}
                             </strong>{" "}
-                            (Aba: <span className="text-[#D4AF37]">{selectedContract.budgetSheetName || "Orçamento"}</span>)
+                            • Unidade:{" "}
+                            <strong className="text-[#D4AF37]">
+                              &ldquo;{selectedContract.detectedColumns?.unitHeaderName || "UNID."}&rdquo;
+                            </strong>
                           </span>
                           <span className="text-emerald-400 font-mono text-[10px]">
-                            Layout & Fórmulas Protegidos
+                            {selectedContract.itemsCount} composições
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
@@ -1185,8 +1333,10 @@ export default function OrcaBaseDashboard() {
 
                 <div className="mt-4 pt-3 border-t border-[#1E2436] flex items-center justify-between text-[11px] text-[#9CA3AF]">
                   <span>
-                    Apenas a coluna de Quantitativo (Col{" "}
-                    {selectedContract?.detectedColumns?.colQtyLetter || "F"}) será alterada
+                    O ajuste será feito na coluna de nome{" "}
+                    <strong className="text-emerald-400">
+                      &ldquo;{selectedContract?.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
+                    </strong>
                   </span>
                   <span className="text-emerald-400 font-mono">Clone Fiel .XLSX</span>
                 </div>
@@ -1201,14 +1351,14 @@ export default function OrcaBaseDashboard() {
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#1E2436] pb-5">
                 <div>
                   <span className="text-[11px] font-mono uppercase tracking-widest text-[#D4AF37] block mb-1">
-                    Regra de Posicionamento e Ajuste na Coluna de Quantitativo
+                    Regra de Posicionamento e Ajuste na Coluna &ldquo;
+                    {selectedContract?.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
                   </span>
                   <h3 className="text-base font-bold text-white">
                     Como deseja aplicar os quantitativos da Planilha 1 na Planilha Base do Contrato?
                   </h3>
                 </div>
 
-                {/* Campo de Valor Alvo quando KEEP_TOTAL_VALUE estiver ativo */}
                 {calcStrategy === "KEEP_TOTAL_VALUE" && (
                   <div className="flex items-center gap-2 bg-[#111622] px-3.5 py-2 rounded-xl border border-[#D4AF37]/50">
                     <Calculator className="w-4 h-4 text-[#D4AF37]" />
@@ -1233,7 +1383,6 @@ export default function OrcaBaseDashboard() {
 
               {/* Os 2 Botões de Escolha Didáticos e Independentes */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* OPÇÃO 1: MANTER O VALOR FINAL DO ORÇAMENTO (AJUSTANDO OS QUANTITATIVOS) */}
                 <button
                   type="button"
                   onClick={() => handleSelectStrategyMode("KEEP_TOTAL_VALUE")}
@@ -1281,7 +1430,6 @@ export default function OrcaBaseDashboard() {
                   </div>
                 </button>
 
-                {/* OPÇÃO 2: MANTER EXATAMENTE O QUANTITATIVO DA PLANILHA 1 */}
                 <button
                   type="button"
                   onClick={() => handleSelectStrategyMode("KEEP_QUANTITY")}
@@ -1322,7 +1470,7 @@ export default function OrcaBaseDashboard() {
                 </button>
               </div>
 
-              {/* Barra de Ação Principal: Botão Compatibilizar + Resumo Financeiro + Botão Baixar Planilha Final */}
+              {/* Barra de Ação Principal */}
               <div className="pt-2 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
                 <button
                   onClick={() => runCompatibilityEngine()}
@@ -1417,8 +1565,11 @@ export default function OrcaBaseDashboard() {
                       </h2>
                     </div>
                     <p className="text-xs text-[#9CA3AF] mt-1">
-                      Veja exatamente em qual linha e composição do Contrato Base cada quantitativo da Planilha 1 foi posicionado. Você pode digitar na coluna de{" "}
-                      <strong className="text-emerald-400">Qtd. Injetada</strong> ou trocar o item vinculado a qualquer momento.
+                      Os quantitativos abaixo serão gravados na coluna de nome{" "}
+                      <strong className="text-emerald-400">
+                        &ldquo;{selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
+                      </strong>{" "}
+                      de cada composição correspondente.
                     </p>
                   </div>
 
@@ -1467,12 +1618,14 @@ export default function OrcaBaseDashboard() {
                   <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 z-10 bg-[#080B12] border-b border-[#1E2436] text-[10px] font-mono uppercase text-[#9CA3AF]">
                       <tr>
-                        <th className="py-3.5 px-4">Linha Excel / Setor</th>
-                        <th className="py-3.5 px-4">Composição na Planilha Base (Destino)</th>
+                        <th className="py-3.5 px-4">Linha / Setor</th>
+                        <th className="py-3.5 px-4">
+                          {selectedContract.detectedColumns?.descHeaderName || "Composição / Descrição"} (Base)
+                        </th>
                         <th className="py-3.5 px-4">Serviço Alocado da Planilha 1 (Origem)</th>
                         <th className="py-3.5 px-4 text-right">Qtd. Planilha 1</th>
                         <th className="py-3.5 px-4 text-right text-emerald-400">
-                          Qtd. Injetada (Col {selectedContract.detectedColumns?.colQtyLetter || "F"})
+                          {selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"} (Injetado)
                         </th>
                         <th className="py-3.5 px-4 text-right">Preço Unit. Base</th>
                         <th className="py-3.5 px-4 text-right text-[#D4AF37]">Novo Subtotal</th>
@@ -1492,7 +1645,6 @@ export default function OrcaBaseDashboard() {
                                 : "bg-[#07090E]/40 opacity-60 hover:opacity-100"
                             }`}
                           >
-                            {/* Linha Real do Excel e Disciplina */}
                             <td className="py-3.5 px-4 whitespace-nowrap">
                               <div className="flex flex-col gap-1">
                                 <span className="font-mono text-[11px] text-[#D4AF37] font-bold">
@@ -1505,7 +1657,6 @@ export default function OrcaBaseDashboard() {
                               </div>
                             </td>
 
-                            {/* Composição na Planilha Base */}
                             <td className="py-3.5 px-4 max-w-xs">
                               <div className="font-semibold text-white leading-snug">
                                 {cItem.description}
@@ -1517,7 +1668,6 @@ export default function OrcaBaseDashboard() {
                               </div>
                             </td>
 
-                            {/* Serviço Alocado da Planilha 1 */}
                             <td className="py-3.5 px-4 max-w-xs">
                               {m.best_candidate ? (
                                 <div>
@@ -1537,7 +1687,6 @@ export default function OrcaBaseDashboard() {
                               )}
                             </td>
 
-                            {/* Quantitativo Original na Planilha 1 */}
                             <td className="py-3.5 px-4 text-right font-mono text-[#9CA3AF]">
                               {m.base_quantity_from_sheet1 > 0
                                 ? `${m.base_quantity_from_sheet1.toLocaleString("pt-BR", {
@@ -1547,7 +1696,6 @@ export default function OrcaBaseDashboard() {
                                 : "—"}
                             </td>
 
-                            {/* Quantitativo Final Injetado na Planilha Base (Editável!) */}
                             <td className="py-3.5 px-4 text-right">
                               <div className="inline-flex items-center justify-end gap-1.5">
                                 <input
@@ -1569,7 +1717,6 @@ export default function OrcaBaseDashboard() {
                               </div>
                             </td>
 
-                            {/* Preço Unitário do Contrato Base */}
                             <td className="py-3.5 px-4 text-right font-mono text-gray-300">
                               R${" "}
                               {m.contract_unit_price.toLocaleString("pt-BR", {
@@ -1578,7 +1725,6 @@ export default function OrcaBaseDashboard() {
                               })}
                             </td>
 
-                            {/* Novo Subtotal da Linha */}
                             <td className="py-3.5 px-4 text-right font-mono font-bold text-[#D4AF37]">
                               R${" "}
                               {m.calculated_total_value.toLocaleString("pt-BR", {
@@ -1587,7 +1733,6 @@ export default function OrcaBaseDashboard() {
                               })}
                             </td>
 
-                            {/* Botão de Trocar / Vincular Item da Planilha 1 */}
                             <td className="py-3.5 px-4 text-center">
                               <button
                                 onClick={() => {
@@ -1612,19 +1757,19 @@ export default function OrcaBaseDashboard() {
           </>
         ) : (
           /* =====================================================================
-             ABA DE CONFIGURAÇÕES: GESTÃO E ESTUDO COMPLETO DOS CONTRATOS BASE
+             ABA DE CONFIGURAÇÕES: GESTÃO DE CONTRATOS BASE COM BUSCA PELO NOME DAS COLUNAS
              ===================================================================== */
           <section className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2436] pb-6">
               <div>
                 <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] block mb-1">
-                  Repositório de Moldes Contratuais (.XLSX)
+                  Identificação Inteligente por Nome de Coluna (Quantitativo, Composição, Discriminação, Unidade)
                 </span>
                 <h2 className="text-xl font-bold text-white">
                   Configurações de Contratos Base (Planilhas Destino)
                 </h2>
                 <p className="text-xs text-[#9CA3AF] mt-1">
-                  Quando você anexa ou substitui uma planilha em um card, o sistema faz o estudo completo de todas as abas, cabeçalhos, etapas, composições e guarda o arquivo original intacto para clonagem.
+                  O sistema procura automaticamente na planilha pelos nomes das colunas (<strong className="text-white">Quantitativo / Quant. / Qtd</strong>, <strong className="text-white">Descrição / Composição / Discriminação</strong>, <strong className="text-white">Unidade / Unid.</strong> e <strong className="text-white">Total Geral</strong>), independentemente da posição em que estejam. Você também pode confirmar ou escolher pelo nome exato abaixo.
                 </p>
               </div>
               <button
@@ -1643,7 +1788,7 @@ export default function OrcaBaseDashboard() {
                   <div className="flex items-center gap-2.5">
                     <Cpu className="w-5 h-5 text-[#D4AF37]" />
                     <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                      Cadastrar Novo Contrato Base com Estudo Estrutural 100%
+                      Cadastrar Novo Contrato Base (Leitura Guiada pelo Nome das Colunas)
                     </h3>
                   </div>
                   <button
@@ -1655,70 +1800,126 @@ export default function OrcaBaseDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                  {/* Dados do Contrato */}
-                  <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">
-                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
-                        Objeto / Nome do Contrato *
-                      </label>
-                      <input
-                        type="text"
-                        value={newContractName}
-                        onChange={(e) => setNewContractName(e.target.value)}
-                        placeholder="Ex: Reforma e Manutenção Predial — Lote 02"
-                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                      />
+                  {/* Dados do Contrato + Nomes das Colunas */}
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                          Objeto / Nome do Contrato *
+                        </label>
+                        <input
+                          type="text"
+                          value={newContractName}
+                          onChange={(e) => setNewContractName(e.target.value)}
+                          placeholder="Ex: Reforma e Manutenção Predial — Lote 02"
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                          Número do Contrato *
+                        </label>
+                        <input
+                          type="text"
+                          value={newContractNumber}
+                          onChange={(e) => setNewContractNumber(e.target.value)}
+                          placeholder="Ex: 089/2026-GPR"
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                          Órgão / Contratante
+                        </label>
+                        <input
+                          type="text"
+                          value={newContractOrg}
+                          onChange={(e) => setNewContractOrg(e.target.value)}
+                          placeholder="Ex: Prefeitura / GPR"
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[#9CA3AF] block mb-1.5">BDI (%)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={newContractBdi}
+                          onChange={(e) => setNewContractBdi(e.target.value)}
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-[#9CA3AF] block mb-1.5">
+                          Fonte / Base Oficial
+                        </label>
+                        <input
+                          type="text"
+                          value={newContractBaseRef}
+                          onChange={(e) => setNewContractBaseRef(e.target.value)}
+                          placeholder="Ex: SINAPI / ORSE"
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
-                        Número do Contrato *
-                      </label>
-                      <input
-                        type="text"
-                        value={newContractNumber}
-                        onChange={(e) => setNewContractNumber(e.target.value)}
-                        placeholder="Ex: 089/2026-GPR"
-                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
-                        Órgão / Contratante
-                      </label>
-                      <input
-                        type="text"
-                        value={newContractOrg}
-                        onChange={(e) => setNewContractOrg(e.target.value)}
-                        placeholder="Ex: Prefeitura / GPR"
-                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-[#9CA3AF] block mb-1.5">BDI (%)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={newContractBdi}
-                        onChange={(e) => setNewContractBdi(e.target.value)}
-                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-[#9CA3AF] block mb-1.5">
-                        Fonte / Base Oficial
-                      </label>
-                      <input
-                        type="text"
-                        value={newContractBaseRef}
-                        onChange={(e) => setNewContractBaseRef(e.target.value)}
-                        placeholder="Ex: SINAPI / ORSE"
-                        className="w-full bg-[#111622] border border-[#26304A] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                      />
+
+                    {/* Caixa de Palavras-Chave de Nomes de Colunas para Busca Inteligente */}
+                    <div className="bg-[#111622] border border-[#26304A] rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#D4AF37]">
+                        <Tag className="w-4 h-4" />
+                        Nomes / Palavras-Chave que o Sistema Procura nas Colunas da Planilha:
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <label className="text-[10px] text-emerald-400 block mb-1 font-semibold">
+                            Nome da Coluna de Quantitativo:
+                          </label>
+                          <input
+                            type="text"
+                            value={customQtyKeyword}
+                            onChange={(e) => setCustomQtyKeyword(e.target.value)}
+                            className="w-full bg-[#07090E] border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-[11px] text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                            Nome da Coluna de Composição / Serviço:
+                          </label>
+                          <input
+                            type="text"
+                            value={customDescKeyword}
+                            onChange={(e) => setCustomDescKeyword(e.target.value)}
+                            className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-[11px] text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                            Nome da Coluna de Unidade:
+                          </label>
+                          <input
+                            type="text"
+                            value={customUnitKeyword}
+                            onChange={(e) => setCustomUnitKeyword(e.target.value)}
+                            className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-[11px] text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                            Nome do Total do Orçamento:
+                          </label>
+                          <input
+                            type="text"
+                            value={customTotalKeyword}
+                            onChange={(e) => setCustomTotalKeyword(e.target.value)}
+                            className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-[11px] text-white"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Dropzone de Upload e Estudo da Planilha do Contrato */}
-                  <div className="lg:col-span-6 flex flex-col justify-between">
+                  {/* Dropzone de Upload e Seleção pelo Nome Real das Colunas Lidas */}
+                  <div className="lg:col-span-6 flex flex-col justify-between space-y-4">
                     <div
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -1732,7 +1933,7 @@ export default function OrcaBaseDashboard() {
                         if (file) inspectNewContractModalFile(file);
                       }}
                       onClick={() => contractFileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[190px] ${
+                      className={`border-2 border-dashed rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[175px] ${
                         isDraggingContract
                           ? "border-[#F97316] bg-[#F97316]/10"
                           : newContractStudy
@@ -1758,7 +1959,7 @@ export default function OrcaBaseDashboard() {
                       />
                       {isInspectingContract ? (
                         <p className="text-xs text-[#D4AF37] font-semibold animate-pulse">
-                          Analisando todas as abas, etapas, composições e Total Geral...
+                          Procurando colunas pelo nome (Quantitativo, Composição, Discriminação, Unidade)...
                         </p>
                       ) : newContractStudy ? (
                         <div className="space-y-2 w-full">
@@ -1777,12 +1978,6 @@ export default function OrcaBaseDashboard() {
                               })}
                             </span>
                           </div>
-                          <p className="text-[10px] text-[#9CA3AF]">
-                            Coluna de Quantitativo identificada:{" "}
-                            <strong className="text-white">
-                              Coluna {newContractStudy.detectedColumns.colQtyLetter}
-                            </strong>
-                          </p>
                         </div>
                       ) : (
                         <>
@@ -1790,26 +1985,147 @@ export default function OrcaBaseDashboard() {
                             Arraste a Planilha do Contrato (.XLSX) ou clique aqui
                           </p>
                           <p className="text-[11px] text-[#9CA3AF] mt-1">
-                            Leitura 100% completa de etapas, composições, coluna de quantitativo e Total Geral
+                            O sistema encontrará automaticamente as colunas pelo nome escrito no cabeçalho
                           </p>
                         </>
                       )}
                     </div>
 
-                    {newContractStudy && newContractStudy.sheetNames.length > 1 && (
-                      <div className="mt-3 flex items-center justify-between bg-[#111622] px-3 py-2 rounded-xl border border-[#26304A]">
-                        <span className="text-xs text-[#9CA3AF]">Aba do Orçamento:</span>
-                        <select
-                          value={newContractStudy.selectedSheetName}
-                          onChange={(e) => handleChangeNewContractModalTab(e.target.value)}
-                          className="bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1 text-xs text-white"
-                        >
-                          {newContractStudy.sheetNames.map((sn) => (
-                            <option key={sn} value={sn}>
-                              {sn}
-                            </option>
-                          ))}
-                        </select>
+                    {/* Seletores por Nome Real de Coluna assim que a planilha é anexada */}
+                    {newContractStudy && (
+                      <div className="bg-[#111622] border border-[#26304A] rounded-xl p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-white">
+                            Colunas Identificadas pelo Nome na Planilha (Clique se quiser alterar):
+                          </span>
+                          {newContractStudy.sheetNames.length > 1 && (
+                            <select
+                              value={newContractStudy.selectedSheetName}
+                              onChange={(e) => handleChangeNewContractModalTabOrCols(e.target.value)}
+                              className="bg-[#07090E] border border-[#26304A] rounded-lg px-2 py-1 text-xs text-[#D4AF37]"
+                            >
+                              {newContractStudy.sheetNames.map((sn) => (
+                                <option key={sn} value={sn}>
+                                  Aba: {sn}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <label className="text-[10px] text-emerald-400 block mb-1 font-bold">
+                              Coluna de Quantitativo (Onde ajustará):
+                            </label>
+                            <select
+                              value={newContractStudy.detectedColumns.colQty}
+                              onChange={(e) =>
+                                handleChangeNewContractModalTabOrCols(undefined, {
+                                  colDesc: newContractStudy.detectedColumns.colDesc,
+                                  colUnit: newContractStudy.detectedColumns.colUnit,
+                                  colQty: Number(e.target.value),
+                                  colPrice: newContractStudy.detectedColumns.colPrice,
+                                  colTotal: newContractStudy.detectedColumns.colTotal,
+                                })
+                              }
+                              className="w-full bg-[#07090E] border border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400 font-bold"
+                            >
+                              {(newContractStudy.detectedColumns.allNamedColumns || []).map(
+                                (col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    Nome: &ldquo;{col.headerTitle}&rdquo;{" "}
+                                    {col.sampleValue ? `(Ex: ${col.sampleValue})` : ""}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[#D4AF37] block mb-1 font-bold">
+                              Coluna de Composição / Discriminação:
+                            </label>
+                            <select
+                              value={newContractStudy.detectedColumns.colDesc}
+                              onChange={(e) =>
+                                handleChangeNewContractModalTabOrCols(undefined, {
+                                  colDesc: Number(e.target.value),
+                                  colUnit: newContractStudy.detectedColumns.colUnit,
+                                  colQty: newContractStudy.detectedColumns.colQty,
+                                  colPrice: newContractStudy.detectedColumns.colPrice,
+                                  colTotal: newContractStudy.detectedColumns.colTotal,
+                                })
+                              }
+                              className="w-full bg-[#07090E] border border-[#D4AF37]/50 rounded-lg px-2.5 py-1.5 text-xs text-white font-semibold"
+                            >
+                              {(newContractStudy.detectedColumns.allNamedColumns || []).map(
+                                (col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    Nome: &ldquo;{col.headerTitle}&rdquo;{" "}
+                                    {col.sampleValue ? `(Ex: ${col.sampleValue})` : ""}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                              Coluna de Unidade:
+                            </label>
+                            <select
+                              value={newContractStudy.detectedColumns.colUnit}
+                              onChange={(e) =>
+                                handleChangeNewContractModalTabOrCols(undefined, {
+                                  colDesc: newContractStudy.detectedColumns.colDesc,
+                                  colUnit: Number(e.target.value),
+                                  colQty: newContractStudy.detectedColumns.colQty,
+                                  colPrice: newContractStudy.detectedColumns.colPrice,
+                                  colTotal: newContractStudy.detectedColumns.colTotal,
+                                })
+                              }
+                              className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-xs text-white"
+                            >
+                              {(newContractStudy.detectedColumns.allNamedColumns || []).map(
+                                (col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    Nome: &ldquo;{col.headerTitle}&rdquo;{" "}
+                                    {col.sampleValue ? `(Ex: ${col.sampleValue})` : ""}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-[#9CA3AF] block mb-1">
+                              Coluna de Preço Unitário:
+                            </label>
+                            <select
+                              value={newContractStudy.detectedColumns.colPrice}
+                              onChange={(e) =>
+                                handleChangeNewContractModalTabOrCols(undefined, {
+                                  colDesc: newContractStudy.detectedColumns.colDesc,
+                                  colUnit: newContractStudy.detectedColumns.colUnit,
+                                  colQty: newContractStudy.detectedColumns.colQty,
+                                  colPrice: Number(e.target.value),
+                                  colTotal: newContractStudy.detectedColumns.colTotal,
+                                })
+                              }
+                              className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1.5 text-xs text-white"
+                            >
+                              {(newContractStudy.detectedColumns.allNamedColumns || []).map(
+                                (col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    Nome: &ldquo;{col.headerTitle}&rdquo;{" "}
+                                    {col.sampleValue ? `(Ex: ${col.sampleValue})` : ""}
+                                  </option>
+                                )
+                              )}
+                            </select>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1839,6 +2155,7 @@ export default function OrcaBaseDashboard() {
                 const isSelected = c.id === selectedContractId;
                 const isExpanded = expandedContractStudyId === c.id;
                 const isUpdatingThis = updatingCardId === c.id;
+                const namedCols = c.detectedColumns?.allNamedColumns || [];
 
                 return (
                   <div
@@ -1874,24 +2191,34 @@ export default function OrcaBaseDashboard() {
                         </button>
                       </div>
 
-                      {/* Metadados e Estudo Estrutural da Planilha do Contrato */}
+                      {/* Resumo dos Nomes das Colunas Encontradas neste Contrato */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-4 p-3.5 rounded-xl bg-[#111622] border border-[#1E2436] text-xs">
                         <div>
-                          <span className="text-[#9CA3AF] block text-[10px]">Composições Lidas</span>
-                          <span className="text-white font-bold font-mono">
-                            {c.itemsCount} itens
+                          <span className="text-[#9CA3AF] block text-[10px]">
+                            Coluna Composição
+                          </span>
+                          <span
+                            className="text-white font-bold font-mono truncate block"
+                            title={c.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}
+                          >
+                            &ldquo;{c.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}&rdquo;
                           </span>
                         </div>
                         <div>
-                          <span className="text-[#9CA3AF] block text-[10px]">Etapas / Grupos</span>
+                          <span className="text-emerald-400 block text-[10px] font-semibold">
+                            Coluna Quantitativo
+                          </span>
+                          <span
+                            className="text-emerald-400 font-bold font-mono truncate block"
+                            title={c.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}
+                          >
+                            &ldquo;{c.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[#9CA3AF] block text-[10px]">Composições</span>
                           <span className="text-[#F97316] font-bold font-mono">
-                            {c.stages?.length || 1} etapas
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-[#9CA3AF] block text-[10px]">Coluna Alvo Qtd</span>
-                          <span className="text-emerald-400 font-bold font-mono">
-                            Coluna {c.detectedColumns?.colQtyLetter || "F"}
+                            {c.itemsCount} itens
                           </span>
                         </div>
                         <div>
@@ -1906,6 +2233,77 @@ export default function OrcaBaseDashboard() {
                         </div>
                       </div>
 
+                      {/* Se a planilha já foi carregada e tem lista de colunas nomeadas, permite ajustar pelo nome diretamente no Card */}
+                      {namedCols.length > 0 && (
+                        <div className="mb-3 p-3 rounded-xl bg-[#111622]/90 border border-[#26304A] space-y-2">
+                          <span className="text-[10px] font-mono uppercase text-[#D4AF37] block font-semibold">
+                            Confirmar / Alterar Colunas pelo Nome Lido na Planilha:
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <label className="text-[10px] text-emerald-400 block mb-0.5 font-semibold">
+                                Coluna Quantitativo:
+                              </label>
+                              <select
+                                value={c.detectedColumns?.colQty}
+                                onChange={(e) =>
+                                  handleRemapExistingContractCard(c.id, undefined, {
+                                    colQty: Number(e.target.value),
+                                  })
+                                }
+                                className="w-full bg-[#07090E] border border-emerald-500/40 rounded-lg px-2 py-1 text-[11px] text-emerald-400 font-bold"
+                              >
+                                {namedCols.map((col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    {col.headerTitle}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[#9CA3AF] block mb-0.5">
+                                Coluna Composição:
+                              </label>
+                              <select
+                                value={c.detectedColumns?.colDesc}
+                                onChange={(e) =>
+                                  handleRemapExistingContractCard(c.id, undefined, {
+                                    colDesc: Number(e.target.value),
+                                  })
+                                }
+                                className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2 py-1 text-[11px] text-white"
+                              >
+                                {namedCols.map((col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    {col.headerTitle}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-[#9CA3AF] block mb-0.5">
+                                Coluna Unidade:
+                              </label>
+                              <select
+                                value={c.detectedColumns?.colUnit}
+                                onChange={(e) =>
+                                  handleRemapExistingContractCard(c.id, undefined, {
+                                    colUnit: Number(e.target.value),
+                                  })
+                                }
+                                className="w-full bg-[#07090E] border border-[#26304A] rounded-lg px-2 py-1 text-[11px] text-white"
+                              >
+                                {namedCols.map((col) => (
+                                  <option key={col.colIndex} value={col.colIndex}>
+                                    {col.headerTitle}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Seletor de Aba se a planilha tiver mais de uma aba */}
                       {c.sheetNames && c.sheetNames.length > 1 && (
                         <div className="mb-3 flex items-center justify-between bg-[#111622] px-3 py-2 rounded-xl border border-[#26304A] text-xs">
@@ -1913,7 +2311,7 @@ export default function OrcaBaseDashboard() {
                           <select
                             value={c.budgetSheetName}
                             onChange={(e) =>
-                              handleSwitchExistingContractSheet(c.id, e.target.value)
+                              handleRemapExistingContractCard(c.id, e.target.value)
                             }
                             className="bg-[#07090E] border border-[#26304A] rounded-lg px-2 py-1 text-xs text-[#D4AF37] font-semibold"
                           >
@@ -1932,7 +2330,7 @@ export default function OrcaBaseDashboard() {
                           <FileSpreadsheet className="w-4 h-4 text-[#D4AF37] shrink-0" />
                           <span className="text-gray-300 truncate">
                             {isUpdatingThis
-                              ? "Estudando todas as linhas e colunas..."
+                              ? "Procurando colunas pelo nome na planilha..."
                               : c.fileName || "Planilha_Base.xlsx"}
                           </span>
                         </div>
@@ -1973,9 +2371,13 @@ export default function OrcaBaseDashboard() {
                       {isExpanded && (
                         <div className="mb-4 bg-[#07090E] border border-[#1E2436] rounded-xl p-3 max-h-64 overflow-y-auto space-y-2">
                           <div className="text-[10px] font-mono text-[#9CA3AF] pb-2 border-b border-[#1E2436]">
-                            Cabeçalho na Linha {c.detectedColumns?.headerRow || 1} • Coluna Qtd:{" "}
+                            Cabeçalho na Linha {c.detectedColumns?.headerRow || 1} • Coluna de Quantitativo:{" "}
                             <strong className="text-emerald-400">
-                              Col {c.detectedColumns?.colQtyLetter || "F"}
+                              &ldquo;{c.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
+                            </strong>{" "}
+                            • Coluna de Composição:{" "}
+                            <strong className="text-white">
+                              &ldquo;{c.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}&rdquo;
                             </strong>
                           </div>
                           {c.items.slice(0, 80).map((it, idx) => (

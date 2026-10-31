@@ -79,7 +79,14 @@ def find_budget_sheet(wb, preferred_name=None):
     return best_sheet, best_name
 
 def detect_sheet_columns(ws):
-    """Detecta as colunas da aba de orçamento varrendo até 80 linhas."""
+    """
+    Detecta as colunas da aba de orçamento buscando especificamente pelos NOMES dos cabeçalhos:
+    - Quantitativo: 'quantitativo', 'quantidade', 'quant.', 'quant', 'qtd.', 'qtd', 'qtde', 'qte'
+    - Descrição / Composição: 'descrição', 'discriminação', 'composição', 'composições', 'especificação', 'serviço'
+    - Unidade: 'unidade', 'unid.', 'unid', 'und.', 'und', 'un.', 'un'
+    - Preço Unitário: 'unitário', 'preço unit', 'valor unit', 'custo unit', 'p.u.'
+    - Total: 'valor total', 'preço total', 'total', 'subtotal'
+    """
     header_row = -1
     col_item = -1
     col_code = -1
@@ -90,43 +97,62 @@ def detect_sheet_columns(ws):
     col_total = -1
     best_score = 0
 
-    for r in range(1, min(ws.max_row + 1, 80)):
+    for r in range(1, min(ws.max_row + 1, 120)):
         c_item, c_code, c_desc, c_unit, c_qty, c_price, c_total = -1, -1, -1, -1, -1, -1, -1
         score = 0
-        for c in range(1, min(ws.max_column + 1, 25)):
-            val = str(ws.cell(row=r, column=c).value or '').strip().lower()
-            if not val:
+        for c in range(1, min(ws.max_column + 1, 30)):
+            v1 = str(ws.cell(row=r, column=c).value or '').strip().lower()
+            v2 = str(ws.cell(row=min(ws.max_row, r + 1), column=c).value or '').strip().lower() if r < ws.max_row else ''
+            val = f"{v1} {v2}".strip() if v2 and len(v2) < 25 else v1
+            if not v1:
                 continue
-            if val in ["item", "it", "it.", "nº", "seq"] or "item" in val:
+
+            # 1. Quantitativo pelo nome
+            if any(k in v1 for k in ["quantitativo", "quantidade", "quant.", "quant", "qtd.", "qtd", "qtde", "qte"]) and not any(bad in v1 for bad in ["preço", "preco", "valor", "custo", "total"]):
+                if c_qty == -1:
+                    c_qty = c
+                    score += 5
+                continue
+
+            # 2. Descrição / Composição / Discriminação pelo nome
+            if any(k in v1 for k in ["descrição", "descricao", "discriminação", "discriminacao", "especificação", "especificacao", "serviço", "servico", "objeto"]) or (
+                any(k in v1 for k in ["composição", "composicao", "composições"]) and not any(cd in v1 for cd in ["código", "codigo", "cód", "cod"])
+            ):
+                if c_desc == -1:
+                    c_desc = c
+                    score += 5
+                continue
+
+            # 3. Unidade pelo nome
+            if (v1 in ["un", "un.", "und", "und.", "unid", "unid.", "unidade", "medida"] or "unid" in v1) and not any(bad in v1 for bad in ["preço", "preco", "valor", "custo", "unitário", "unitario"]):
+                if c_unit == -1:
+                    c_unit = c
+                    score += 4
+                continue
+
+            # 4. Item / Código
+            if v1 in ["item", "it", "it.", "nº", "seq"] or v1.startswith("item "):
                 if c_item == -1:
                     c_item = c
                     score += 1
-            elif any(k in val for k in ["código", "codigo", "cod", "cód", "composic", "sinapi", "referência"]):
+                continue
+            if any(k in v1 for k in ["código", "codigo", "cod", "cód", "sinapi", "referência"]):
                 if c_code == -1:
                     c_code = c
                     score += 2
-            elif any(k in val for k in ["descrição", "descricao", "discriminação", "discriminacao", "especificação", "serviço", "servico", "objeto"]):
-                if c_desc == -1:
-                    c_desc = c
-                    score += 3
-            elif val in ["un", "un.", "und", "und.", "unid", "unid.", "unidade", "medida"]:
-                if c_unit == -1:
-                    c_unit = c
-                    score += 2
-            elif any(k in val for k in ["quant", "qtd", "qtde", "quantidade"]):
-                if c_qty == -1:
-                    c_qty = c
-                    score += 3
-            elif any(k in val for k in ["unitário", "unitario", "preço unit", "preco unit", "valor unit", "vlr unit", "custo unit", "p.u."]):
+                continue
+
+            # 5. Preço Unitário e Total
+            if any(k in val for k in ["unitário", "unitario", "preço unit", "preco unit", "valor unit", "vlr unit", "custo unit", "p.u."]):
                 if c_price == -1:
                     c_price = c
-                    score += 2
-            elif any(k in val for k in ["total", "valor total", "preço total", "custo total", "subtotal"]):
-                if c_total == -1 and c != c_price:
-                    c_total = c
-                    score += 2
+                    score += 3
+                continue
+            if any(k in val for k in ["total", "valor total", "preço total", "custo total", "subtotal"]):
+                c_total = c
+                score += 2
 
-        if score > best_score and c_desc != -1 and (c_qty != -1 or c_unit != -1 or c_price != -1):
+        if score > best_score and (c_desc != -1 or c_qty != -1):
             best_score = score
             header_row = r
             col_item = c_item
@@ -164,7 +190,7 @@ def detect_sheet_columns(ws):
 def inspect_contract_spreadsheet(file_bytes, preferred_sheet=None):
     """
     Lê a planilha do contrato por completo, identifica a aba de orçamento,
-    detecta o TOTAL GERAL no final da planilha e extrai todas as composições e colunas.
+    detecta o TOTAL GERAL no final da planilha e extrai todas as composições e colunas pelo nome.
     """
     wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
     ws, sheet_name = find_budget_sheet(wb, preferred_sheet)
@@ -177,6 +203,19 @@ def inspect_contract_spreadsheet(file_bytes, preferred_sheet=None):
     col_qty = cols["col_qty"]
     col_price = cols["col_price"]
     col_total = cols["col_total"]
+
+    # Monta lista de colunas nomeadas pelo cabeçalho
+    all_named_columns = []
+    if header_row != -1:
+        for c in range(1, min(ws.max_column + 1, 35)):
+            val = str(ws.cell(row=header_row, column=c).value or '').strip()
+            sample = str(ws.cell(row=header_row + 1, column=c).value or '').strip() if header_row < ws.max_row else ''
+            all_named_columns.append({
+                "colIndex": c,
+                "colLetter": get_column_letter(c),
+                "headerTitle": val or f"Coluna {get_column_letter(c)}",
+                "sampleValue": sample[:30] if sample else ""
+            })
 
     # Procura o "TOTAL GERAL", "VALOR TOTAL", "TOTAL DO ORÇAMENTO" de baixo para cima
     total_geral_val = 0.0
@@ -222,7 +261,6 @@ def inspect_contract_spreadsheet(file_bytes, preferred_sheet=None):
         raw_tot = ws.cell(row=r, column=col_total).value if col_total > 0 else None
         unit_val = str(ws.cell(row=r, column=col_unit).value or "").strip().upper() if col_unit > 0 else ""
 
-        # Se não tem unidade nem preço unitário nem quantidade, pode ser cabeçalho de etapa
         qty = float(raw_qty) if isinstance(raw_qty, (int, float)) else 0.0
         price = float(raw_price) if isinstance(raw_price, (int, float)) else 0.0
         tot = float(raw_tot) if isinstance(raw_tot, (int, float)) else round(qty * price, 2)
@@ -251,6 +289,10 @@ def inspect_contract_spreadsheet(file_bytes, preferred_sheet=None):
     if total_geral_val == 0.0 and calculated_sum > 0:
         total_geral_val = round(calculated_sum, 2)
 
+    qty_h_name = str(ws.cell(row=header_row, column=col_qty).value or "QUANTITATIVO").strip() if header_row > 0 and col_qty > 0 else "QUANTITATIVO"
+    desc_h_name = str(ws.cell(row=header_row, column=col_desc).value or "DISCRIMINAÇÃO").strip() if header_row > 0 and col_desc > 0 else "DISCRIMINAÇÃO"
+    unit_h_name = str(ws.cell(row=header_row, column=col_unit).value or "UNID.").strip() if header_row > 0 and col_unit > 0 else "UNID."
+
     return {
         "sheet_names": wb.sheetnames,
         "budget_sheet_name": sheet_name,
@@ -259,7 +301,13 @@ def inspect_contract_spreadsheet(file_bytes, preferred_sheet=None):
         "total_geral_row": total_geral_row,
         "compositions_count": len(extracted_compositions),
         "compositions": extracted_compositions,
-        "detected_columns": cols
+        "detected_columns": {
+            **cols,
+            "qty_header_name": qty_h_name,
+            "desc_header_name": desc_h_name,
+            "unit_header_name": unit_h_name,
+            "all_named_columns": all_named_columns
+        }
     }
 
 def inject_quantities_into_contract_template(
@@ -269,19 +317,34 @@ def inject_quantities_into_contract_template(
     preferred_sheet=None,
     explicit_col_qty=None,
     explicit_col_price=None,
-    explicit_col_total=None
+    explicit_col_total=None,
+    qty_header_name=None
 ):
     """
     Clona integralmente a planilha do Contrato Base selecionado com openpyxl,
     mantendo rigorosamente todo o layout, configurações, cabeçalhos, logos, BDI e fórmulas.
-    Modifica UNICAMENTE a célula de quantitativo na composição específica correspondente!
+    Modifica UNICAMENTE a célula de quantitativo na coluna identificada pelo nome!
     """
     wb = openpyxl.load_workbook(io.BytesIO(contract_bytes), data_only=False)
     ws, sheet_name = find_budget_sheet(wb, preferred_sheet)
     wb.calculation.calcPr.fullCalcOnLoad = True
     
     cols = detect_sheet_columns(ws)
-    col_qty = int(explicit_col_qty) if explicit_col_qty and int(explicit_col_qty) > 0 else cols["col_qty"]
+    header_row = cols.get("header_row", 1)
+
+    # Se foi passado o nome da coluna de quantitativo, busca ela diretamente pelo nome no cabeçalho
+    col_qty = -1
+    if qty_header_name and header_row > 0:
+        q_target = qty_header_name.strip().lower()
+        for c in range(1, min(ws.max_column + 1, 35)):
+            c_val = str(ws.cell(row=header_row, column=c).value or "").strip().lower()
+            if q_target == c_val or q_target in c_val or c_val in q_target:
+                col_qty = c
+                break
+
+    if col_qty == -1:
+        col_qty = int(explicit_col_qty) if explicit_col_qty and int(explicit_col_qty) > 0 else cols["col_qty"]
+
     col_price = int(explicit_col_price) if explicit_col_price and int(explicit_col_price) > 0 else cols["col_price"]
     col_total = int(explicit_col_total) if explicit_col_total and int(explicit_col_total) > 0 else cols["col_total"]
     col_code = cols["col_code"]
@@ -291,7 +354,7 @@ def inject_quantities_into_contract_template(
     qty_by_code = {}
     qty_by_desc = {}
 
-    # 1. Processa composition_matches (novo formato completo PR.008)
+    # 1. Processa composition_matches (novo formato completo PR.008/PR.009)
     if composition_matches:
         for cm in composition_matches:
             calc_qty = float(cm.get("final_injected_quantity", 0.0))
@@ -334,7 +397,7 @@ def inject_quantities_into_contract_template(
                 target_qty = qty_by_desc[d_val]
                 
         if target_qty is not None:
-            # Atualiza EXCLUSIVAMENTE o número do quantitativo na célula
+            # Atualiza EXCLUSIVAMENTE o número do quantitativo na célula da coluna identificada pelo nome
             qty_cell = ws.cell(row=r, column=col_qty)
             qty_cell.value = round(float(target_qty), 4)
 
@@ -347,6 +410,11 @@ def inject_quantities_into_contract_template(
                     q_letter = get_column_letter(col_qty)
                     p_letter = get_column_letter(col_price)
                     tot_cell.value = f"=ROUND({q_letter}{r}*{p_letter}{r}, 2)"
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.getvalue()
 
     output = io.BytesIO()
     wb.save(output)
@@ -535,6 +603,7 @@ class handler(BaseHTTPRequestHandler):
             col_qty = body.get("col_qty", None)
             col_price = body.get("col_price", None)
             col_total = body.get("col_total", None)
+            qty_header_name = body.get("qty_header_name", None)
             filename = body.get("filename", "Planilha_Final_Compatibilizada.xlsx")
             
             try:
@@ -549,7 +618,8 @@ class handler(BaseHTTPRequestHandler):
                         preferred_sheet=preferred_sheet,
                         explicit_col_qty=col_qty,
                         explicit_col_price=col_price,
-                        explicit_col_total=col_total
+                        explicit_col_total=col_total,
+                        qty_header_name=qty_header_name
                     )
                     engine_label = "openpyxl v3.1.5 (Clone Fiel 100% da Planilha do Contrato Base)"
                 else:

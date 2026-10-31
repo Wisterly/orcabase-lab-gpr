@@ -1,19 +1,21 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.008
-O ciclo **`PR.008`** consolidou o Estudo Estrutural 100% Completo das duas planilhas, o Posicionamento Contextual de Quantitativos (com os 2 modos de cálculo) e o Download Infalível mantendo 100% da padronização do Contrato Base:
-1. **Estudo Estrutural Completo das 2 Planilhas (`src/lib/excelEngine.ts` + `api/index.py`):**
-   - Leitura profunda de todas as abas, cabeçalhos, etapas, disciplinas de engenharia (Pintura, Hidráulica, Elétrica, Estrutura, Pisos, etc.), coluna alvo de quantitativo e Total Geral do Orçamento.
-   - Armazenamento binário do `.xlsx` original no **IndexedDB** para que o arquivo nunca seja truncado pelo limite do `localStorage`.
-   - Atualização/substituição direta de planilhas nos Cards existentes na aba **Configurações**.
-2. **Área de Trabalho Dupla e 2 Modos de Regra de Quantitativo:**
-   - **Opção 1 (`KEEP_TOTAL_VALUE`):** Posiciona os quantitativos na composição correspondente da Planilha Base e ajusta proporcionalmente os quantitativos para cravar o Valor Total Final do orçamento da Planilha 1 (ou Valor Alvo editável).
-   - **Opção 2 (`KEEP_QUANTITY`):** Mantém exatamente o quantitativo físico da Planilha 1 na coluna de quantitativo da Planilha Base.
-3. **Download Infalível via Blob + `openpyxl`:**
-   - Gera e baixa imediatamente a planilha `.xlsx` clonada do Contrato Base com **apenas a coluna de Quantitativo atualizada** e todas as fórmulas vivas preservadas (`calcProperties.fullCalcOnLoad = True`).
+## 📍 Ponto Atual de Entrega — Ciclo PR.009
+O ciclo **`PR.009`** estabeleceu a busca inteligente e mapeamento flexível baseado exclusivamente nos **Nomes das Colunas** nos cabeçalhos:
+1. **Identificação 100% por Nome de Cabeçalho (Sem Letras Fixas):**
+   - O sistema não fixa nem assume colunas rígidas (como "Coluna F"). Ele varre até 120 linhas identificando as colunas pelos termos:
+     - **Quantitativo:** `quantitativo`, `quantidade`, `quant.`, `quant`, `qtd.`, `qtd`, `qtde`, `qte`, etc.
+     - **Composição:** `descrição`, `discriminação`, `composição`, `especificação`, `serviço`, etc.
+     - **Unidade:** `unidade`, `unid.`, `und.`, `un.`, etc.
+     - **Total Geral:** `total geral`, `valor total`, `total do orçamento`.
+2. **Opções na Aba de Configurações (Cadastro e Cards Existentes):**
+   - No cadastro de novo contrato, o usuário pode definir palavras-chave personalizadas e, ao carregar o arquivo, selecionar as colunas diretamente por seus nomes reais lidos no cabeçalho da planilha.
+   - Nos cards de contratos salvos, o usuário visualiza e pode remapear as colunas pelo nome com um clique.
+3. **Injeção Fiel de Quantitativos:**
+   - O `openpyxl` localiza a coluna no cabeçalho através do nome e injeta os quantitativos unicamente nela, mantendo 100% de layout, formatação e fórmulas.
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.009)
+## 🎯 Próximo Passo do Agente (Ciclo PR.010)
 1. **Persistência em Nuvem (Supabase / Postgres):** Sincronização remota dos Contratos Base entre múltiplos dispositivos.
-2. **Relatório Comparativo Analítico:** Aba adicional opcional de memória de cálculo detalhando o fator de ajuste aplicado em cada etapa.
+2. **Relatório Analítico Comparativo:** Visão detalhada de variações percentuais e memória de cálculo de quantitativos.

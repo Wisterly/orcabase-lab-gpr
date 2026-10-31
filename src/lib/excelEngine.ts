@@ -7,6 +7,9 @@
 import * as XLSX from "xlsx";
 import {
   DetectedColumns,
+  NamedColumnOption,
+  CustomColumnKeywords,
+  ExplicitColumnOverrides,
   StageGroup,
   ItemBase,
   SpreadsheetStudy,
@@ -287,7 +290,9 @@ export function studySpreadsheetFromBuffer(
   buffer: ArrayBuffer,
   preferredSheet?: string,
   fileName: string = "Planilha.xlsx",
-  fileSize: string = "0 KB"
+  fileSize: string = "0 KB",
+  customKeywords?: CustomColumnKeywords,
+  explicitOverrides?: ExplicitColumnOverrides
 ): SpreadsheetStudy {
   const workbook = XLSX.read(buffer, { type: "array", cellFormula: true, cellStyles: true });
   const sheetNames = workbook.SheetNames;
@@ -320,23 +325,93 @@ export function studySpreadsheetFromBuffer(
   const totalRows = rows.length;
   const totalCols = rows.reduce((max, r) => Math.max(max, r ? r.length : 0), 0);
 
-  // 2. Detecção profunda da linha de cabeçalho (varre até a linha 80)
+  // Palavras-chave extras opcionais configuradas pelo usuário
+  const userDescKey = normalizeText(customKeywords?.descKeyword || "");
+  const userUnitKey = normalizeText(customKeywords?.unitKeyword || "");
+  const userQtyKey = normalizeText(customKeywords?.qtyKeyword || "");
+  const userPriceKey = normalizeText(customKeywords?.priceKeyword || "");
+  const userTotalKey = normalizeText(customKeywords?.totalKeyword || "");
+
+  // 2. Detecção profunda da linha de cabeçalho por NOME (varre até a linha 120)
   let bestHeaderRow = 0; // 0-based
   let bestHeaderScore = 0;
 
-  for (let r = 0; r < Math.min(rows.length, 80); r++) {
+  for (let r = 0; r < Math.min(rows.length, 120); r++) {
     const row = rows[r];
     if (!row) continue;
-    const rowCells = row.map((c) => normalizeText(String(c || "")));
-    let score = 0;
+    // Olha também a linha seguinte para suportar cabeçalhos mesclados em 2 linhas
+    const nextRow = rows[r + 1] || [];
+    const combinedCells: string[] = [];
+    for (let c = 0; c < Math.max(row.length, nextRow.length); c++) {
+      const c1 = normalizeText(String(row[c] || ""));
+      const c2 = normalizeText(String(nextRow[c] || ""));
+      combinedCells.push(`${c1} ${c2}`.trim());
+    }
 
-    if (rowCells.some((c) => c === "item" || c.includes("item"))) score += 2;
-    if (rowCells.some((c) => c.includes("cod") || c.includes("ref"))) score += 2;
-    if (rowCells.some((c) => c.includes("descri") || c.includes("discrimina") || c.includes("especifica") || c.includes("servic") || c.includes("composic"))) score += 5;
-    if (rowCells.some((c) => c === "un" || c === "und" || c.includes("unid"))) score += 4;
-    if (rowCells.some((c) => c === "qtd" || c === "qtde" || c.includes("quant"))) score += 5;
-    if (rowCells.some((c) => c.includes("unit") || c.includes("preco") || c.includes("custo"))) score += 3;
-    if (rowCells.some((c) => c.includes("total") || c.includes("valor"))) score += 2;
+    let score = 0;
+    const rowOnlyCells = row.map((c) => normalizeText(String(c || "")));
+
+    // Pontua fortemente a linha que possui os nomes de cabeçalho reais
+    if (
+      rowOnlyCells.some(
+        (c) =>
+          c.includes("descri") ||
+          c.includes("discrimina") ||
+          c.includes("composic") ||
+          c.includes("composicao") ||
+          c.includes("especifica") ||
+          c.includes("servic") ||
+          (userDescKey && c.includes(userDescKey))
+      )
+    ) {
+      score += 6;
+    }
+    if (
+      rowOnlyCells.some(
+        (c) =>
+          c.includes("quantitativo") ||
+          c.includes("quantidade") ||
+          c === "quant" ||
+          c === "quant." ||
+          c.startsWith("quant ") ||
+          c === "qtd" ||
+          c === "qtd." ||
+          c === "qtde" ||
+          c === "qtde." ||
+          c === "qte" ||
+          (userQtyKey && c.includes(userQtyKey))
+      )
+    ) {
+      score += 6;
+    }
+    if (
+      rowOnlyCells.some(
+        (c) =>
+          c === "un" ||
+          c === "un." ||
+          c === "und" ||
+          c === "und." ||
+          c === "unid" ||
+          c === "unid." ||
+          c.includes("unidade") ||
+          (userUnitKey && c.includes(userUnitKey))
+      )
+    ) {
+      score += 4;
+    }
+    if (rowOnlyCells.some((c) => c === "item" || c.startsWith("item "))) score += 2;
+    if (rowOnlyCells.some((c) => c.includes("cod") || c.includes("ref"))) score += 2;
+    if (rowOnlyCells.some((c) => c.includes("unit") || c.includes("preco") || c.includes("custo"))) score += 3;
+    if (rowOnlyCells.some((c) => c.includes("total") || c.includes("valor"))) score += 2;
+
+    // Bônus se na janela combinada (2 linhas) tem ambos Descrição/Composição e Quantitativo
+    const hasCombinedDesc = combinedCells.some(
+      (c) => c.includes("descri") || c.includes("discrimina") || c.includes("composic") || c.includes("especifica")
+    );
+    const hasCombinedQty = combinedCells.some(
+      (c) => c.includes("quant") || c.includes("qtd") || c.includes("qtde")
+    );
+    if (hasCombinedDesc && hasCombinedQty) score += 3;
 
     if (score > bestHeaderScore) {
       bestHeaderScore = score;
@@ -344,16 +419,76 @@ export function studySpreadsheetFromBuffer(
     }
   }
 
-  // Combina a linha de cabeçalho com a linha imediatamente abaixo (caso seja cabeçalho mesclado em 2 linhas)
+  // Monta os nomes originais e normalizados de cada coluna na região do cabeçalho
+  const rawHeaderTitles: string[] = [];
   const headerCells: string[] = [];
-  for (let c = 0; c < totalCols; c++) {
-    const h1 = normalizeText(String(rows[bestHeaderRow]?.[c] || ""));
-    const h2 = bestHeaderScore >= 4 && rows[bestHeaderRow + 1] ? normalizeText(String(rows[bestHeaderRow + 1]?.[c] || "")) : "";
-    // Só junta h2 se a linha de baixo também parecer cabeçalho (não tiver números de preço/quantidade)
-    const isH2Header = h2 && (h2.includes("bdi") || h2.includes("sem") || h2.includes("com") || h2.includes("unit") || h2.includes("total") || h2.includes("quant"));
-    headerCells[c] = isH2Header ? `${h1} ${h2}`.trim() : h1;
+  let headerSpanRows = 1;
+
+  // Verifica se a linha abaixo de bestHeaderRow também faz parte do cabeçalho (ex: subcabeçalho de Preço s/ BDI, Quant., etc.)
+  if (bestHeaderScore >= 4 && rows[bestHeaderRow + 1]) {
+    const nextRowNorm = rows[bestHeaderRow + 1].map((c) => normalizeText(String(c || "")));
+    const looksLikeSubHeader = nextRowNorm.some(
+      (c) =>
+        c.includes("quant") ||
+        c === "qtd" ||
+        c === "qtde" ||
+        c.includes("unit") ||
+        c.includes("bdi") ||
+        c.includes("total") ||
+        c === "un" ||
+        c === "und" ||
+        c.includes("unid")
+    );
+    const hasLongServiceText = rows[bestHeaderRow + 1].some((c) => String(c || "").trim().length > 35);
+    if (looksLikeSubHeader && !hasLongServiceText) {
+      headerSpanRows = 2;
+    }
   }
 
+  for (let c = 0; c < totalCols; c++) {
+    const raw1 = String(rows[bestHeaderRow]?.[c] || "").replace(/\s+/g, " ").trim();
+    const raw2 =
+      headerSpanRows === 2 ? String(rows[bestHeaderRow + 1]?.[c] || "").replace(/\s+/g, " ").trim() : "";
+    const combinedRaw = raw1 && raw2 && raw1.toLowerCase() !== raw2.toLowerCase() ? `${raw1} (${raw2})` : raw1 || raw2;
+    rawHeaderTitles[c] = combinedRaw || `Coluna ${XLSX.utils.encode_col(c)}`;
+    headerCells[c] = normalizeText(`${raw1} ${raw2}`);
+  }
+
+  // Estatísticas reais das células de dados de cada coluna (para desempate inteligente entre "Código da Composição" vs "Descrição da Composição")
+  const sampleStart = bestHeaderScore >= 4 ? bestHeaderRow + headerSpanRows : 0;
+  const colStats = Array.from({ length: totalCols }, () => ({
+    longTextCount: 0,
+    shortCodeCount: 0,
+    unitCount: 0,
+    numberCount: 0,
+    itemPatternCount: 0,
+    firstSample: "",
+  }));
+
+  for (let r = sampleStart; r < Math.min(rows.length, sampleStart + 100); r++) {
+    const row = rows[r];
+    if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      const val = row[c];
+      if (val === "" || val === null || val === undefined) continue;
+      const s = String(val).trim();
+      if (!s) continue;
+      if (!colStats[c].firstSample && s.length > 0) {
+        colStats[c].firstSample = s.slice(0, 32);
+      }
+      if (/^\d+(\.\d+)+$/.test(s)) colStats[c].itemPatternCount++;
+      if (isLikelyUnit(s)) colStats[c].unitCount++;
+      else if (typeof val === "number" || (/^[\d.,]+$/.test(s) && parseBrazilianNumber(s) > 0)) {
+        colStats[c].numberCount++;
+      } else if (s.length >= 14 && isNaN(Number(s))) {
+        colStats[c].longTextCount++;
+      } else if (s.length >= 2 && s.length < 14) {
+        colStats[c].shortCodeCount++;
+      }
+    }
+  }
+
+  // 3. BUSCA INDEPENDENTE POR NOME DE COLUNA (Focada nos nomes: Quantitativo, Descrição/Composição/Discriminação, Unidade, Preço, Total)
   let colItem = -1;
   let colSource = -1;
   let colCode = -1;
@@ -364,90 +499,212 @@ export function studySpreadsheetFromBuffer(
   let colUnitPriceBdi = -1;
   let colTotal = -1;
 
+  // 3.1 Localiza a coluna de QUANTITATIVO pelo NOME ("quantitativo", "quantidade", "quant.", "quant", "qtd", "qtde", etc.)
+  let bestQtyScore = 0;
   headerCells.forEach((cell, idx) => {
     if (!cell) return;
-    if (colItem === -1 && (cell === "item" || cell.startsWith("item "))) colItem = idx;
-    else if (colSource === -1 && (cell.includes("fonte") || cell.includes("banco") || cell.includes("base") || cell === "orgao")) colSource = idx;
-    else if (colCode === -1 && (cell.includes("cod") || cell.includes("comp"))) colCode = idx;
-    else if (colDesc === -1 && (cell.includes("descri") || cell.includes("discrimina") || cell.includes("especifica") || cell.includes("servic") || cell.includes("composic"))) colDesc = idx;
-    else if (colUnit === -1 && (cell === "un" || cell === "und" || cell.includes("unid"))) colUnit = idx;
-    else if (colQty === -1 && (cell === "qtd" || cell === "qtde" || cell.includes("quant"))) colQty = idx;
-    else if (cell.includes("unit") || cell.includes("preco") || cell.includes("custo")) {
-      if (colUnitPrice === -1) colUnitPrice = idx;
-      else if (colUnitPriceBdi === -1 && (cell.includes("bdi") || idx > colUnitPrice)) colUnitPriceBdi = idx;
-    } else if (cell.includes("total") || cell.includes("valor")) {
-      colTotal = idx; // Pega a última coluna de total (que geralmente é o Total com BDI)
+    let qScore = 0;
+    const words = cell.split(/\s+/);
+
+    if (userQtyKey && cell.includes(userQtyKey)) qScore = 120;
+    else if (cell === "quantitativo" || cell === "quantidade" || words.includes("quantitativo") || words.includes("quantidade")) qScore = 100;
+    else if (
+      words.includes("quant") ||
+      words.includes("quant.") ||
+      words.includes("qtd") ||
+      words.includes("qtd.") ||
+      words.includes("qtde") ||
+      words.includes("qtde.") ||
+      words.includes("qte") ||
+      cell.includes("quant")
+    ) {
+      qScore = 90;
+    } else if (words.includes("volume") || words.includes("medicao")) {
+      qScore = 70;
+    }
+
+    // Não deixa confundir com "Preço Unitário", "Valor Total", "Custo"
+    if (qScore > 0 && (cell.includes("preco") || cell.includes("valor") || cell.includes("custo") || cell.includes("total") || cell.includes("unitario"))) {
+      qScore -= 60;
+    }
+    if (qScore > 0 && colStats[idx].numberCount > 0) {
+      qScore += 10;
+    }
+
+    if (qScore > bestQtyScore) {
+      bestQtyScore = qScore;
+      colQty = idx;
     }
   });
 
-  // 3. Inferência estatística caso alguma coluna não tenha sido detectada pelo título
-  const sampleStart = bestHeaderScore >= 4 ? bestHeaderRow + 1 : 0;
-  if (colDesc === -1 || colUnit === -1 || colQty === -1) {
-    const colStats = Array.from({ length: totalCols }, () => ({
-      longTextCount: 0,
-      unitCount: 0,
-      numberCount: 0,
-      itemPatternCount: 0,
-    }));
+  // 3.2 Localiza a coluna de DESCRIÇÃO / COMPOSIÇÃO / DISCRIMINAÇÃO pelo NOME
+  let bestDescScore = 0;
+  headerCells.forEach((cell, idx) => {
+    if (!cell || idx === colQty) return;
+    let dScore = 0;
 
-    for (let r = sampleStart; r < Math.min(rows.length, sampleStart + 80); r++) {
-      const row = rows[r];
-      if (!row) continue;
-      for (let c = 0; c < row.length; c++) {
-        const val = row[c];
-        if (val === "" || val === null || val === undefined) continue;
-        const s = String(val).trim();
-        if (/^\d+(\.\d+)+$/.test(s)) colStats[c].itemPatternCount++;
-        if (isLikelyUnit(s)) colStats[c].unitCount++;
-        else if (typeof val === "number" || (/^[\d.,]+$/.test(s) && parseBrazilianNumber(s) > 0)) colStats[c].numberCount++;
-        else if (s.length > 15 && isNaN(Number(s))) colStats[c].longTextCount++;
+    if (userDescKey && cell.includes(userDescKey)) dScore = 120;
+    else if (cell.includes("discriminacao") || cell.includes("descricao") || cell.includes("especificacao")) {
+      dScore = 100;
+    } else if (cell.includes("composicao") || cell.includes("composicoes") || cell.includes("composic")) {
+      // Se disser "Código da Composição", só pontua alto se tiver textos longos; se disser só "Composição" ou "Descrição da Composição", é a coluna de descrição!
+      if (cell.includes("cod") && !cell.includes("descri") && !cell.includes("discrimina") && colStats[idx].longTextCount < 2) {
+        dScore = 20;
+      } else {
+        dScore = 95;
       }
+    } else if (cell.includes("servico") || cell.includes("servicos") || cell.includes("objeto") || cell.includes("titulo")) {
+      dScore = 85;
     }
 
-    if (colDesc === -1) {
-      let maxLong = 0;
-      colStats.forEach((st, idx) => {
-        if (st.longTextCount > maxLong) {
-          maxLong = st.longTextCount;
-          colDesc = idx;
-        }
-      });
+    // Bônus se a coluna realmente contém as frases/descrições das composições nas linhas abaixo
+    if (dScore > 0 && colStats[idx].longTextCount >= 2) {
+      dScore += 20;
     }
 
-    if (colUnit === -1) {
-      let maxUnit = 0;
-      colStats.forEach((st, idx) => {
-        if (idx > colDesc && st.unitCount > maxUnit) {
-          maxUnit = st.unitCount;
-          colUnit = idx;
-        }
-      });
+    if (dScore > bestDescScore) {
+      bestDescScore = dScore;
+      colDesc = idx;
+    }
+  });
+
+  // 3.3 Localiza a coluna de UNIDADE pelo NOME ("unidade", "unid.", "unid", "und", "un")
+  let bestUnitScore = 0;
+  headerCells.forEach((cell, idx) => {
+    if (!cell || idx === colQty || idx === colDesc) return;
+    let uScore = 0;
+    const words = cell.replace(/\./g, "").split(/\s+/);
+
+    if (userUnitKey && cell.includes(userUnitKey)) uScore = 120;
+    else if (words.includes("unidade") || words.includes("unid") || words.includes("und") || words.includes("un") || words.includes("medida")) {
+      uScore = 95;
+    } else if (cell.includes("unid")) {
+      uScore = 85;
     }
 
-    if (colItem === -1) {
-      colStats.forEach((st, idx) => {
-        if (idx < colDesc && st.itemPatternCount >= 3 && colItem === -1) colItem = idx;
-      });
+    // Nunca confundir "UNID." com "PREÇO UNITÁRIO" / "VALOR UNIT."
+    if (uScore > 0 && (cell.includes("preco") || cell.includes("valor") || cell.includes("custo") || cell.includes("unitario") || cell.includes("total"))) {
+      uScore = 0;
+    }
+    if (uScore > 0 && colStats[idx].unitCount > 0) {
+      uScore += 15;
     }
 
-    // Colunas numéricas após a coluna de Unidade (ou Descrição)
-    const afterCol = colUnit !== -1 ? colUnit : colDesc;
-    const numericColsAfter: number[] = [];
+    if (uScore > bestUnitScore) {
+      bestUnitScore = uScore;
+      colUnit = idx;
+    }
+  });
+
+  // 3.4 Localiza ITEM, FONTE, CÓDIGO, PREÇO UNITÁRIO e TOTAL pelo NOME
+  headerCells.forEach((cell, idx) => {
+    if (!cell || idx === colQty || idx === colDesc || idx === colUnit) return;
+    const words = cell.replace(/\./g, "").split(/\s+/);
+
+    if (colItem === -1 && (words.includes("item") || words.includes("it") || words.includes("seq"))) {
+      colItem = idx;
+      return;
+    }
+    if (colSource === -1 && (words.includes("fonte") || words.includes("banco") || words.includes("base") || words.includes("tabela"))) {
+      colSource = idx;
+      return;
+    }
+    if (colCode === -1 && (cell.includes("cod") || cell.includes("referencia") || cell.includes("sinapi") || cell.includes("composic"))) {
+      colCode = idx;
+      return;
+    }
+    if (
+      (userPriceKey && cell.includes(userPriceKey)) ||
+      cell.includes("unitario") ||
+      cell.includes("preco unit") ||
+      cell.includes("valor unit") ||
+      cell.includes("vlr unit") ||
+      cell.includes("custo unit") ||
+      words.includes("unit") ||
+      words.includes("pu")
+    ) {
+      if (colUnitPrice === -1) colUnitPrice = idx;
+      else if (colUnitPriceBdi === -1 && (cell.includes("bdi") || idx > colUnitPrice)) colUnitPriceBdi = idx;
+      return;
+    }
+    if (
+      (userTotalKey && cell.includes(userTotalKey)) ||
+      cell.includes("total") ||
+      cell.includes("subtotal") ||
+      (cell.includes("valor") && !cell.includes("unit"))
+    ) {
+      colTotal = idx;
+    }
+  });
+
+  // 3.5 Fallback estatístico se alguma coluna não tinha cabeçalho explícito
+  if (colDesc === -1) {
+    let maxLong = 0;
     colStats.forEach((st, idx) => {
-      if (idx > afterCol && st.numberCount >= 2) numericColsAfter.push(idx);
+      if (st.longTextCount > maxLong) {
+        maxLong = st.longTextCount;
+        colDesc = idx;
+      }
     });
-
-    if (colQty === -1 && numericColsAfter.length >= 1) colQty = numericColsAfter[0];
-    if (colUnitPrice === -1 && numericColsAfter.length >= 2) colUnitPrice = numericColsAfter[1];
-    if (colTotal === -1 && numericColsAfter.length >= 3) colTotal = numericColsAfter[numericColsAfter.length - 1];
+  }
+  if (colUnit === -1) {
+    let maxUnit = 0;
+    colStats.forEach((st, idx) => {
+      if (idx !== colDesc && idx !== colQty && st.unitCount > maxUnit) {
+        maxUnit = st.unitCount;
+        colUnit = idx;
+      }
+    });
+  }
+  if (colItem === -1) {
+    colStats.forEach((st, idx) => {
+      if (idx < colDesc && st.itemPatternCount >= 2 && colItem === -1) colItem = idx;
+    });
   }
 
-  // Defaults seguros caso a planilha tenha formato mínimo
+  const afterCol = colUnit !== -1 ? colUnit : colDesc;
+  const numericColsAfter: number[] = [];
+  colStats.forEach((st, idx) => {
+    if (idx > afterCol && st.numberCount >= 1) numericColsAfter.push(idx);
+  });
+
+  if (colQty === -1 && numericColsAfter.length >= 1) colQty = numericColsAfter[0];
+  if (colUnitPrice === -1 && numericColsAfter.length >= 2) {
+    const nextAfterQty = numericColsAfter.find((c) => c > colQty);
+    if (nextAfterQty !== undefined) colUnitPrice = nextAfterQty;
+  }
+  if (colTotal === -1 && numericColsAfter.length >= 2) {
+    const lastNumCol = numericColsAfter[numericColsAfter.length - 1];
+    if (lastNumCol > colQty) colTotal = lastNumCol;
+  }
+
   if (colDesc === -1) colDesc = 1;
   if (colUnit === -1) colUnit = colDesc + 1;
   if (colQty === -1) colQty = colUnit + 1;
   if (colUnitPrice === -1) colUnitPrice = colQty + 1;
   if (colTotal === -1) colTotal = colUnitPrice + 1;
+
+  // 3.6 Aplica overrides explícitos caso o usuário tenha selecionado uma coluna específica pelo nome
+  if (explicitOverrides?.colDesc && explicitOverrides.colDesc > 0) colDesc = explicitOverrides.colDesc - 1;
+  if (explicitOverrides?.colUnit && explicitOverrides.colUnit > 0) colUnit = explicitOverrides.colUnit - 1;
+  if (explicitOverrides?.colQty && explicitOverrides.colQty > 0) colQty = explicitOverrides.colQty - 1;
+  if (explicitOverrides?.colPrice && explicitOverrides.colPrice > 0) colUnitPrice = explicitOverrides.colPrice - 1;
+  if (explicitOverrides?.colTotal && explicitOverrides.colTotal > 0) colTotal = explicitOverrides.colTotal - 1;
+
+  // Monta a lista de todas as colunas nomeadas da planilha para exibição e seleção pelo nome na UI
+  const allNamedColumns: NamedColumnOption[] = [];
+  for (let c = 0; c < totalCols; c++) {
+    const title = rawHeaderTitles[c] || `Coluna ${XLSX.utils.encode_col(c)}`;
+    const sample = colStats[c]?.firstSample || "";
+    if (rawHeaderTitles[c] || sample) {
+      allNamedColumns.push({
+        colIndex: c + 1,
+        colLetter: XLSX.utils.encode_col(c),
+        headerTitle: title,
+        sampleValue: sample,
+      });
+    }
+  }
 
   // 4. Varredura de 100% das linhas para identificar Etapas, Composições e TOTAL GERAL
   const stages: StageGroup[] = [];
@@ -597,6 +854,13 @@ export function studySpreadsheetFromBuffer(
     colTotal: colTotal + 1,
     qtyColLetter: qtyLetter,
     colQtyLetter: qtyLetter,
+    descHeaderName: rawHeaderTitles[colDesc] || "DESCRIÇÃO / COMPOSIÇÃO",
+    unitHeaderName: rawHeaderTitles[colUnit] || "UNID.",
+    qtyHeaderName: rawHeaderTitles[colQty] || "QUANTITATIVO",
+    priceHeaderName: rawHeaderTitles[colUnitPrice] || "PREÇO UNITÁRIO",
+    totalHeaderName: rawHeaderTitles[colTotal] || "TOTAL",
+    codeHeaderName: colCode !== -1 ? rawHeaderTitles[colCode] || "CÓDIGO" : "CÓDIGO",
+    allNamedColumns,
   };
 
   return {
