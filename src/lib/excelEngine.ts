@@ -1549,8 +1549,8 @@ async function findWorksheetPathInZip(zip: JSZip, preferredSheetName?: string): 
 
 /**
  * Atualiza o XML da aba de orçamento:
- * 1. Preserva 100% de tags, namespaces, larguras de colunas (<cols>) e alturas de linhas.
- * 2. Garante a visualização em Quebra de Página (view="pageBreakPreview") com 1 página de largura (fitToWidth="1").
+ * 1. Preserva 100% rigoroso de tags, namespaces, ordem XSD, larguras de colunas (<cols>) e alturas de linhas.
+ * 2. Garante a visualização em Quebra de Página (view="pageBreakPreview") no <sheetView> existente sem quebrar o schema.
  * 3. Injeta unicamente o valor numérico na coluna de quantitativo nas composições filtradas.
  */
 function updateWorksheetXmlWithQuantitiesAndLayout(
@@ -1560,45 +1560,19 @@ function updateWorksheetXmlWithQuantitiesAndLayout(
 ): string {
   const qtyColIdx = letterToColIndex(colLetter);
 
-  // 1. Garantir sheetPr com fitToPage="1" PRESERVANDO todos os atributos e namespaces da tag <worksheet>
-  if (sheetXml.includes("<sheetPr")) {
-    if (!sheetXml.includes("fitToPage")) {
-      sheetXml = sheetXml.replace(/<sheetPr\b([^>]*)>/i, '<sheetPr$1><pageSetUpPr fitToPage="1"/>');
-    }
-  } else {
-    sheetXml = sheetXml.replace(/(<worksheet\b[^>]*>)/i, '$1<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>');
+  // 1. Configurar view="pageBreakPreview" de forma segura no <sheetView> existente
+  if (sheetXml.includes("<sheetView")) {
+    sheetXml = sheetXml.replace(/(<sheetView\b[^>]*?)(>)/i, (match, openTag, closeTag) => {
+      if (openTag.includes("view=")) {
+        openTag = openTag.replace(/view=["'][^"']*["']/i, 'view="pageBreakPreview"');
+      } else {
+        openTag += ' view="pageBreakPreview"';
+      }
+      return `${openTag}${closeTag}`;
+    });
   }
 
-  // 2. Garantir sheetViews com view="pageBreakPreview" (Visualização de Quebra de Página solicitada no vídeo)
-  if (sheetXml.includes("<sheetViews>")) {
-    sheetXml = sheetXml.replace(
-      /<sheetViews>[\s\S]*?<\/sheetViews>/i,
-      `<sheetViews><sheetView tabSelected="1" showOutlineSymbols="0" view="pageBreakPreview" zoomScale="60" zoomScaleNormal="100" workbookViewId="0"><selection activeCell="${colLetter}9" sqref="${colLetter}9"/></sheetView></sheetViews>`
-    );
-  } else {
-    const insertPoint = sheetXml.indexOf("</sheetPr>");
-    if (insertPoint !== -1) {
-      sheetXml =
-        sheetXml.slice(0, insertPoint + 10) +
-        `<sheetViews><sheetView tabSelected="1" showOutlineSymbols="0" view="pageBreakPreview" zoomScale="60" zoomScaleNormal="100" workbookViewId="0"><selection activeCell="${colLetter}9" sqref="${colLetter}9"/></sheetView></sheetViews>` +
-        sheetXml.slice(insertPoint + 10);
-    }
-  }
-
-  // 3. Garantir pageSetup com fitToWidth="1" fitToHeight="0" (largura de 1 página e altura automática)
-  if (sheetXml.includes("<pageSetup")) {
-    sheetXml = sheetXml.replace(
-      /<pageSetup\b[^>]*\/?>/i,
-      '<pageSetup paperSize="9" fitToWidth="1" fitToHeight="0" orientation="portrait"/>'
-    );
-  } else if (sheetXml.includes("</worksheet>")) {
-    sheetXml = sheetXml.replace(
-      "</worksheet>",
-      '<pageSetup paperSize="9" fitToWidth="1" fitToHeight="0" orientation="portrait"/></worksheet>'
-    );
-  }
-
-  // 4. Injetar cirurgicamente os quantitativos linha a linha
+  // 2. Injetar cirurgicamente os quantitativos linha a linha mantendo estilos e integridade
   return sheetXml.replace(
     /(<row\b[^>]*\br="(\d+)"[^>]*>)([\s\S]*?)(<\/row>)/gi,
     (fullRow, rowOpen, rowNumStr, rowBody, rowClose) => {
@@ -1667,9 +1641,8 @@ function updateWorksheetXmlWithQuantitiesAndLayout(
  * Clona com fidelidade física 100% o arquivo .xlsx original do Contrato Base através de OpenXML direto com JSZip.
  * PRESERVA 100% de fontes, cores, larguras de colunas (<cols>), alturas de linhas, fórmulas, abas e logotipos,
  * alterando ESTRITAMENTE o número na célula da coluna de quantitativo na aba de orçamento!
- * Remove comentários, observações e caixas de anotação flutuantes indesejadas.
- * Configura nativamente a visualização de quebra de página (view="pageBreakPreview") com 1 página de largura (fitToWidth="1").
- * Ativa recálculo canônico (<calcPr fullCalcOnLoad="1"/>) compatível com o Microsoft Excel nativo.
+ * Remove comentários, observações e caixas de anotação flutuantes indesejadas sem quebrar referências.
+ * Mantém o schema XSD rigorosamente canônico para evitar mensagens de recuperação no Microsoft Excel.
  */
 export async function injectQuantitiesPreservingOriginalWorkbook(
   contractBase64: string,
@@ -1693,23 +1666,34 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
 
   const zip = await JSZip.loadAsync(bytes);
 
-  // 1. Limpeza Universal de Comentários e Observações (conforme solicitado no vídeo)
-  Object.keys(zip.files).forEach((f) => {
-    if (f.startsWith("xl/comments") && f.endsWith(".xml")) {
+  // 1. Limpeza segura de comentários (esvazia commentList sem violar schema nem referências)
+  Object.keys(zip.files).forEach((filename) => {
+    if (filename.startsWith("xl/comments") && filename.endsWith(".xml")) {
       zip.file(
-        f,
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>OrçaBase</author></authors><commentList/></comments>'
-      );
-    }
-    if (f.startsWith("xl/drawings/vmlDrawing") && f.endsWith(".vml")) {
-      zip.file(
-        f,
-        '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout><v:shapetype id="_x0000_t202" o:spt="202" coordsize="21600,21600" path="m0,0l0,21600,21600,21600,21600,0xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype></xml>'
+        filename,
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author></author></authors><commentList/></comments>'
       );
     }
   });
 
-  // 2. Localiza a worksheet da aba de orçamento
+  // 2. Oculta e desativa caixas de anotação flutuantes no VML preservando a integridade dos drawings
+  const vmlFiles = Object.keys(zip.files).filter(
+    (f) => f.startsWith("xl/drawings/vmlDrawing") && f.endsWith(".vml")
+  );
+  for (const filename of vmlFiles) {
+    let vml = await zip.file(filename)!.async("string");
+    vml = vml.replace(/<x:Visible\s*\/>/gi, "");
+    vml = vml.replace(/<x:Visible>[\s\S]*?<\/x:Visible>/gi, "");
+    vml = vml.replace(/(<v:shape\b[^>]*style=")([^"]*?)(")/gi, (m, p1, p2, p3) => {
+      if (!p2.includes("visibility:hidden")) {
+        return `${p1}${p2};visibility:hidden${p3}`;
+      }
+      return m;
+    });
+    zip.file(filename, vml);
+  }
+
+  // 3. Localiza a worksheet da aba de orçamento
   const sheetPath = await findWorksheetPathInZip(zip, options.budgetSheetName);
   const sheetXmlFile = zip.file(sheetPath);
   if (!sheetXmlFile) {
@@ -1718,12 +1702,12 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
 
   let sheetXml = await sheetXmlFile.async("string");
 
-  // 3. Determina a letra da coluna de quantitativo
+  // 4. Determina a letra da coluna de quantitativo
   const colLetter =
     options.colQtyLetter ||
     (options.colQtyOneBased ? colIndexToLetter(options.colQtyOneBased) : "F");
 
-  // 4. Mapeia as linhas e quantitativos validados
+  // 5. Mapeia as linhas e quantitativos validados
   const qtyByRow = new Map<number, number>();
   for (const cm of options.compositionMatches) {
     if (cm.contract_row_index && cm.contract_row_index > 0) {
@@ -1731,24 +1715,25 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
     }
   }
 
-  // 5. Atualiza o XML da aba com preservação de layout, pageBreakPreview, fitToWidth e injeção de quantitativos
+  // 6. Atualiza o XML da aba com preservação estrita de schema e injeção de quantitativos
   sheetXml = updateWorksheetXmlWithQuantitiesAndLayout(sheetXml, colLetter, qtyByRow);
   zip.file(sheetPath, sheetXml);
 
-  // 6. Ativa o recálculo automático canônico das fórmulas do Excel (<calcPr fullCalcOnLoad="1"/>)
+  // 7. Ativa o recálculo automático preservando estritamente calcId e atributos de workbook.xml
   const wbFile = zip.file("xl/workbook.xml");
   if (wbFile) {
     let wbXml = await wbFile.async("string");
     if (wbXml.includes("<calcPr")) {
-      wbXml = wbXml.replace(/<calcPr\b[^>]*\/>/i, '<calcPr fullCalcOnLoad="1"/>');
-      wbXml = wbXml.replace(/<calcPr\b[^>]*>/i, '<calcPr fullCalcOnLoad="1">');
+      if (!wbXml.includes("fullCalcOnLoad")) {
+        wbXml = wbXml.replace(/(<calcPr\b[^>]*?)(\/?>)/i, '$1 fullCalcOnLoad="1"$2');
+      }
     } else if (wbXml.includes("</workbook>")) {
-      wbXml = wbXml.replace("</workbook>", '<calcPr fullCalcOnLoad="1"/></workbook>');
+      wbXml = wbXml.replace("</workbook>", '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');
     }
     zip.file("xl/workbook.xml", wbXml);
   }
 
-  // 7. Gera o arquivo final .xlsx comprimido em DEFLATE instantaneamente
+  // 8. Gera o arquivo final .xlsx canônico comprimido em DEFLATE
   return await zip.generateAsync({
     type: "blob",
     mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

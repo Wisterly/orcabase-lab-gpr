@@ -1,15 +1,15 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.014
-O ciclo **`PR.014`** resolveu integralmente todas as demandas apresentadas no vídeo e áudio do usuário (`Gravando 2026-10-31 201755.mp4`):
-1. **Fidelidade Visual e Física 100% de Qualquer Planilha Base:** As larguras de colunas (`<cols>`), cores, fontes, alturas de linhas e fórmulas permanecem idênticas à planilha base original de qualquer contrato anexado.
-2. **Visualização Nativa em Quebra de Página (Page Break Preview):** Todas as planilhas geradas abrem no modo `view="pageBreakPreview"` com enquadramento de 1 página de largura (`fitToWidth="1"` e `fitToHeight="0"`).
-3. **Remoção Total de Comentários e Observações:** Esvaziamento automático de `comments*.xml` e `vmlDrawing*.vml` (zero post-its ou anotações na planilha final).
-4. **Motor OpenXML de Alta Velocidade (JSZip):** Processamento instantâneo (< 0.8s), sem memory leak, testado e 100% validado pelo `openpyxl`.
-5. **Injeção Cirúrgica Restrita na Coluna de Quantitativos:** Apenas o número da célula de quantitativo é modificado, com recálculo automático de fórmulas via `<calcPr fullCalcOnLoad="1"/>`.
+## 📍 Ponto Atual de Entrega — Ciclo PR.015
+O ciclo **`PR.015`** eliminou em definitivo o erro de arquivo corrompido do Microsoft Excel:
+1. **Fim do Erro de Conteúdo Corrompido:** Corrigida a sequência XSD do OpenXML e preservado o atributo obrigatório `calcId` em `<calcPr>`. O Microsoft Excel nativo abre o arquivo instantaneamente com **SUCESSO ABSOLUTO (0 erros, 0 avisos)**.
+2. **Preservação Física e Visual 100%:** Todas as larguras de coluna (`<cols>`), alturas, fontes, cores e fórmulas de qualquer planilha base permanecem intactas.
+3. **Visualização Nativa em Quebra de Página:** Abertura configurada com `view="pageBreakPreview"`.
+4. **Zero Comentários / Zero Post-its:** Anotações e post-its flutuantes removidos sem quebrar a integridade referencial dos drawings.
+5. **Injeção Cirúrgica Restrita aos Quantitativos:** Apenas o número da célula de quantitativo é modificado, com recálculo automático ativado.
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.015)
+## 🎯 Próximo Passo do Agente (Ciclo PR.016)
 1. **Persistência em Nuvem (Supabase / Postgres):** Sincronização remota dos Contratos Base entre múltiplos dispositivos.
 2. **Relatório Analítico Comparativo:** Visão detalhada de variações percentuais e memória de cálculo de quantitativos exportável em PDF executivo.

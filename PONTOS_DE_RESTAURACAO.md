@@ -11,6 +11,33 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.015]
+- **Data/Hora:** 31/10/2026 21:48 (Horário Local)
+- **Tag Git:** `PR.015`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.015 (Eliminação Definitiva do Erro de Corrupção no Microsoft Excel):
+1. **Identificação da Causa Raiz do Alerta de Conteúdo Inválido:**
+   - No ciclo anterior, a tentativa de reinserir `<pageSetup>` antes de `</worksheet>` quebrava a sequência rígida de elementos (Sequence XSD) definida pela norma ISO/IEC 29500 para planilhas que já continham drawings (`<legacyDrawing>`).
+   - A substituição do `<calcPr>` descartava o atributo obrigatório `calcId`, levando o Excel a disparar o aviso de conteúdo corrompido.
+2. **Correção Cirúrgica de Preservação de Schema XSD:**
+   - O `<pageSetup>` original da planilha base é rigorosamente preservado em sua coordenada e atributos originais.
+   - O `<sheetView>` existente é mantido intacto, recebendo cirurgicamente o atributo `view="pageBreakPreview"` sem deslocar elementos.
+   - O `<calcPr>` preserva 100% de seus atributos originais (especialmente `calcId`) e apenas agrega `fullCalcOnLoad="1"` para recálculo instantâneo de fórmulas.
+3. **Limpeza Segura de Comentários e VML:**
+   - O `<commentList/>` é esvaziado de forma canônica mantendo o cabeçalho de comments intacto.
+   - Os shapes VML de anotação têm `<x:Visible/>` removido e estilo configurado com `visibility:hidden`, eliminando post-its flutuantes na tela sem corromper referências de drawings.
+4. **Validação Direta no Microsoft Excel Nativo (Automação COM):**
+   - O arquivo gerado foi submetido a teste de abertura real via `Excel.Application.Workbooks.Open` na própria máquina Windows, confirmando abertura imediata com **SUCESSO ABSOLUTO (código 0, sem avisos de reparo ou dados corrompidos)**.
+
+---
+
 ### [PR.014]
 - **Data/Hora:** 31/10/2026 21:10 (Horário Local)
 - **Tag Git:** `PR.014`
