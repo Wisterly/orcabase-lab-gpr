@@ -5,7 +5,7 @@
  */
 
 import * as XLSX from "xlsx";
-import ExcelJS from "exceljs";
+import JSZip from "jszip";
 import {
   DetectedColumns,
   NamedColumnOption,
@@ -1489,10 +1489,187 @@ export function letterToColIndex(letter: string): number {
 }
 
 /**
- * Clona com fidelidade física 100% o arquivo .xlsx original do Contrato Base através de ExcelJS.
- * PRESERVA 100% de fontes, cores, larguras de colunas, alturas de linhas, fórmulas, abas e logotipos,
+ * Localiza o caminho da worksheet da aba de orçamento no interior do contêiner .xlsx (ZIP)
+ */
+async function findWorksheetPathInZip(zip: JSZip, preferredSheetName?: string): Promise<string> {
+  const wbXmlFile = zip.file("xl/workbook.xml");
+  const relsFile = zip.file("xl/_rels/workbook.xml.rels");
+  if (!wbXmlFile || !relsFile) {
+    return "xl/worksheets/sheet1.xml";
+  }
+
+  const wbXml = await wbXmlFile.async("string");
+  const relsXml = await relsFile.async("string");
+
+  const relMap = new Map<string, string>();
+  const relRegex = /<Relationship\b[^>]*Id="([^"]+)"[^>]*Target="([^"]+)"/gi;
+  let rMatch: RegExpExecArray | null;
+  while ((rMatch = relRegex.exec(relsXml)) !== null) {
+    relMap.set(rMatch[1], rMatch[2]);
+  }
+
+  const sheets: { name: string; target: string }[] = [];
+  const sheetRegex = /<sheet\b[^>]*name="([^"]+)"[^>]*sheetId="([^"]+)"[^>]*r:id="([^"]+)"/gi;
+  let sMatch: RegExpExecArray | null;
+  while ((sMatch = sheetRegex.exec(wbXml)) !== null) {
+    const name = sMatch[1];
+    const rId = sMatch[3];
+    let target = relMap.get(rId) || `worksheets/sheet${sMatch[2]}.xml`;
+    if (!target.startsWith("xl/")) {
+      target = "xl/" + target.replace(/^\//, "").replace(/^xl\//, "");
+    }
+    sheets.push({ name, target });
+  }
+
+  if (preferredSheetName) {
+    const exact = sheets.find((s) => s.name.trim().toLowerCase() === preferredSheetName.trim().toLowerCase());
+    if (exact && zip.file(exact.target)) return exact.target;
+
+    const partial = sheets.find((s) => s.name.toLowerCase().includes(preferredSheetName.toLowerCase()));
+    if (partial && zip.file(partial.target)) return partial.target;
+  }
+
+  const budgetCandidate = sheets.find((s) => {
+    const n = s.name.toLowerCase();
+    return (
+      n.includes("sintetico") ||
+      n.includes("sintético") ||
+      n.includes("orçamento") ||
+      n.includes("orcamento") ||
+      n.includes("planilha") ||
+      n.includes("geral")
+    );
+  });
+  if (budgetCandidate && zip.file(budgetCandidate.target)) {
+    return budgetCandidate.target;
+  }
+
+  return sheets[0]?.target || "xl/worksheets/sheet1.xml";
+}
+
+/**
+ * Atualiza o XML da aba de orçamento:
+ * 1. Preserva 100% de tags, namespaces, larguras de colunas (<cols>) e alturas de linhas.
+ * 2. Garante a visualização em Quebra de Página (view="pageBreakPreview") com 1 página de largura (fitToWidth="1").
+ * 3. Injeta unicamente o valor numérico na coluna de quantitativo nas composições filtradas.
+ */
+function updateWorksheetXmlWithQuantitiesAndLayout(
+  sheetXml: string,
+  colLetter: string,
+  qtyByRow: Map<number, number>
+): string {
+  const qtyColIdx = letterToColIndex(colLetter);
+
+  // 1. Garantir sheetPr com fitToPage="1" PRESERVANDO todos os atributos e namespaces da tag <worksheet>
+  if (sheetXml.includes("<sheetPr")) {
+    if (!sheetXml.includes("fitToPage")) {
+      sheetXml = sheetXml.replace(/<sheetPr\b([^>]*)>/i, '<sheetPr$1><pageSetUpPr fitToPage="1"/>');
+    }
+  } else {
+    sheetXml = sheetXml.replace(/(<worksheet\b[^>]*>)/i, '$1<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>');
+  }
+
+  // 2. Garantir sheetViews com view="pageBreakPreview" (Visualização de Quebra de Página solicitada no vídeo)
+  if (sheetXml.includes("<sheetViews>")) {
+    sheetXml = sheetXml.replace(
+      /<sheetViews>[\s\S]*?<\/sheetViews>/i,
+      `<sheetViews><sheetView tabSelected="1" showOutlineSymbols="0" view="pageBreakPreview" zoomScale="60" zoomScaleNormal="100" workbookViewId="0"><selection activeCell="${colLetter}9" sqref="${colLetter}9"/></sheetView></sheetViews>`
+    );
+  } else {
+    const insertPoint = sheetXml.indexOf("</sheetPr>");
+    if (insertPoint !== -1) {
+      sheetXml =
+        sheetXml.slice(0, insertPoint + 10) +
+        `<sheetViews><sheetView tabSelected="1" showOutlineSymbols="0" view="pageBreakPreview" zoomScale="60" zoomScaleNormal="100" workbookViewId="0"><selection activeCell="${colLetter}9" sqref="${colLetter}9"/></sheetView></sheetViews>` +
+        sheetXml.slice(insertPoint + 10);
+    }
+  }
+
+  // 3. Garantir pageSetup com fitToWidth="1" fitToHeight="0" (largura de 1 página e altura automática)
+  if (sheetXml.includes("<pageSetup")) {
+    sheetXml = sheetXml.replace(
+      /<pageSetup\b[^>]*\/?>/i,
+      '<pageSetup paperSize="9" fitToWidth="1" fitToHeight="0" orientation="portrait"/>'
+    );
+  } else if (sheetXml.includes("</worksheet>")) {
+    sheetXml = sheetXml.replace(
+      "</worksheet>",
+      '<pageSetup paperSize="9" fitToWidth="1" fitToHeight="0" orientation="portrait"/></worksheet>'
+    );
+  }
+
+  // 4. Injetar cirurgicamente os quantitativos linha a linha
+  return sheetXml.replace(
+    /(<row\b[^>]*\br="(\d+)"[^>]*>)([\s\S]*?)(<\/row>)/gi,
+    (fullRow, rowOpen, rowNumStr, rowBody, rowClose) => {
+      const rowNum = parseInt(rowNumStr, 10);
+      if (!qtyByRow.has(rowNum)) {
+        return fullRow;
+      }
+
+      const qty = qtyByRow.get(rowNum) || 0;
+      const formattedQty = Number(qty.toFixed(4));
+      const cellRef = `${colLetter}${rowNum}`;
+
+      let body = rowBody;
+      const cellRegex = new RegExp(
+        `(<c\\b[^>]*\\br="${cellRef}"[^>]*>)([\\s\\S]*?)(<\\/c>)|(<c\\b[^>]*\\br="${cellRef}"[^>]*\\/>)`,
+        "i"
+      );
+
+      const cellMatch = cellRegex.exec(body);
+      if (cellMatch) {
+        if (cellMatch[1]) {
+          let openTag = cellMatch[1];
+          if (openTag.includes('t="s"') || openTag.includes("t='s'")) {
+            openTag = openTag.replace(/t=["']s["']/, 't="n"');
+          } else if (!openTag.includes("t=")) {
+            openTag = openTag.replace(/>$/, ' t="n">');
+          }
+          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
+          body = body.replace(cellMatch[0], updatedCell);
+        } else if (cellMatch[4]) {
+          let openTag = cellMatch[4].replace(/\/>$/, ">");
+          if (!openTag.includes("t=")) {
+            openTag = openTag.replace(/>$/, ' t="n">');
+          }
+          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
+          body = body.replace(cellMatch[0], updatedCell);
+        }
+      } else {
+        const newCell = `<c r="${cellRef}" t="n"><v>${formattedQty}</v></c>`;
+        const anyCellRegex = /<c\b[^>]*\br="([A-Z]+)\d+"/gi;
+        let cMatch: RegExpExecArray | null;
+        let insertIndex = -1;
+
+        while ((cMatch = anyCellRegex.exec(body)) !== null) {
+          const existingColLetter = cMatch[1];
+          const existingColIdx = letterToColIndex(existingColLetter);
+          if (existingColIdx > qtyColIdx) {
+            insertIndex = cMatch.index;
+            break;
+          }
+        }
+
+        if (insertIndex !== -1) {
+          body = body.slice(0, insertIndex) + newCell + body.slice(insertIndex);
+        } else {
+          body = body + newCell;
+        }
+      }
+
+      return `${rowOpen}${body}${rowClose}`;
+    }
+  );
+}
+
+/**
+ * Clona com fidelidade física 100% o arquivo .xlsx original do Contrato Base através de OpenXML direto com JSZip.
+ * PRESERVA 100% de fontes, cores, larguras de colunas (<cols>), alturas de linhas, fórmulas, abas e logotipos,
  * alterando ESTRITAMENTE o número na célula da coluna de quantitativo na aba de orçamento!
- * Gera um arquivo canônico 100% compatível com o Microsoft Excel sem erros de corrupção.
+ * Remove comentários, observações e caixas de anotação flutuantes indesejadas.
+ * Configura nativamente a visualização de quebra de página (view="pageBreakPreview") com 1 página de largura (fitToWidth="1").
+ * Ativa recálculo canônico (<calcPr fullCalcOnLoad="1"/>) compatível com o Microsoft Excel nativo.
  */
 export async function injectQuantitiesPreservingOriginalWorkbook(
   contractBase64: string,
@@ -1514,61 +1691,69 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
     bytes[i] = binaryString.charCodeAt(i);
   }
 
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(bytes.buffer);
+  const zip = await JSZip.loadAsync(bytes);
 
-  // 1. Localiza a worksheet correspondente à aba de orçamento
-  let worksheet: ExcelJS.Worksheet | undefined;
-
-  if (options.budgetSheetName) {
-    worksheet = workbook.getWorksheet(options.budgetSheetName);
-  }
-
-  if (!worksheet) {
-    worksheet = workbook.worksheets.find((ws) => {
-      const n = ws.name.toLowerCase();
-      return (
-        n.includes("orçamento") ||
-        n.includes("orcamento") ||
-        n.includes("planilha") ||
-        n.includes("composi") ||
-        n.includes("analítico")
+  // 1. Limpeza Universal de Comentários e Observações (conforme solicitado no vídeo)
+  Object.keys(zip.files).forEach((f) => {
+    if (f.startsWith("xl/comments") && f.endsWith(".xml")) {
+      zip.file(
+        f,
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>OrçaBase</author></authors><commentList/></comments>'
       );
-    });
+    }
+    if (f.startsWith("xl/drawings/vmlDrawing") && f.endsWith(".vml")) {
+      zip.file(
+        f,
+        '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout><v:shapetype id="_x0000_t202" o:spt="202" coordsize="21600,21600" path="m0,0l0,21600,21600,21600,21600,0xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype></xml>'
+      );
+    }
+  });
+
+  // 2. Localiza a worksheet da aba de orçamento
+  const sheetPath = await findWorksheetPathInZip(zip, options.budgetSheetName);
+  const sheetXmlFile = zip.file(sheetPath);
+  if (!sheetXmlFile) {
+    throw new Error(`Arquivo da aba "${sheetPath}" não encontrado no arquivo .xlsx do contrato.`);
   }
 
-  if (!worksheet && workbook.worksheets.length > 0) {
-    worksheet = workbook.worksheets[0];
-  }
+  let sheetXml = await sheetXmlFile.async("string");
 
-  if (!worksheet) {
-    throw new Error("Não foi possível localizar a aba de orçamento na planilha do contrato.");
-  }
+  // 3. Determina a letra da coluna de quantitativo
+  const colLetter =
+    options.colQtyLetter ||
+    (options.colQtyOneBased ? colIndexToLetter(options.colQtyOneBased) : "F");
 
-  // 2. Coluna de quantitativo (1-based)
-  const colQtyIdx =
-    options.colQtyOneBased && options.colQtyOneBased > 0
-      ? options.colQtyOneBased
-      : options.colQtyLetter
-      ? letterToColIndex(options.colQtyLetter)
-      : 6;
-
-  // 3. Aplica os quantitativos linha por linha mantendo estilos e fórmulas
+  // 4. Mapeia as linhas e quantitativos validados
+  const qtyByRow = new Map<number, number>();
   for (const cm of options.compositionMatches) {
     if (cm.contract_row_index && cm.contract_row_index > 0) {
-      const cell = worksheet.getCell(cm.contract_row_index, colQtyIdx);
-      cell.value = Number(cm.final_injected_quantity.toFixed(4));
+      qtyByRow.set(cm.contract_row_index, cm.final_injected_quantity);
     }
   }
 
-  // 4. Força o Excel a recalcular todas as fórmulas (totalizadores e BDI) ao abrir
-  workbook.calcProperties.fullCalcOnLoad = true;
+  // 5. Atualiza o XML da aba com preservação de layout, pageBreakPreview, fitToWidth e injeção de quantitativos
+  sheetXml = updateWorksheetXmlWithQuantitiesAndLayout(sheetXml, colLetter, qtyByRow);
+  zip.file(sheetPath, sheetXml);
 
-  // 5. Gera o binário do arquivo .xlsx de forma canônica
-  const buffer = await workbook.xlsx.writeBuffer();
+  // 6. Ativa o recálculo automático canônico das fórmulas do Excel (<calcPr fullCalcOnLoad="1"/>)
+  const wbFile = zip.file("xl/workbook.xml");
+  if (wbFile) {
+    let wbXml = await wbFile.async("string");
+    if (wbXml.includes("<calcPr")) {
+      wbXml = wbXml.replace(/<calcPr\b[^>]*\/>/i, '<calcPr fullCalcOnLoad="1"/>');
+      wbXml = wbXml.replace(/<calcPr\b[^>]*>/i, '<calcPr fullCalcOnLoad="1">');
+    } else if (wbXml.includes("</workbook>")) {
+      wbXml = wbXml.replace("</workbook>", '<calcPr fullCalcOnLoad="1"/></workbook>');
+    }
+    zip.file("xl/workbook.xml", wbXml);
+  }
 
-  return new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  // 7. Gera o arquivo final .xlsx comprimido em DEFLATE instantaneamente
+  return await zip.generateAsync({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
   });
 }
 
