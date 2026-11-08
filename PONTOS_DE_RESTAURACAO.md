@@ -11,6 +11,37 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.020]
+- **Data/Hora:** 08/11/2026 01:20 (Horário Local)
+- **Tag Git:** `PR.020`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.020 (Sanitizador Universal de XML OpenXML, Fechamento Estrito de calcPr e Fim do Descarte da Aba pelo Excel):
+1. **Diagnóstico da Causa Raiz da Aba Zerada e do Erro de XML em sheet7.xml:**
+   - Na planilha do contrato Desenvolva (e em planilhas que já haviam passado por processamento prévio ou tags auto-fechadas), 197 células da coluna F continham uma barra solta antes do atributo de tipo: `<c r="F9" s="162"/ t="n"><v>...</v></c>`.
+   - Ao abrir no Microsoft Excel, a validação de XML falhava exatamente nessa barra solta (`Parte de /xl/worksheets/sheet7.xml com erro XML. Esperado um '>'. Linha 2, coluna 5797`).
+   - O mecanismo de recuperação do Excel descartava a aba inteira (`sintetico GERAL`), gerando uma aba vazia, sem formatação e sem itens.
+   - Adicionalmente, em `xl/workbook.xml`, a tag `<calcPr>` estava aberta sem fechamento canônico (`<calcPr fullCalcOnLoad="1">`), levando o Excel a remover o `calcChain.xml`.
+2. **Sanitizador Universal de Tags XML em Todas as Worksheets:**
+   - Implementado varredura universal em todas as abas (`xl/worksheets/sheet*.xml`) que limpa automaticamente qualquer barra solta antes de atributos: `replace(/(<c\b[^>]*?)\/\s*(\b[a-zA-Z_:][a-zA-Z0-9_:\-]*=)/g, "$1 $2")`.
+   - Na injeção de novas células de quantitativo, o `tagOpen` é rigorosamente higienizado com `replace(/\s*\/+\s*$/, "")`, impedindo terminantemente que qualquer tag de abertura termine com barra solta.
+3. **Cura Estrutural de `xl/workbook.xml`:**
+   - Garantido que `<calcPr>` seja sempre auto-fechado com `/>`: `wbXml.replace(/(<calcPr\b[^>]*?)(?<!\/)>/i, "$1/>")`.
+   - Mantida ativa a instrução `fullCalcOnLoad="1"` para recálculo automático instantâneo ao abrir no Excel.
+4. **Validação Rigorosa com openpyxl (Modo Estrito ISO/IEC 29500):**
+   - Planilha curada validada diretamente no `openpyxl`:
+     - 13 abas carregadas sem nenhum erro.
+     - 225 linhas da aba `sintetico GERAL` lidas com 100% de integridade.
+     - Célula `F9` (quantitativo), `H9` (`=TRUNC(G9*1.2685,2)`), `I9` (`=TRUNC(H9*F9,2)`), `D10` (descrição da placa de obra) e subtotais intactos.
+
+---
+
 ### [PR.019]
 - **Data/Hora:** 08/11/2026 00:30 (Horário Local)
 - **Tag Git:** `PR.019`

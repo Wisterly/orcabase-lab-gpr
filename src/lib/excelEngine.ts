@@ -1759,7 +1759,9 @@ function updateWorksheetXmlWithQuantitiesAndLayout(
       const cellMatch = cellRegex.exec(body);
 
       if (cellMatch) {
-        let tagOpen = cellMatch[1].replace(/\s+t=["'][^"']*["']/i, "");
+        let tagOpen = cellMatch[1]
+          .replace(/\s+t=["'][^"']*["']/i, "")
+          .replace(/\s*\/+\s*$/, "");
         tagOpen = `${tagOpen} t="n">`;
         const updatedCell = `${tagOpen}<v>${formattedQty}</v></c>`;
         body = body.replace(cellMatch[0], updatedCell);
@@ -1915,6 +1917,19 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
   // 2. Remoção CONSISTENTE de comentários/notas (partes, relações, tipos de conteúdo e shapes VML de nota)
   await removeCommentsConsistently(zip);
 
+  // 2.2. Sanitização UNIVERSAL de todas as worksheets contra tags corrompidas com barra solta
+  const sheetFiles = Object.keys(zip.files).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/i.test(n));
+  for (const sPath of sheetFiles) {
+    const sFile = zip.file(sPath);
+    if (sFile) {
+      let sContent = await sFile.async("string");
+      const cleaned = sContent.replace(/(<c\b[^>]*?)\/\s*(\b[a-zA-Z_:][a-zA-Z0-9_:\-]*=)/g, "$1 $2");
+      if (cleaned !== sContent) {
+        zip.file(sPath, cleaned);
+      }
+    }
+  }
+
   // 2.5 Remoção da cadeia de cálculo obsoleta (calcChain.xml) para reconstrução automática e silenciosa no Excel
   await removeCalcChainConsistently(zip);
 
@@ -1956,13 +1971,15 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
   sheetXml = updateWorksheetXmlWithQuantitiesAndLayout(sheetXml, colLetter, qtyByRow);
   zip.file(sheetPath, sheetXml);
 
-  // 7. Ativa o recálculo automático preservando estritamente calcId e atributos de workbook.xml
+  // 7. Ativa o recálculo automático preservando estritamente calcId e garantindo fechamento correto
   const wbFile = zip.file("xl/workbook.xml");
   if (wbFile) {
     let wbXml = await wbFile.async("string");
+    // Garante que calcPr feche com /> caso não tenha fechamento (ex: <calcPr fullCalcOnLoad="1">)
+    wbXml = wbXml.replace(/(<calcPr\b[^>]*?)(?<!\/)>/i, "$1/>");
     if (wbXml.includes("<calcPr")) {
       if (!wbXml.includes("fullCalcOnLoad")) {
-        wbXml = wbXml.replace(/(<calcPr\b[^>]*?)(\/?>)/i, '$1 fullCalcOnLoad="1"$2');
+        wbXml = wbXml.replace(/(<calcPr\b[^>]*?)(\/>)/i, '$1 fullCalcOnLoad="1"/>');
       }
     } else if (wbXml.includes("</workbook>")) {
       wbXml = wbXml.replace("</workbook>", '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>');

@@ -1,15 +1,14 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.019
-O ciclo **`PR.019`** implementou o banco de dados IndexedDB de alta capacidade (`OrcaBaseGPR_Storage_v1` v2), eliminando de forma definitiva o problema de perda de contratos e configurações ao atualizar a página (F5):
-1. **Banco de Dados IndexedDB (Sem Limite de 5MB do LocalStorage):** Contratos com centenas ou milhares de itens orçamentários (SINAPI/ORSE) são persistidos com todas as suas composições, etapas e parâmetros estruturados na store `contracts_store`.
-2. **Persistência de Arquivos Binários:** Planilhas originais (`.xlsx` e `.xlsm`) permanecem salvas na store `contract_binaries` associadas ao ID de cada contrato.
-3. **Persistência de Configurações e Estado:** A store `app_settings` mantém o contrato ativo selecionado (`selectedContractId`), estratégia de cálculo (`calcStrategy`), palavras-chave inteligentes de busca de colunas e flag de inicialização do sistema (`initialized: true`).
-4. **CRUD Completo:** Adição, edição de colunas e intervalos de linhas, e exclusão de contratos operam de forma transacional e permanente no disco do navegador.
-5. **Botão "Restaurar Exemplos":** Disponibilizado na aba de Configurações para recarregar com segurança os contratos de fábrica quando desejado.
+## 📍 Ponto Atual de Entrega — Ciclo PR.020
+O ciclo **`PR.020`** implementou o sanitizador universal OpenXML e a cura estrutural de `xl/workbook.xml` e `xl/worksheets/*.xml`, eliminando definitivamente o erro de XML que causava o descarte da aba orçamentária (`sintetico GERAL`) pelo Microsoft Excel:
+1. **Sanitizador Universal de Tags XML:** Remove automaticamente qualquer barra solta antes de atributos (`<c .../ t="n"> -> <c ... t="n">`) em todas as abas da planilha.
+2. **Higienização de Injeção de Células:** O `tagOpen` é limpo com `replace(/\s*\/+\s*$/, "")`, impedindo que tags de quantitativo gerem sintaxe XML malformada.
+3. **Cura de `xl/workbook.xml`:** Garante fechamento canônico da tag `<calcPr/>` com `fullCalcOnLoad="1"`, eliminando avisos de reparo de fórmulas.
+4. **Validação Rigorosa openpyxl:** Arquivo Desenvolva testado e aprovado com 225 linhas íntegras, todas as descrições preservadas e fórmulas vivas recalculadas com sucesso.
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.020)
+## 🎯 Próximo Passo do Agente (Ciclo PR.021)
 1. **Persistência em Nuvem (Supabase / Postgres):** Sincronização remota dos Contratos Base entre múltiplos dispositivos e usuários da organização.
 2. **Relatório Analítico Comparativo:** Visão detalhada de variações percentuais e memória de cálculo de quantitativos exportável em PDF executivo.
