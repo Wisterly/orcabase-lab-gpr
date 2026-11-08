@@ -11,6 +11,34 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.027]
+- **Data/Hora:** 08/11/2026 04:08 (Horário Local)
+- **Tag Git:** `PR.027`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.027 (Aba Memorial Descritivo Idêntica à Referência Visual: Chat IA, Dados do Memorial, Visualizador de PDF e Ações):
+1. **Layout Split Oficial em 2 Colunas no Dark Industrial Luxury:**
+   - **Coluna Esquerda (Chat do Assistente OrçaBase.lab):**
+     - Cabeçalho com ícone de robô em moldura com glow dourado/âmbar, títulos institucionais e pill `Modelo 4 · Chat ⓘ` / `Modelo 4 · Gemini` com modal para inserção opcional de chave de IA.
+     - Histórico de mensagens estruturado com avatares dedicados (usuário laranja à direita, robô com borda laranja à esquerda).
+     - Respostas técnicas com marcadores em bullet points laranjas luminosos e botões de feedback (like/dislike).
+     - Barra de ferramentas inferior com botão de anexo de arquivos (`Paperclip`), input de texto, transcrição de áudio por microfone em tempo real e botão laranja vibrante de envio (`Send`).
+2. **Coluna Direita: 3 Cards Empilhados com Cabeçalho e Chevrons Colapsáveis:**
+   - **Card 1 (Dados do Memorial):** Formulário em grid com campos padronizados: *Identificação do imóvel \**, *Município \**, *UF \**, *Área (m²) \**, *Perímetro (m) \**, *Sistema de referência / Datum \** e *Finalidade*.
+   - **Card 2 (Visualização do Memorial Descritivo - PDF):** Viewport A4 centralizado e realista com logo `OrçaBase.Lab - GPR`, badge vermelho `PDF`, título `MEMORIAL DESCRITIVO`, linhas de especificações sincronizadas e onda institucional laranja no rodapé. Navegação lateral entre páginas (`<` e `>`), indicador `1 de 4`, lupa de Zoom In/Out e botão de visualização em tela cheia.
+   - **Card 3 (Ações do PDF):** Botão principal com gradiente laranja vibrante e ícone de faíscas `✨ Gerar Memorial`, botão secundário escuro `👁️ Visualizar PDF` (modal em alta definição) e botão `📥 Baixar PDF` (download direto do documento executivo oficial via jsPDF).
+3. **Preservação Integral de 100% dos Dados e Motores de Cálculo:**
+   - Compilação do Next.js 15 concluída com sucesso com código de saída 0.
+   - Módulo de Orçamento e compatibilizações perfeitamente preservados.
+
+---
+
 ### [PR.026]
 - **Data/Hora:** 08/11/2026 03:52 (Horário Local)
 - **Tag Git:** `PR.026`

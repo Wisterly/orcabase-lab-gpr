@@ -30,6 +30,13 @@ export interface MemorialMetadata {
   engineerName: string; // Ex: "Eng. Responsável Técnico"
   creaNumber: string; // Ex: "CREA-PI nº 12345/D"
   dateStr: string; // Ex: "08/11/2026"
+  // Campos Imobiliários e Topográficos Oficiais (conforme referência)
+  propertyId?: string; // Ex: "Lote 05 – Quadra B"
+  uf?: string; // Ex: "SC" ou "PI"
+  areaM2?: string; // Ex: "525,00"
+  perimeterM?: string; // Ex: "96,40"
+  datumSystem?: string; // Ex: "SIRGAS2000"
+  purpose?: string; // Ex: "Desmembramento" ou "Reforma Predial"
 }
 
 export interface ChatMessage {
@@ -382,7 +389,7 @@ Por favor, elabore ou incremente o Memorial Descritivo Técnico com base nessa s
 // ============================================================================
 // GERAÇÃO DE PDF OFICIAL DO MEMORIAL DESCRITIVO (Layout A4 Executivo)
 // ============================================================================
-export function generateMemorialPDF(metadata: MemorialMetadata, stages: DescritivoStage[]): void {
+export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: DescritivoStage[]): jsPDF {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -404,23 +411,20 @@ export function generateMemorialPDF(metadata: MemorialMetadata, stages: Descriti
   };
 
   const drawPageBorderAndHeader = () => {
-    // Linha superior elegante
-    doc.setDrawColor(212, 175, 55); // Ouro Metálico
+    doc.setDrawColor(212, 175, 55);
     doc.setLineWidth(0.8);
     doc.line(margin, margin - 5, pageWidth - margin, margin - 5);
 
-    // Linha fina cinza
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
     doc.line(margin, margin - 3, pageWidth - margin, margin - 3);
 
-    // Rodapé de Numeração de Página
     const totalPages = doc.getNumberOfPages();
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
     doc.text(
-      `Memorial Descritivo — ${metadata.schoolName || metadata.projectName} | Página ${doc.getCurrentPageInfo().pageNumber}`,
+      `Memorial Descritivo — ${metadata.propertyId || metadata.schoolName || metadata.projectName} | Página ${doc.getCurrentPageInfo().pageNumber}`,
       margin,
       pageHeight - 10
     );
@@ -432,31 +436,32 @@ export function generateMemorialPDF(metadata: MemorialMetadata, stages: Descriti
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(15, 23, 42); // Navy Dark
-  doc.text(metadata.organization.toUpperCase(), pageWidth / 2, currentY, { align: "center" });
+  doc.setTextColor(15, 23, 42);
+  doc.text((metadata.organization || "GOVERNO DO ESTADO — SECRETARIA DA EDUCAÇÃO").toUpperCase(), pageWidth / 2, currentY, { align: "center" });
   currentY += 5;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(249, 115, 22); // Orange Accent
-  doc.text(`${metadata.gre.toUpperCase()} — DEPARTAMENTO DE INFRAESTRUTURA`, pageWidth / 2, currentY, { align: "center" });
+  doc.setTextColor(249, 115, 22);
+  doc.text(`${(metadata.gre || "GPR").toUpperCase()} — DEPARTAMENTO DE ENGENHARIA E INFRAESTRUTURA`, pageWidth / 2, currentY, { align: "center" });
   currentY += 8;
 
   // Caixa Título Principal
-  doc.setFillColor(15, 23, 42); // Navy
+  doc.setFillColor(15, 23, 42);
   doc.roundedRect(margin, currentY, printableWidth, 12, 1.5, 1.5, "F");
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(212, 175, 55); // Gold
+  doc.setTextColor(212, 175, 55);
   doc.text("MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS", pageWidth / 2, currentY + 7.5, { align: "center" });
   currentY += 16;
 
-  // 2. QUADRO RESUMO DE IDENTIFICAÇÃO DA OBRA
-  doc.setFillColor(248, 250, 252); // Cinza bem claro
+  // 2. QUADRO RESUMO DE IDENTIFICAÇÃO DO IMÓVEL / OBRA
+  doc.setFillColor(248, 250, 252);
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.4);
-  doc.roundedRect(margin, currentY, printableWidth, 28, 1, 1, "FD");
+  const quadroHeight = (metadata.areaM2 || metadata.datumSystem) ? 35 : 28;
+  doc.roundedRect(margin, currentY, printableWidth, quadroHeight, 1, 1, "FD");
 
   doc.setFontSize(8.5);
   doc.setTextColor(50, 50, 50);
@@ -466,31 +471,38 @@ export function generateMemorialPDF(metadata: MemorialMetadata, stages: Descriti
   let qY = currentY + 5;
 
   doc.setFont("helvetica", "bold");
-  doc.text("UNIDADE / ESCOLA:", col1X, qY);
+  doc.text("IDENTIFICAÇÃO / IMÓVEL:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.schoolName || "-", col1X + 32, qY);
+  doc.text(metadata.propertyId || metadata.schoolName || "-", col1X + 42, qY);
 
   doc.setFont("helvetica", "bold");
   doc.text("MUNICÍPIO / UF:", col2X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.city || "-", col2X + 26, qY);
+  doc.text(`${metadata.city || "-"}${metadata.uf ? ` - ${metadata.uf}` : ""}`, col2X + 26, qY);
 
   qY += 5.5;
   doc.setFont("helvetica", "bold");
-  doc.text("PROJETO / ATA:", col1X, qY);
+  doc.text("FINALIDADE / OBJETO:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.projectName || "-", col1X + 32, qY);
+  doc.text(metadata.purpose || metadata.objectDescription || "-", col1X + 42, qY);
 
   doc.setFont("helvetica", "bold");
   doc.text("DATA DE EMISSÃO:", col2X, qY);
   doc.setFont("helvetica", "normal");
   doc.text(metadata.dateStr || new Date().toLocaleDateString("pt-BR"), col2X + 26, qY);
 
-  qY += 5.5;
-  doc.setFont("helvetica", "bold");
-  doc.text("OBJETO DA INTERVENÇÃO:", col1X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(metadata.objectDescription || "Manutenção Predial e Adequação Geral", col1X + 42, qY);
+  if (metadata.areaM2 || metadata.perimeterM || metadata.datumSystem) {
+    qY += 5.5;
+    doc.setFont("helvetica", "bold");
+    doc.text("ÁREA TOTAL / PERÍMETRO:", col1X, qY);
+    doc.setFont("helvetica", "normal");
+    doc.text(`${metadata.areaM2 ? `${metadata.areaM2} m²` : "-"}  |  Perímetro: ${metadata.perimeterM ? `${metadata.perimeterM} m` : "-"}`, col1X + 42, qY);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("SISTEMA REF. / DATUM:", col2X, qY);
+    doc.setFont("helvetica", "normal");
+    doc.text(metadata.datumSystem || "SIRGAS2000", col2X + 38, qY);
+  }
 
   qY += 5.5;
   doc.setFont("helvetica", "bold");
@@ -498,29 +510,29 @@ export function generateMemorialPDF(metadata: MemorialMetadata, stages: Descriti
   doc.setFont("helvetica", "normal");
   doc.text(`${metadata.engineerName || "Engenheiro Civil"} (${metadata.creaNumber || "CREA/CAU"})`, col1X + 42, qY);
 
-  currentY += 34;
+  currentY += quadroHeight + 6;
 
   // 3. INTRODUÇÃO NORMATIVA
+  checkPageBreak(25);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("1.0 CONSIDERAÇÕES PRELIMINARES E NORMAS APLICÁVEIS", margin, currentY);
-  currentY += 5;
+  doc.text("1. DISPOSIÇÕES GERAIS E NORMAS APLICÁVEIS", margin, currentY);
+  currentY += 4.5;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.setTextColor(50, 50, 50);
+  doc.setTextColor(60, 60, 60);
   const introText =
-    "O presente Memorial Descritivo tem por finalidade fixar as condições técnicas e construtivas para a execução dos serviços de reforma, reparos e adequações na edificação escolar supracitada. Todas as intervenções deverão obedecer rigorosamente às normas técnicas da ABNT pertinentes, às recomendações dos fabricantes dos materiais empregados e às determinações da Fiscalização.";
+    "O presente Memorial Descritivo tem por finalidade fixar as diretrizes técnicas, métodos executivos e padrões de qualidade exigidos para a execução dos serviços de engenharia e adequação predial, em estrita observância às normas da ABNT, legislação de segurança do trabalho (NRs) e especificações do órgão contratante.";
   const splitIntro = doc.splitTextToSize(introText, printableWidth);
   doc.text(splitIntro, margin, currentY);
-  currentY += splitIntro.length * 4.2 + 6;
+  currentY += splitIntro.length * 4 + 6;
 
-  // 4. DISCRIMINAÇÃO TÉCNICA DAS ETAPAS E ITENS
-  stages.forEach((stage, sIdx) => {
+  // 4. ETAPAS E ITENS TÉCNICOS
+  stages.forEach((stage) => {
     checkPageBreak(25);
 
-    // Faixa da Etapa / Título
     doc.setFillColor(241, 245, 249);
     doc.setDrawColor(212, 175, 55);
     doc.setLineWidth(0.6);
@@ -532,7 +544,6 @@ export function generateMemorialPDF(metadata: MemorialMetadata, stages: Descriti
     doc.text(`${stage.stageCode} — ${stage.title}`, margin + 3, currentY + 5);
     currentY += 10;
 
-    // Itens da Etapa
     stage.items.forEach((item) => {
       const itemHeader = `${item.itemNumber} `;
       doc.setFont("helvetica", "bold");
@@ -610,14 +621,21 @@ export function generateMemorialPDF(metadata: MemorialMetadata, stages: Descriti
   doc.setTextColor(100, 100, 100);
   doc.text(metadata.organization || "SEDUC / GPR", sign2X + 5 + signColWidth / 2, currentY + 7.5, { align: "center" });
 
-  // Salva o arquivo PDF
-  const safeFilename = `Memorial_Descritivo_${(metadata.schoolName || metadata.projectName || "Obra").replace(/[\/\\:\*\?\"<>\|]/g, "_").trim()}.pdf`;
+  return doc;
+}
+
+export function generateMemorialPDF(metadata: MemorialMetadata, stages: DescritivoStage[]): void {
+  const doc = buildMemorialPDFDoc(metadata, stages);
+  const safeFilename = `Memorial_Descritivo_${(metadata.propertyId || metadata.schoolName || metadata.projectName || "Obra").replace(/[\/\\:\*\?"<>\|]/g, "_").trim()}.pdf`;
   doc.save(safeFilename);
 }
 
-// ============================================================================
-// EXPORTAÇÃO PARA MICROSOFT WORD (.DOC FORMATADO)
-// ============================================================================
+export function getMemorialPDFBlobUrl(metadata: MemorialMetadata, stages: DescritivoStage[]): string {
+  const doc = buildMemorialPDFDoc(metadata, stages);
+  const blob = doc.output("blob");
+  return URL.createObjectURL(blob);
+}
+
 export function generateMemorialWordDoc(metadata: MemorialMetadata, stages: DescritivoStage[]): void {
   const content = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
