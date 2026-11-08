@@ -11,6 +11,55 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.031]
+- **Data/Hora:** 08/11/2026 16:10 (Horário Local)
+- **Tag Git:** `PR.031`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.031 (Layout Oficial da Aba Descritivos em 3 Cards Verticais Lado a Lado + Barra Inferior de Ações do PDF):
+1. **Padronização Fiel da Aba Descritivos com a Página Inicial:**
+   - A aba Descritivos foi completamente reestruturada para seguir a mesma disposição arquitetural da aba Orçamento, organizando todo o fluxo em três cards verticais harmoniosos lado a lado (`grid-cols-1 lg:grid-cols-3` com altura uniforme de 700px) e uma barra inferior de ações unificada.
+2. **Card 1 (Esquerda) — Assistente OrçaBase.lab (Chat com IA):**
+   - Cabeçalho com badge circular "1", indicador de status "Online" em verde pulsante e botão de reset com tooltip informativo.
+   - Área de histórico de mensagens com rolagem suave independente (`messagesEndRef`), balões de usuário em âmbar/dourado e balões da IA com formatação rica de etapas e serviços.
+   - Painel inferior de envio com:
+     - Botão de anexo de arquivos (`Paperclip`) com suporte a documentos e arquivos de referência;
+     - Input de texto dinâmico com acionamento por tecla `Enter`;
+     - Botão de gravação de voz (`Mic`) com animação pulsante em vermelho e transcrição nativa em tempo real (`Web Speech API`);
+     - Botão estilizado de envio de mensagem (`Send`).
+3. **Card 2 (Meio) — Dados do Memorial:**
+   - Cabeçalho com badge circular "2", ícone `Building2` em dourado e rótulo institucional.
+   - Formulário com campos operacionais completos de infraestrutura escolar:
+     - *Nome da Escola (Unidade Escolar)*;
+     - *Município* e *UF* (com badge de estado);
+     - *BDI da Obra (%)* com destaque em âmbar;
+     - *GRE / Regional* e *Finalidade / Objeto da Intervenção*.
+   - Seção de *Datas Automáticas da Planilha e Emissão* com:
+     - *Mês / Ano de Referência* (calculado automaticamente pelo sistema, ex: `Novembro de 2026`);
+     - *Data Extensa com Dia da Semana* (gerada dinamicamente, ex: `Domingo, 8 de novembro de 2026`);
+     - Botão de sincronização instantânea de datas (`RefreshCw`).
+4. **Card 3 (Direita) — Visualizador de Memorial (Folha A4 Realista):**
+   - Cabeçalho com badge circular "3", ícone `FileText` em dourado e contador de etapas consolidadas em tempo real.
+   - Barra de ferramentas do preview com controle de Zoom (`ZoomIn`, `ZoomOut`), indicador percentual e atalho de visualização em tela cheia.
+   - Visualizador estilo folha de papel A4 realista (proporção 210mm x 297mm) com cabeçalho oficial da Secretaria da Educação / SEDUC-PI, brasão de armas, quadro de metadados, lista hierárquica de serviços técnicos divididos por disciplinas e rodapé institucional com paginação.
+5. **Barra de Ações do PDF (Largura Total, Inferior):**
+   - Posicionada abaixo do grid dos 3 cards, ocupando 100% da largura útil da tela com acabamento em Dark Industrial Luxury (`bg-[#0c0f17]`, borda `#232b3d`).
+   - Apresenta resumo dos dados vigentes (Escola, Localidade, BDI e contagem de itens) e os 4 botões de ação executiva:
+     - **Copiar para Excel:** Copia diretamente para a área de transferência no formato tabular limpo (sem asteriscos ou marcadores markdown), pronto para `Ctrl+V` nas colunas da planilha orçamentária;
+     - **Exportar Word (.DOC):** Gera documento estruturado e formatado para o Microsoft Office Word;
+     - **Visualizar em Tela Cheia:** Abre o modal de alta definição para leitura contínua e detalhada;
+     - **Baixar PDF Oficial:** Gera o PDF executivo oficial com cabeçalho da SEDUC, fontes compactas, BDI, datas automáticas e rodapés institucionais.
+6. **Validação de Compilação e Produção:**
+   - Build do Next.js 15 (`npm run build`) validado com **100% de sucesso, 0 erros de tipagem TypeScript e 0 warnings**.
+
+---
+
 ### [PR.030]
 - **Data/Hora:** 08/11/2026 15:55 (Horário Local)
 - **Tag Git:** `PR.030`

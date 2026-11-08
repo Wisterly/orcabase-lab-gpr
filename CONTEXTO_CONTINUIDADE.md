@@ -1,17 +1,21 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.030
-O ciclo **`PR.030`** adaptou a página inicial do módulo de Orçamento com fidelidade visual estrita à nova referência de design:
-1. **Stepper Superior Horizontal Conectado (1 - 2 - 3):** Passos circulares numerados com linha de ligação (`Importar planilha` -> `Selecionar contrato base` -> `Definir regra e compatibilizar`).
-2. **Grid Oficial de 3 Cards Verticais:**
-   - **Card 1 (Importar planilha):** Badge "1", dropzone com ícone de nuvem laranja e botão de seleção, rodapé com card de arquivo e checks verdes.
-   - **Card 2 (Selecionar contrato base):** Badge "2", dropdown de contratos e bloco de Mapeamento Principal com as tags `DISCRIMINAÇÃO`, `QUANT.` e `UND`.
-   - **Card 3 (Definir regra e compatibilizar):** Badge "3", dois Radio Cards ("Manter o valor final do orçamento" [moedas] e "Manter o quantitativo exato" [balança]), input de *Valor final alvo (R$)* e o botão largo `▷ Compatibilizar e Exportar`.
-3. **Ação Unificada `handleCompatibilizarEExportar`:** Executa o cálculo proporcional da matriz e dispara o download da planilha clonada (.xlsx/.xlsm).
-4. **Build e Produção:** Next.js 15 compilado com sucesso e publicado na Vercel (`https://orcabase-lab-gpr.vercel.app`).
+## 📍 Ponto Atual de Entrega — Ciclo PR.031
+O ciclo **`PR.031`** adaptou a aba **Descritivos** para a mesma arquitetura de design em **três cards verticais lado a lado** com uma **barra inferior de ações do PDF**:
+1. **Grid de 3 Cards Lado a Lado (`h-[700px]` com scroll independente):**
+   - **Card 1 (Esquerda) — Assistente OrçaBase.lab (Chat com IA):** Badge "1", status online verde, histórico de mensagens com rolagem automática, botões de anexo de arquivo, digitação por texto, gravação de voz com transcrição por IA e envio rápido.
+   - **Card 2 (Meio) — Dados do Memorial:** Badge "2", formulário oficial de infraestrutura escolar (Escola, Município, UF, BDI %, GRE, Objeto) e bloco inteligente de Datas Automáticas (Mês/Ano corrente e Data Completa com dia da semana por extenso) com botão de recalibração instantânea.
+   - **Card 3 (Direita) — Visualizador de Memorial (Folha A4 Realista):** Badge "3", barra de ferramentas de Zoom in/out e tela cheia, folha A4 com proporção 210x297mm renderizada em tempo real com brasão institucional, cabeçalho da SEDUC-PI, quadro de metadados, lista hierárquica técnica de serviços e rodapé com paginação.
+2. **Barra de Ações do PDF (Largura Total, Inferior):**
+   - Posicionada abaixo dos 3 cards, unificando as 4 ações executivas do memorial:
+     - **Copiar para Excel:** Copia a lista em formato tabular limpo para colagem direta na planilha de orçamento.
+     - **Exportar Word (.DOC):** Gera documento estruturado e editável.
+     - **Visualizar em Tela Cheia:** Abre modal de alta resolução para leitura imersiva.
+     - **Baixar PDF Oficial:** Gera o PDF executivo oficial com layout de engenharia.
+3. **Build e Produção:** Next.js 15 compilado com sucesso e publicado na Vercel (`https://orcabase-lab-gpr.vercel.app`).
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.031)
+## 🎯 Próximo Passo do Agente (Ciclo PR.032)
 1. **Auditoria de Desvios de Quantitativos:** Indicador visual de variação percentual dos itens compatibilizados.
 2. **Histórico em Nuvem:** Compartilhamento multiusuário via Supabase/PostgreSQL.
