@@ -1353,94 +1353,63 @@ export default function OrcaBaseDashboard() {
         </div>
       )}
 
-      {/* Fundo Institucional MediSEI / SEDUC */}
-      <div className="institutional-backdrop" aria-hidden="true" />
+      {/* Topbar Oficial MediSEI.lab Integrada com Fachada SEDUC e Abas 3D */}
+      <header className="relative border-b border-[#ffffff1f] bg-[#0c0d12] overflow-hidden">
+        {/* Fundo Institucional MediSEI / SEDUC integrado à metade direita do cabeçalho */}
+        <div className="institutional-backdrop" aria-hidden="true" />
 
-      {/* Topbar Oficial MediSEI.lab - GPR */}
-      <header className="border-b border-[#ffffff19] bg-[#0c0c0d]/90 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
-          {/* Marca SEDUC com Mapa do Piauí + Nome Oficial em Destaque */}
-          <div className="flex items-center gap-3 sm:gap-5 min-w-0">
+        {/* Linha Superior: Marca à Esquerda e Botão de Conta à Direita sobre a Fachada */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-2 flex items-center justify-between gap-4 relative z-10">
+          {/* Marca SEDUC com Divisória Vertical e Título Oficial em Linha Única */}
+          <div className="brand">
             <span
               className="seduc-logo"
               role="img"
               aria-label="Secretaria da Educação — Governo do Piauí"
             >
-              <img src="/seduc-pi.png" alt="" />
+              <img src="/seduc-pi.png" alt="Governo do Piauí" />
             </span>
-            <div className="min-w-0">
-              <strong className="block text-lg sm:text-2xl md:text-[26px] font-black text-white leading-tight tracking-tight whitespace-nowrap">
+            <div className="brand-info">
+              <strong className="text-xl sm:text-2xl md:text-[27px] font-black text-white leading-tight tracking-tight">
                 OrçaBase.Lab <span className="text-[#ffaa2c] font-bold">- GPR</span>
               </strong>
-              <small className="block text-xs text-[#b8b5b1] mt-0.5 tracking-wide truncate">
+              <small className="text-xs sm:text-[13px] text-[#b8b5b1] tracking-wide">
                 Gestão de Orçamentos e Memoriais Descritivos
               </small>
             </div>
           </div>
 
-          {/* Badges Institucionais SEDUC no Canto Direito */}
-          <div className="hidden sm:flex items-center gap-3">
-            <div className="text-right">
-              <span className="block text-[11px] font-mono uppercase text-[#e2eaf4] font-bold tracking-wider">
-                SEDUC-PI / SUPEX / UGERF / GPR
-              </span>
-              <span className="block text-[10px] text-[#b8b5b1]">
-                Engenharia de Manutenção Predial
-              </span>
+          {/* Botão de Conta / Usuário no Canto Superior Direito sobreposto à fachada */}
+          <div className="account-settings">
+            <div className="account-button">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Conta • wisterly</span>
             </div>
-            <div
-              className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
-              title="Sistema Operacional e Sincronizado"
-            />
           </div>
         </div>
+
+        {/* Linha Inferior do Cabeçalho: Abas 3D Ancoradas Diretamente na Linha de Base */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+          <nav className="app-navigation" aria-label="Áreas do sistema">
+            <button
+              type="button"
+              aria-pressed={mainModule === "ORCAMENTO"}
+              onClick={() => setMainModule("ORCAMENTO")}
+            >
+              <Calculator className="w-4 h-4 text-[#ffb457]" />
+              <span>Orçamento</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={mainModule === "DESCRITIVOS"}
+              onClick={() => setMainModule("DESCRITIVOS")}
+            >
+              <BrainCircuit className="w-4 h-4 text-[#ffb457]" />
+              <span>Descritivos</span>
+            </button>
+          </nav>
+        </div>
       </header>
-
-      {/* Banner da Secretaria da Educação (MediSEI management-banner) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5">
-        <section className="management-banner">
-          <div className="measurement-banner-art">
-            <img
-              src="/medisei-facade-banner.webp"
-              alt="Fachada ilustrada com a marca da Secretaria da Educação do Piauí e o letreiro OrçaBase.lab / GPR"
-            />
-          </div>
-          <div className="banner-copy">
-            <h1>
-              {mainModule === "ORCAMENTO"
-                ? "Gestão Orçamentária"
-                : "Memoriais Descritivos"}
-            </h1>
-            <p>
-              {mainModule === "ORCAMENTO"
-                ? "Compatibilização inteligente de quantitativos entre planilhas e contratos base oficiais."
-                : "Elaboração técnica de memoriais e especificações de serviços com IA Sênior e áudio."}
-            </p>
-          </div>
-        </section>
-      </div>
-
-      {/* Navegação Principal: Exatamente 2 Abas (Orçamento e Descritivos) estilo MediSEI 3D */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
-        <nav className="app-navigation" aria-label="Áreas do sistema">
-          <button
-            type="button"
-            aria-pressed={mainModule === "ORCAMENTO"}
-            onClick={() => setMainModule("ORCAMENTO")}
-          >
-            <Calculator className="w-4 h-4 text-[#ffb457]" />
-            <span>Orçamento</span>
-          </button>
-          <button
-            type="button"
-            aria-pressed={mainModule === "DESCRITIVOS"}
-            onClick={() => setMainModule("DESCRITIVOS")}
-          >
-            <BrainCircuit className="w-4 h-4 text-[#ffb457]" />
-            <span>Descritivos</span>
-          </button>
-        </nav>
-      </div>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
         {mainModule === "DESCRITIVOS" ? (
