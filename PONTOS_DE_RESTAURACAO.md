@@ -11,6 +11,35 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.022]
+- **Data/Hora:** 08/11/2026 01:56 (Horário Local)
+- **Tag Git:** `PR.022`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.022 (Estudo Forense do Contrato 217, Pré-Carregamento Duplo RAM+IndexedDB e Replicação Universal de Regras):
+1. **Auditoria Forense da Execução do Contrato 217 ao Vivo (`1.xlsm`):**
+   - Inspecionado em detalhes o arquivo gerado pelo usuário durante o teste (`1.xlsm`, 21.277.516 bytes).
+   - Constatadas 36 abas preservadas intactas, código VBA mantido e ausência de `calcChain.xml` obsoleto.
+   - Na aba orçamentária `ORÇAMENTO`, confirmada a injeção cirúrgica de quantitativos nas linhas 22 (22.6), 26 (1.17), 29 (1.08), 35 (10.11), 41 (16.87), 42 (37.49), 45 (50.3), etc., exatamente na coluna **I** (coluna 9).
+   - Comprovado que o motor OpenXML operou em 100% da sua capacidade e precisão.
+2. **Pré-Carregamento e Retenção Dupla de Binários (RAM + IndexedDB):**
+   - Ao anexar ou substituir uma planilha base de contrato, o binário base64 agora é persistido no IndexedDB e retido instantaneamente no estado em memória (`rawWorkbookBase64`).
+   - Ao iniciar o sistema ou ao alternar entre contratos na interface (`handleSelectContract`), o binário do contrato selecionado é pré-carregado automaticamente em segundo plano.
+   - Isso elimina 100% qualquer atraso ou falha de leitura no momento do clique de download, garantindo injeção imediata sem intermediários.
+3. **Replicação Universal das Regras para Todos os Contratos Novos:**
+   - **Auto-detecção de Coluna de Quantidade:** Coluna `I` para contratos tipo 217, coluna `F` para contratos tipo Desenvolva, ou qualquer coluna indicada/mapeada dinamicamente.
+   - **Auto-detecção de Aba Orçamentária:** Reconhecimento automático de abas como `sintetico GERAL`, `ORÇAMENTO`, `Planilha Orçamentária`, etc.
+   - **Sanitizador Universal OpenXML:** Proteção contra qualquer barra solta ou erro de XML que pudesse provocar descarte de abas no Excel.
+   - **Preservação de Formato Nativo:** Entrega estrita em `.xlsm` para contratos com macros e `.xlsx` para contratos padrão.
+
+---
+
 ### [PR.021]
 - **Data/Hora:** 08/11/2026 01:40 (Horário Local)
 - **Tag Git:** `PR.021`

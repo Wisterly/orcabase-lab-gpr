@@ -361,13 +361,19 @@ export default function OrcaBaseDashboard() {
           const dbContracts = await getAllContractsFromDB();
           if (Array.isArray(dbContracts) && dbContracts.length > 0) {
             setContracts(dbContracts);
-            // Recupera o ID do contrato selecionado salvo
             const savedSelectedId = await getAppSettingFromDB<string>("selectedContractId");
-            if (savedSelectedId && dbContracts.some((c) => c.id === savedSelectedId)) {
-              setSelectedContractId(savedSelectedId);
-            } else {
-              setSelectedContractId(dbContracts[0].id);
-            }
+            const activeId =
+              savedSelectedId && dbContracts.some((c) => c.id === savedSelectedId)
+                ? savedSelectedId
+                : dbContracts[0].id;
+            setSelectedContractId(activeId);
+            getContractBinary(activeId).then((bin) => {
+              if (bin) {
+                setContracts((prev) =>
+                  prev.map((c) => (c.id === activeId ? { ...c, rawWorkbookBase64: bin } : c))
+                );
+              }
+            }).catch(() => {});
           } else {
             // Se a lista estiver vazia (usuário excluiu todos ou vazio), respeita o estado
             setContracts(dbContracts || []);
@@ -434,6 +440,13 @@ export default function OrcaBaseDashboard() {
   const handleSelectContract = (id: string) => {
     setSelectedContractId(id);
     saveAppSettingToDB("selectedContractId", id).catch(() => {});
+    getContractBinary(id).then((bin) => {
+      if (bin) {
+        setContracts((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, rawWorkbookBase64: bin } : c))
+        );
+      }
+    }).catch(() => {});
   };
 
   // Salva automaticamente palavras-chave personalizadas no banco ao digitar
@@ -627,6 +640,7 @@ export default function OrcaBaseDashboard() {
         if (c.id !== contractId) return c;
         return {
           ...c,
+          rawWorkbookBase64: b64,
           fileName: file.name,
           updatedAt: new Date().toLocaleDateString("pt-BR"),
           sheetNames: study.sheetNames,
@@ -843,6 +857,7 @@ export default function OrcaBaseDashboard() {
 
     const newCard: ContractBaseCard = {
       id: newId,
+      rawWorkbookBase64: newContractBuffer ? arrayBufferToBase64(newContractBuffer) : undefined,
       contractName: newContractName.trim(),
       contractNumber: newContractNumber.trim(),
       organization: newContractOrg.trim() || "GPR / Engenharia",

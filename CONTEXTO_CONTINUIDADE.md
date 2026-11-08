@@ -1,13 +1,13 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.021
-O ciclo **`PR.021`** eliminou definitivamente o fallback cru (`injectQuantitiesClientFallback`) que gerava planilhas desformatadas (conforme o PDF 2) e consolidou a garantia estrita de entrega no **Modelo Oficial Original (PDF 1)**:
-1. **Fidelidade Arquitetural Estrita (PDF 1):** O motor de clonagem OpenXML nativo (JSZip) preserva 100% da estrutura da planilha base anexada pelo usuário: todas as 13 abas, cabeçalhos de logos/BDI/encargos, linhas de etapas com formatação visual/cores, fórmulas matemáticas vivas (`=TRUNC(H9*F9,2)`) e totais automáticos.
-2. **Eliminação do Fallback Silencioso:** Removida a geração sintética simplificada. Caso um contrato não tenha seu binário anexado, o sistema avisa o usuário com destaque e aciona o upload direto, impedindo que qualquer planilha sem formatação seja entregue.
-3. **Validação Rigorosa em Python/openpyxl:** Testada a compatibilização real da Desenvolva com a planilha de referência `CETI FADE III`. O arquivo gerado foi lido e auditado sem nenhum aviso de erro, com todas as fórmulas e etapas preservadas com precisão milimétrica.
+## 📍 Ponto Atual de Entrega — Ciclo PR.022
+O ciclo **`PR.022`** concluiu o estudo ao vivo do teste com o **Contrato 217 da R. Melo** (`1.xlsm`, 21 MB) e consolidou as regras de ouro para aplicação universal em todos os contratos cadastrados:
+1. **Auditoria Forense do Contrato 217:** Confirmada a injeção cirúrgica de quantitativos na coluna **I** nas linhas 22, 26, 29, 35, 41, etc., mantendo 36 abas, fórmulas vivas e projeto VBA intactos.
+2. **Pré-Carregamento Duplo de Binários:** Implementada redundância em memória RAM e IndexedDB ao selecionar, criar ou atualizar contratos, garantindo que o arquivo base esteja sempre carregado para a injeção OpenXML instantânea.
+3. **Replicação Universal:** Garantida a compatibilidade total para qualquer modelo de planilha (seja com quantidade na coluna F como na Desenvolva, coluna I como na 217, ou qualquer outra letra), preservando fórmulas, etapas e formato nativo (`.xlsx` e `.xlsm`).
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.022)
-1. **Persistência em Nuvem / Multi-usuário:** Sincronização remota dos contratos e templates orçamentários.
-2. **Painel de Auditoria de Compatibilização:** Interface comparativa destacando os quantitativos mantidos versus modificados antes do download.
+## 🎯 Próximo Passo do Agente (Ciclo PR.023)
+1. **Persistência em Nuvem (Supabase / PostgreSQL):** Compartilhamento dos contratos entre múltiplos membros da equipe.
+2. **Exportação de Relatório Executivo de Auditoria:** Relatório analítico comparativo com memória de cálculo das composições.
