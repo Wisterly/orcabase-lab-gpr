@@ -301,11 +301,23 @@ export const CIVIL_ONTOLOGY: KnowledgeDiscipline[] = [
     ],
   },
   {
-    keywords: ["calçada", "calcada", "acesso", "rampa", "drenagem", "sarjeta", "canaleta", "passagem", "externa"],
-    stageTitle: "ÁREAS EXTERNAS",
+    keywords: ["piso", "pavimento", "cerâmica", "ceramica", "contrapiso", "lajota", "quebrado"],
+    stageTitle: "PISOS E PAVIMENTAÇÃO",
     defaultItemsGenerator: (text) => {
       const items: string[] = [];
-      items.push("Executar recuperação e construção de novas calçadas de proteção perimetral na unidade escolar.");
+      items.push("Executar recuperação e regularização do piso danificado da unidade escolar, com recomposição e nivelamento dos trechos quebrados.");
+      if (text.includes("cerâmica") || text.includes("ceramica") || text.includes("lajota")) {
+        items.push("Executar assentamento de piso cerâmico com rejuntamento e acabamento.");
+      }
+      return items;
+    },
+  },
+  {
+    keywords: ["calçada", "calcada", "passeio", "acesso", "rampa", "drenagem", "sarjeta", "canaleta", "passagem", "externa"],
+    stageTitle: "CALÇADAS E ÁREAS EXTERNAS",
+    defaultItemsGenerator: (text) => {
+      const items: string[] = [];
+      items.push("Executar recuperação e construção de novas calçadas de proteção e circulação da unidade escolar em concreto desempenado.");
       if (text.includes("drenag") || text.includes("sarjeta") || text.includes("canaleta") || text.includes("grade")) {
         items.push("Executar construção de sistema de drenagem pluvial com instalação de grade metálica para proteção e passagem de pedestres.");
       }
@@ -621,22 +633,24 @@ DADOS DO PROJETO ATUAL:
 - Mês/Ano Ref: ${metadata.mesAnoRef || "Novembro de 2026"}
 - Data Extensa: ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}
 
-ESTADO ATUAL DO MEMORIAL (Contexto Acumulado):
-${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente."}
+ESTADO ATUAL DO MEMORIAL:
+${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente (Criando novo memorial do zero)."}
 
 NOVA DEMANDA DO USUÁRIO (Texto / Áudio Transcrito):
 "${userInput}"
 
-INSTRUÇÃO:
-Analise a nova demanda com a metodologia de Engenheiro Sênior de Infraestrutura Escolar da SEDUC/GPR.
-Incorpore, altere ou exclua os serviços no memorial existente e apresente o DESCRITIVO COMPLETO, CONSOLIDADO E ATUALIZADO no padrão obrigatório:
-1. Títulos em CAIXA ALTA e sem numeração.
-2. Todo serviço de natureza elétrica ou iluminação no grupo único chamado exatamente ELÉTRICA.
-3. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar" ou "Fornecer e instalar".
-4. Sem marcadores, traços (-), asteriscos ou bolinhas no início das linhas.
-5. Sem linhas em branco entre serviços do mesmo grupo.
-6. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
-7. Incluir no final o bloco JSON estruturado com a chave "stages".
+INSTRUÇÃO OBRIGATÓRIA (ZERO SERVIÇOS FANTASMAS — FIDELIDADE ABSOLUTA AO PEDIDO):
+1. NUNCA use modelos fixos pré-moldados nem listas de serviços antigas.
+2. Crie títulos e itens EXCLUSIVAMENTE para os serviços e ambientes solicitados na mensagem do usuário.
+3. É EXPRESSAMENTE PROIBIDO incluir FORROS, ELÉTRICA, BANHEIROS, COZINHA, PINTURA ou qualquer outro grupo que o usuário NÃO tenha solicitado explicitamente!
+4. Se o usuário solicitou apenas "novas calçadas, recuperar o piso quebrado e tirar goteiras", gere única e exclusivamente os grupos pertinentes (ex: PAVIMENTAÇÃO E CALÇADAS e COBERTURA).
+5. Títulos sempre em CAIXA ALTA e sem numeração.
+6. Se e somente se houver serviços elétricos demandados, use exatamente o título ELÉTRICA.
+7. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar..." ou "Fornecer e instalar...".
+8. Sem marcadores, traços (-), asteriscos (*) ou bolinhas no início das linhas.
+9. Sem linhas em branco entre serviços do mesmo grupo.
+10. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
+11. Incluir no final o bloco JSON estruturado delimitado por \`\`\`json contendo a chave "stages".
 `;
 
   try {

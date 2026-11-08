@@ -11,6 +11,47 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.034]
+- **Data/Hora:** 08/11/2026 17:30 (Horário Local)
+- **Tag Git:** `PR.034`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.034 (Eliminação Definitiva de Modelos Fixos / Serviços Fantasmas e Folha A4 100% Dinâmica sob Demanda):
+1. **Diagnóstico da Causa Raiz:**
+   - O estado inicial da variável `stages` continha quatro grupos mockados fixos (`FORROS`, `ELÉTRICA`, `COBERTURA`, `BANHEIROS`) e o chat possuía histórico pré-gravado estático.
+   - Além disso, a folha A4 em miniatura no Card 3 possuía textos estáticos gravados no JSX para as páginas 1, 2 e 3, não refletindo dinamicamente as alterações de `stages`.
+   - Ao receber uma nova demanda pontual (ex: "novas calçadas, piso quebrado e tirar goteiras"), o sistema repassava o estado anterior mockado no contexto e o modelo incorporava os novos serviços aos itens fixos existentes.
+2. **Inicialização 100% Limpa (Zero Poluição Inicial):**
+   - `stages` inicial redefinido para array estritamente vazio (`[]`).
+   - Chat inicializado com mensagem de acolhimento limpa e profissional, sem serviços pré-cadastrados.
+   - Folha A4 no Card 3 atualizada com estado visual limpo de espera: exibe o cabeçalho oficial e painel com ícone de documento *"Aguardando Serviços — Envie um áudio ou texto no chat para gerar o memorial sob demanda"*.
+3. **Folha A4 do Card 3 100% Dinâmica com Paginação Real:**
+   - Remoção de todos os textos hardcoded de forro, elétrica e banheiros da miniatura A4.
+   - A folha A4 agora renderiza única e exclusivamente as etapas reais geradas em `stages`:
+     - Título em CAIXA ALTA com tarja em destaque;
+     - Cada serviço em linha independente com formatação técnica;
+     - Paginação dinâmica (`totalPages = Math.max(1, Math.ceil(stages.length / 2))`);
+     - Fechamento com assinaturas do Engenheiro e Fiscal exibido na última página.
+4. **Regra Cardinal de Fidelidade no Prompt (Zero Serviços Fantasmas):**
+   - Atualizados `SUPER_PROMPT_MEMORIAL`, `queryOpenAISeniorEngineer` e `/api/openai/route.ts`:
+     - Proibição absoluta de modelos fixos pré-moldados;
+     - Criação de títulos e itens EXCLUSIVAMENTE para o que o usuário solicitou na mensagem atual (ex: se o usuário pediu apenas calçadas, piso e goteiras, o assistente gera única e exclusivamente `PAVIMENTAÇÃO E CALÇADAS` e `COBERTURA`);
+     - Proibição terminante de incluir forros, elétrica ou banheiros sem solicitação explícita.
+5. **Botão de Ação Rápida "Novo Memorial" no Cabeçalho:**
+   - Adicionado botão `Novo Memorial` com ícone `RotateCw` no topo do Card 1, permitindo ao usuário zerar o memorial a qualquer instante e iniciar novos orçamentos 100% do zero.
+6. **Expansão da Ontologia Local (`CIVIL_ONTOLOGY`):**
+   - Adicionadas as disciplinas `PISOS E PAVIMENTAÇÃO` e `CALÇADAS E ÁREAS EXTERNAS` para classificação precisa de calçadas, passeios, cerâmicas, pisos danificados e contrapiso.
+7. **Validação de Compilação:**
+   - Build do Next.js 15 (`npm run build`) concluído com 100% de êxito e 0 erros.
+
+---
+
 ### [PR.033]
 - **Data/Hora:** 08/11/2026 17:15 (Horário Local)
 - **Tag Git:** `PR.033`

@@ -24,22 +24,24 @@ DADOS DO PROJETO ATUAL:
 - Mês/Ano Ref: ${metadata.mesAnoRef || "Novembro de 2026"}
 - Data Extensa: ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}
 
-ESTADO ATUAL DO MEMORIAL (Contexto Acumulado):
-${formatStagesToSpreadsheetText(stages) || "Nenhum serviço registrado anteriormente."}
+ESTADO ATUAL DO MEMORIAL:
+${formatStagesToSpreadsheetText(stages) || "Nenhum serviço registrado anteriormente (Criando novo memorial do zero)."}
 
 NOVA DEMANDA DO USUÁRIO (Texto / Áudio Transcrito):
 "${userInput || ""}"
 
-INSTRUÇÃO:
-Analise a nova demanda com a metodologia técnica de Engenheiro Sênior de Infraestrutura Escolar da SEDUC/GPR.
-Incorpore, altere ou exclua os serviços no memorial existente e apresente o DESCRITIVO COMPLETO, CONSOLIDADO E ATUALIZADO no padrão obrigatório:
-1. Títulos em CAIXA ALTA e sem numeração.
-2. Todo serviço de natureza elétrica ou iluminação no grupo único chamado exatamente ELÉTRICA.
-3. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar" ou "Fornecer e instalar".
-4. Sem marcadores, traços (-), asteriscos ou bolinhas no início das linhas.
-5. Sem linhas em branco entre serviços do mesmo grupo.
-6. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
-7. Incluir no final o bloco JSON estruturado com a chave "stages".
+INSTRUÇÃO OBRIGATÓRIA (ZERO SERVIÇOS FANTASMAS — FIDELIDADE ABSOLUTA AO PEDIDO):
+1. NUNCA use listas de serviços pré-moldadas ou modelos fixos.
+2. Crie títulos e itens EXCLUSIVAMENTE para os serviços e ambientes solicitados na mensagem do usuário.
+3. É TERMINANTEMENTE PROIBIDO incluir FORROS, ELÉTRICA, BANHEIROS, COZINHA, PINTURA ou qualquer outro grupo que o usuário NÃO tenha solicitado explicitamente!
+4. Se o usuário solicitou apenas "novas calçadas, recuperar o piso quebrado e tirar goteiras", gere única e exclusivamente os grupos pertinentes (ex: CALÇADAS E PISOS e COBERTURA).
+5. Títulos sempre em CAIXA ALTA e sem numeração (ex: COBERTURA, PAVIMENTAÇÃO E CALÇADAS).
+6. Se e somente se houver serviços elétricos demandados, o título do grupo DEVE ser exclusivamente ELÉTRICA.
+7. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar..." ou "Fornecer e instalar...".
+8. Sem marcadores, traços (-), asteriscos (*) ou bolinhas no início das linhas.
+9. Sem linhas em branco entre serviços do mesmo grupo.
+10. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
+11. Incluir no final da resposta o bloco JSON estruturado delimitado por \`\`\`json contendo a chave "stages".
 `;
 
     const openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {

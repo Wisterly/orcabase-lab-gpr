@@ -123,142 +123,41 @@ export default function DescritivoView({
   );
 
   // --------------------------------------------------------------------------
-  // 2. ETAPAS E ITENS TÉCNICOS (Padrão Oficial do SUPER PROMPT: Títulos em CAIXA ALTA sem numeração)
+  // 2. ETAPAS E ITENS TÉCNICOS (Início 100% Limpo — Zero Serviços Fantasmas)
   // --------------------------------------------------------------------------
-  const [stages, setStages] = useState<DescritivoStage[]>([
-    {
-      id: "stg-forros",
-      stageCode: "1",
-      title: "FORROS",
-      items: [
-        {
-          id: "it-forros-1",
-          itemNumber: "1",
-          description: "Executar instalação de forro em todas as salas de aula da unidade escolar.",
-        },
-        {
-          id: "it-forros-2",
-          itemNumber: "2",
-          description: "Executar substituição dos trechos de forro danificados ou comprometidos.",
-        },
-      ],
-    },
-    {
-      id: "stg-eletrica",
-      stageCode: "2",
-      title: "ELÉTRICA",
-      items: [
-        {
-          id: "it-el-1",
-          itemNumber: "1",
-          description:
-            "Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados.",
-        },
-        {
-          id: "it-el-2",
-          itemNumber: "2",
-          description: "Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.",
-        },
-        {
-          id: "it-el-3",
-          itemNumber: "3",
-          description: "Executar adequação dos quadros de distribuição de circuitos com instalação de proteção termomagnética e DR.",
-        },
-      ],
-    },
-    {
-      id: "stg-cobertura",
-      stageCode: "3",
-      title: "COBERTURA",
-      items: [
-        {
-          id: "it-cob-1",
-          itemNumber: "1",
-          description: "Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção das goteiras.",
-        },
-        {
-          id: "it-cob-2",
-          itemNumber: "2",
-          description: "Executar revisão da estrutura da cobertura, com recuperação dos trechos comprometidos.",
-        },
-      ],
-    },
-    {
-      id: "stg-banheiros",
-      stageCode: "4",
-      title: "BANHEIROS",
-      items: [
-        {
-          id: "it-ban-1",
-          itemNumber: "1",
-          description: "Executar revisão geral das instalações hidrossanitárias dos banheiros.",
-        },
-        {
-          id: "it-ban-2",
-          itemNumber: "2",
-          description: "Executar substituição das torneiras danificadas, com adequação dos pontos hidráulicos, quando necessário.",
-        },
-        {
-          id: "it-ban-3",
-          itemNumber: "3",
-          description: "Executar desobstrução e revisão dos vasos sanitários dos banheiros.",
-        },
-      ],
-    },
-  ]);
+  const [stages, setStages] = useState<DescritivoStage[]>([]);
 
   // --------------------------------------------------------------------------
-  // 3. ESTADO DO CHAT (Conforme Diálogo de Referência e Regras do Super Prompt)
+  // 3. ESTADO DO CHAT (Mensagem de Acolhimento Inicial Limpa)
   // --------------------------------------------------------------------------
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: "msg-user-1",
-      sender: "user",
-      text: "Quero elaborar um memorial descritivo de um terreno urbano. Tenho a matrícula, a planta e as coordenadas. Pode me orientar?",
-      timestamp: "10:24",
-    },
-    {
-      id: "msg-ai-1",
+      id: "msg-welcome",
       sender: "assistant",
-      text: `Claro! Vou te ajudar a gerar o memorial descritivo no padrão técnico.
+      text: `Olá! Sou o Assistente Técnico Especialista em Infraestrutura Escolar da SEDUC/GPR.
 
-Para começar, confirme (ou preencho ao lado) os dados principais do imóvel:
-• Identificação do imóvel (ex.: Lote, Quadra, Loteamento)
-• Município/UF
-• Área (m²)
-• Perímetro (m)
-• Sistema de referência / Datum (ex.: SIRGAS2000)
-• Descrição dos vértices (coordenadas, confrontações e distâncias)
+Estou pronto para raciocinar e estruturar o seu memorial descritivo sob medida para as suas necessidades.
+Envie uma mensagem de texto ou grave um áudio com os serviços que você deseja executar (por exemplo: *"novas calçadas, recuperação de piso quebrado e eliminação de goteiras no telhado"*).
 
-Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou informar os dados no formulário ao lado. Como prefere seguir?`,
-      timestamp: "10:24",
-    },
-    {
-      id: "msg-user-2",
-      sender: "user",
-      text: "Perfeito. Já preenchi os dados ao lado. Pode gerar o memorial descritivo?",
-      timestamp: "10:27",
-    },
-    {
-      id: "msg-ai-2",
-      sender: "assistant",
-      text: `### FORROS
-Executar instalação de forro em todas as salas de aula da unidade escolar.
-Executar substituição dos trechos de forro danificados ou comprometidos.
-
-### ELÉTRICA
-Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados.
-Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.
-
-### COBERTURA
-Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção das goteiras.
-
-### BANHEIROS
-Executar revisão geral das instalações hidrossanitárias dos banheiros.
-Executar substituição das torneiras danificadas, com adequação dos pontos hidráulicos.`,
-      timestamp: "10:27",
+Irei interpretar as demandas, aplicar a padronização oficial de engenharia e gerar os títulos e itens executivos exclusivamente para o que você solicitar, com saída pronta para o Excel e emissão de PDF oficial!`,
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
     },
   ]);
+
+  // Iniciar Novo Memorial do Zero (Limpar Contexto)
+  const handleResetNewMemorial = () => {
+    setStages([]);
+    setMessages([
+      {
+        id: `welcome-${Date.now()}`,
+        sender: "assistant",
+        text: `Novo memorial descritivo iniciado! O escopo anterior foi limpo.\n\nDescreva em áudio ou texto os serviços específicos que deseja executar nesta unidade escolar.`,
+        timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      },
+    ]);
+    setCurrentPage(1);
+    showToast("✨ Novo memorial iniciado do zero!");
+  };
 
   const [inputText, setInputText] = useState("");
   const [isProcessingAI, setIsProcessingAI] = useState(false);
@@ -282,7 +181,7 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
 
   // Estados do Visualizador de PDF
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 4;
+  const totalPages = Math.max(1, Math.ceil(stages.length / 2));
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFullscreenPreview, setIsFullscreenPreview] = useState(false);
 
@@ -651,33 +550,45 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
               </div>
             </div>
 
-            {/* Pill de Seleção de Modelo no Canto Direito */}
-            <button
-              type="button"
-              onClick={() => setShowApiKeyModal(true)}
-              className="px-3 py-1.5 rounded-lg border border-[#2d374d] bg-[#141926] hover:bg-[#1a2133] hover:border-[#ffaa2c]/60 text-xs text-gray-300 flex items-center gap-2 transition-all cursor-pointer shrink-0 shadow-sm"
-              title="Clique para configurar o ChatGPT (OpenAI) ou motor de IA"
-            >
-              {openaiApiKey ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="font-semibold text-emerald-300">
-                    ChatGPT · {openaiModel === "gpt-4o" ? "GPT-4o" : "GPT-4o Mini"}
-                  </span>
-                </>
-              ) : geminiApiKey ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                  <span className="font-semibold text-blue-300">Google Gemini</span>
-                </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span className="font-medium text-gray-300">Motor Sênior Local</span>
-                </>
-              )}
-              <Key className="w-3.5 h-3.5 text-[#ffaa2c]" />
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleResetNewMemorial}
+                className="px-2.5 py-1.5 rounded-lg border border-[#2d374d] bg-[#141926] hover:bg-[#1a2133] hover:border-[#ffaa2c]/60 text-xs text-gray-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                title="Limpar e iniciar um novo memorial do zero"
+              >
+                <RotateCw className="w-3.5 h-3.5 text-[#ffaa2c]" />
+                <span className="hidden sm:inline font-medium">Novo Memorial</span>
+              </button>
+
+              {/* Pill de Seleção de Modelo no Canto Direito */}
+              <button
+                type="button"
+                onClick={() => setShowApiKeyModal(true)}
+                className="px-3 py-1.5 rounded-lg border border-[#2d374d] bg-[#141926] hover:bg-[#1a2133] hover:border-[#ffaa2c]/60 text-xs text-gray-300 flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                title="Clique para configurar o ChatGPT (OpenAI) ou motor de IA"
+              >
+                {openaiApiKey ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-semibold text-emerald-300">
+                      ChatGPT · {openaiModel === "gpt-4o" ? "GPT-4o" : "GPT-4o Mini"}
+                    </span>
+                  </>
+                ) : geminiApiKey ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                    <span className="font-semibold text-blue-300">Google Gemini</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="font-medium text-gray-300">Motor Sênior Local</span>
+                  </>
+                )}
+                <Key className="w-3.5 h-3.5 text-[#ffaa2c]" />
+              </button>
+            </div>
           </div>
 
           {/* Área de Mensagens do Chat */}
@@ -1177,69 +1088,73 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                   MEMORIAL DESCRITIVO
                 </h4>
 
-                {currentPage === 1 && (
-                  <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
-                    <div className="bg-slate-100 p-1.5 rounded border border-slate-200 space-y-0.5 mb-2 text-[6.5px]">
-                      <p className="font-bold text-slate-800 truncate">
-                        Unidade: {formData.schoolName}
-                      </p>
-                      <div className="flex justify-between text-slate-700">
-                        <span>Local: {formData.municipio} - {formData.uf}</span>
-                        <span className="font-bold text-[#e65c00]">BDI: {formData.bdiPercent}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-600">
-                        <span>Ref: {formData.mesAnoRef}</span>
-                        <span>GRE: {formData.gre}</span>
-                      </div>
+                {stages.length === 0 ? (
+                  <div className="py-6 px-3 flex flex-col items-center justify-center text-center space-y-2 text-slate-400 my-auto">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
+                      <FileText className="w-4 h-4" />
                     </div>
-                    <p className="font-bold text-slate-800 uppercase">FORROS</p>
-                    <p className="line-clamp-2">
-                      Executar instalação de forro em todas as salas de aula da unidade escolar.
-                    </p>
-                    <p className="font-bold text-slate-800 uppercase mt-1">ELÉTRICA</p>
-                    <p className="line-clamp-2">
-                      Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação.
-                    </p>
-                    <p className="line-clamp-2">
-                      Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.
+                    <strong className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">
+                      Aguardando Serviços
+                    </strong>
+                    <p className="text-[7.5px] text-slate-500 max-w-[210px] leading-tight">
+                      Envie um áudio ou texto no chat descrevendo os serviços desejados para gerar o memorial técnico exclusivo.
                     </p>
                   </div>
-                )}
-
-                {currentPage === 2 && (
-                  <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
-                    <p className="font-bold text-slate-800 uppercase">COBERTURA</p>
-                    <p className="line-clamp-3">
-                      Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção das goteiras.
-                    </p>
-                    <p className="font-bold text-slate-800 uppercase mt-1">BANHEIROS</p>
-                    <p className="line-clamp-3">
-                      Executar revisão geral das instalações hidrossanitárias dos banheiros da unidade escolar.
-                    </p>
-                  </div>
-                )}
-
-                {currentPage >= 3 && (
-                  <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
-                    <p className="font-bold text-slate-800 uppercase">RECEBIMENTO E CONCLUSÃO</p>
-                    <p className="line-clamp-2">
-                      Vistoria conclusiva da equipe de engenharia fiscal para ateste final de conformidade da intervenção predial e escolar.
-                    </p>
-                    <p className="text-center italic text-[6px] text-slate-500 pt-1">
-                      {formData.municipio} - {formData.uf}, {formData.dataExtensa}.
-                    </p>
-                    <div className="pt-2 flex justify-between gap-2 border-t border-slate-200 mt-2 text-[6px] text-center">
-                      <div className="flex-1">
-                        <div className="border-b border-slate-400 mb-0.5" />
-                        <p className="font-bold">Engenheiro Responsável</p>
-                        <p className="text-slate-400">{formData.creaNumber}</p>
+                ) : (
+                  <div className="space-y-2 text-[7px] text-slate-700 leading-tight">
+                    {/* Quadro de Metadados (Página 1) */}
+                    {currentPage === 1 && (
+                      <div className="bg-slate-100 p-1.5 rounded border border-slate-200 space-y-0.5 mb-2 text-[6.5px]">
+                        <p className="font-bold text-slate-800 truncate">
+                          Unidade: {formData.schoolName}
+                        </p>
+                        <div className="flex justify-between text-slate-700">
+                          <span>Local: {formData.municipio} - {formData.uf}</span>
+                          <span className="font-bold text-[#e65c00]">BDI: {formData.bdiPercent}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                          <span>Ref: {formData.mesAnoRef}</span>
+                          <span>GRE: {formData.gre}</span>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <div className="border-b border-slate-400 mb-0.5" />
-                        <p className="font-bold">Fiscal Contratante</p>
-                        <p className="text-slate-400">SEDUC / GPR</p>
+                    )}
+
+                    {/* Etapas Dinâmicas Reais da Página Atual */}
+                    {stages
+                      .slice((currentPage - 1) * 2, currentPage * 2)
+                      .map((stg) => (
+                        <div key={stg.id} className="space-y-0.5">
+                          <p className="font-bold text-slate-800 uppercase text-[7.5px] border-l-2 border-[#ffaa2c] pl-1 bg-slate-100 py-0.5">
+                            {stg.title.toUpperCase()}
+                          </p>
+                          {stg.items.map((it) => (
+                            <p key={it.id} className="text-slate-600 pl-1.5 line-clamp-2">
+                              {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                            </p>
+                          ))}
+                        </div>
+                      ))}
+
+                    {/* Fechamento com Assinaturas na Última Página */}
+                    {currentPage === totalPages && (
+                      <div className="pt-2 text-center text-[6px] text-slate-500 border-t border-slate-200 mt-2">
+                        <p className="italic mb-1">
+                          {formData.municipio} - {formData.uf}, {formData.dataExtensa}.
+                        </p>
+                        <div className="flex justify-between gap-2 pt-1 text-[5.5px]">
+                          <div className="flex-1">
+                            <div className="border-b border-slate-300 mb-0.5" />
+                            <p className="font-bold text-slate-700 truncate">{formData.engineerName}</p>
+                            <p className="text-slate-400">{formData.creaNumber}</p>
+                          </div>
+                          <div className="flex-1">
+                            <div className="border-b border-slate-300 mb-0.5" />
+                            <p className="font-bold text-slate-700">Fiscal Contratante</p>
+                            <p className="text-slate-400">SEDUC / GPR</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
