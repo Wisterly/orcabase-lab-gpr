@@ -539,11 +539,11 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
             {/* -------------------------------------------------------------------- */}
       {/* GRID PRINCIPAL EM 3 CARDS LADO A LADO                                */}
       {/* -------------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch w-full">
         {/* ================================================================== */}
         {/* CARD 1 (ESQUERDA): CHAT DO ASSISTENTE IA                           */}
         {/* ================================================================== */}
-        <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] flex flex-col h-[700px] shadow-2xl overflow-hidden">
+        <section className="lg:col-span-6 rounded-2xl border border-[#232b3d] bg-[#0c0f17] flex flex-col h-[720px] shadow-2xl overflow-hidden">
           {/* Header do Chat */}
           <div className="p-4 sm:p-5 border-b border-[#1f2637] bg-[#0f131e] flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3 min-w-0">
@@ -748,7 +748,7 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
         {/* ================================================================== */}
         {/* CARD 2 (MEIO): DADOS DO MEMORIAL                                   */}
         {/* ================================================================== */}
-        <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] flex flex-col h-[700px] shadow-2xl overflow-hidden">
+        <section className="lg:col-span-3 rounded-2xl border border-[#232b3d] bg-[#0c0f17] flex flex-col h-[720px] shadow-2xl overflow-hidden">
           {/* Header do Card 2 */}
           <div className="p-4 sm:p-5 border-b border-[#1f2637] bg-[#0f131e] flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3">
@@ -970,7 +970,7 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
         {/* ================================================================== */}
         {/* CARD 3 (DIREITA): VISUALIZADOR DE MEMORIAL (PDF)                   */}
         {/* ================================================================== */}
-        <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] flex flex-col h-[700px] shadow-2xl overflow-hidden">
+        <section className="lg:col-span-3 rounded-2xl border border-[#232b3d] bg-[#0c0f17] flex flex-col h-[720px] shadow-2xl overflow-hidden">
           {/* Header do Card 3 */}
           <div className="p-4 sm:p-5 border-b border-[#1f2637] bg-[#0f131e] flex items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-3">
@@ -1052,7 +1052,7 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
             {/* Folha A4 Realista do PDF */}
             <div
               style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "center top" }}
-              className="w-full max-w-[280px] sm:max-w-[305px] aspect-[1/1.38] bg-white text-slate-900 rounded-sm shadow-[0_15px_35px_rgba(0,0,0,0.6)] p-5 flex flex-col justify-between relative overflow-hidden transition-transform duration-200 select-none my-auto"
+              className="w-full max-w-[315px] sm:max-w-[340px] aspect-[1/1.38] bg-white text-slate-900 rounded-sm shadow-[0_15px_35px_rgba(0,0,0,0.6)] p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden transition-transform duration-200 select-none my-auto"
             >
               {/* Cabeçalho da Folha */}
               <div>

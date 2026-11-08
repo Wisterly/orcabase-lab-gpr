@@ -11,6 +11,31 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.032]
+- **Data/Hora:** 08/11/2026 16:35 (Horário Local)
+- **Tag Git:** `PR.032`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.032 (Expansão Widescreen Total e Proporção Dinâmica dos 3 Cards: Chat Expandido 50% vs Dados e Visualizador 25% Cada):
+1. **Eliminação dos Espaços Vazios nas Laterais (Widescreen Total até 1920px):**
+   - Substituição do limite estreito anterior `max-w-7xl` (1280px) por `max-w-[1920px] w-full px-4 sm:px-6 lg:px-8` no `<header>`, na barra de abas e no container `<main>`, preenchendo integralmente todo o espaço ocioso nas laterais esquerda e direita em telas Full HD e monitores amplos.
+2. **Proporção Hierárquica dos 3 Cards (`grid-cols-12`):**
+   - **Card 1 (Chat com IA):** Configurado com `lg:col-span-6` (50% da largura útil total), proporcionando um campo de diálogo amplo, confortável e espaçoso para acomodar grandes volumes de texto, transcrições de voz e memoriais completos sem aperto ou quebras de linha excessivas.
+   - **Card 2 (Dados do Memorial):** Configurado com `lg:col-span-3` (25% da largura), perfeitamente dimensionado para todos os formulários técnicos (Escola, Município, UF, BDI %, GRE, Objeto e painel de datas automáticas).
+   - **Card 3 (Visualizador de Memorial - Folha A4):** Configurado com `lg:col-span-3` (25% da largura), exatamente do mesmo tamanho e largura que o Card 2, com a folha A4 proporcional ajustada para `max-w-[340px]` centralizada com nitidez.
+3. **Barra Inferior de Ações do Memorial Expandida:**
+   - A barra inferior com os 4 botões executivos (`Copiar para Excel`, `Exportar Word (.DOC)`, `Visualizar em Tela Cheia` e `Baixar PDF Oficial`) acompanha automaticamente a nova largura estendida (`w-full`), alinhada de ponta a ponta com o grid superior.
+4. **Validação de Compilação:**
+   - Compilação do Next.js 15 (`npm run build`) validada com 100% de êxito e 0 erros.
+
+---
+
 ### [PR.031]
 - **Data/Hora:** 08/11/2026 16:10 (Horário Local)
 - **Tag Git:** `PR.031`

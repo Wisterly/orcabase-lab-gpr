@@ -1439,7 +1439,7 @@ export default function OrcaBaseDashboard() {
         <div className="institutional-backdrop" aria-hidden="true" />
 
         {/* Linha Superior: Marca à Esquerda e Botão de Conta à Direita sobre a Fachada */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-2 flex items-center justify-between gap-4 relative z-10">
+        <div className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-2 flex items-center justify-between gap-4 relative z-10">
           {/* Marca SEDUC com Divisória Vertical e Título Oficial em Linha Única */}
           <div className="brand">
             <span
@@ -1469,7 +1469,7 @@ export default function OrcaBaseDashboard() {
         </div>
 
         {/* Linha Inferior do Cabeçalho: Abas 3D Ancoradas Diretamente na Linha de Base */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <div className="max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <nav className="app-navigation" aria-label="Áreas do sistema">
             <button
               type="button"
@@ -1491,7 +1491,7 @@ export default function OrcaBaseDashboard() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
+      <main className="flex-1 max-w-[1920px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
         {mainModule === "DESCRITIVOS" ? (
           <DescritivoView
             initialSchoolName={initialFileName?.replace(/\.(xlsx|xlsm|xls)$/i, "") || "CETI FADE III"}
