@@ -27,6 +27,7 @@ import {
   ChevronUp,
   Tag,
   AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import {
   ItemBase,
@@ -44,6 +45,15 @@ import {
   saveContractBinary,
   getContractBinary,
   deleteContractBinary,
+  saveAllContractsToDB,
+  getAllContractsFromDB,
+  saveContractCardToDB,
+  deleteContractCardFromDB,
+  saveAppSettingToDB,
+  getAppSettingFromDB,
+  isDBInitialized,
+  setDBInitialized,
+  resetDatabaseToDefaults,
   buildCompatibilityMatrix,
   applyCalculationStrategyToMatches,
   triggerBase64ExcelDownload,
@@ -309,6 +319,7 @@ export default function OrcaBaseDashboard() {
 
   // Notificação Toast
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [isStorageReady, setIsStorageReady] = useState<boolean>(false);
 
   const initialFileInputRef = useRef<HTMLInputElement>(null);
   const contractFileInputRef = useRef<HTMLInputElement>(null);
@@ -319,25 +330,95 @@ export default function OrcaBaseDashboard() {
     setTimeout(() => setToastMsg(null), 5000);
   };
 
-  // Carrega contratos salvos no navegador
+  // Carregamento resiliente do Banco de Dados IndexedDB (sem limite de 5MB do LocalStorage)
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setContracts(parsed);
-          setSelectedContractId(parsed[0].id);
+    async function initDB() {
+      try {
+        const initialized = await isDBInitialized();
+        if (!initialized) {
+          // Checa se há dados prévios no localStorage para migração suave
+          let migrated: ContractBaseCard[] | null = null;
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                migrated = parsed;
+              }
+            }
+          } catch {}
+
+          const initialList = migrated || INITIAL_CONTRACTS;
+          await saveAllContractsToDB(initialList);
+          await setDBInitialized();
+          setContracts(initialList);
+          if (initialList.length > 0) {
+            setSelectedContractId(initialList[0].id);
+            await saveAppSettingToDB("selectedContractId", initialList[0].id);
+          }
+        } else {
+          // Banco já inicializado: recupera contratos persistidos pelo usuário
+          const dbContracts = await getAllContractsFromDB();
+          if (Array.isArray(dbContracts) && dbContracts.length > 0) {
+            setContracts(dbContracts);
+            // Recupera o ID do contrato selecionado salvo
+            const savedSelectedId = await getAppSettingFromDB<string>("selectedContractId");
+            if (savedSelectedId && dbContracts.some((c) => c.id === savedSelectedId)) {
+              setSelectedContractId(savedSelectedId);
+            } else {
+              setSelectedContractId(dbContracts[0].id);
+            }
+          } else {
+            // Se a lista estiver vazia (usuário excluiu todos ou vazio), respeita o estado
+            setContracts(dbContracts || []);
+          }
+
+          // Recupera palavras-chave customizadas se salvas
+          const savedKeywords = await getAppSettingFromDB<{
+            descKeyword?: string;
+            unitKeyword?: string;
+            qtyKeyword?: string;
+            totalKeyword?: string;
+          }>("customKeywords");
+          if (savedKeywords) {
+            if (savedKeywords.descKeyword) setCustomDescKeyword(savedKeywords.descKeyword);
+            if (savedKeywords.unitKeyword) setCustomUnitKeyword(savedKeywords.unitKeyword);
+            if (savedKeywords.qtyKeyword) setCustomQtyKeyword(savedKeywords.qtyKeyword);
+            if (savedKeywords.totalKeyword) setCustomTotalKeyword(savedKeywords.totalKeyword);
+          }
+
+          // Recupera estratégia de cálculo salva
+          const savedStrategy = await getAppSettingFromDB<CalculationStrategy["mode"]>("calcStrategy");
+          if (savedStrategy) {
+            setCalcStrategy(savedStrategy);
+          }
         }
+      } catch (err) {
+        console.warn("Aviso ao carregar dados do IndexedDB, tentando fallback:", err);
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setContracts(parsed);
+              setSelectedContractId(parsed[0].id);
+            }
+          }
+        } catch {}
+      } finally {
+        setIsStorageReady(true);
       }
-    } catch {
-      // Ignora erro de parse
     }
+
+    initDB();
   }, []);
 
-  // Salva metadados e estudo completo dos contratos no localStorage (o binário pesado fica no IndexedDB)
+  // Salva contratos no IndexedDB com persistência definitiva (sem cota de 5MB)
   const persistContracts = (updated: ContractBaseCard[]) => {
     setContracts(updated);
+    saveAllContractsToDB(updated).catch((e) =>
+      console.warn("Falha ao persistir contratos no IndexedDB:", e)
+    );
     try {
       const lightCopy = updated.map((c) => {
         const copy = { ...c };
@@ -346,7 +427,40 @@ export default function OrcaBaseDashboard() {
       });
       localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(lightCopy));
     } catch {
-      // Mantém em memória
+      // Ignora erro de cota de 5MB do localStorage, pois o IndexedDB grava sem limite
+    }
+  };
+
+  const handleSelectContract = (id: string) => {
+    setSelectedContractId(id);
+    saveAppSettingToDB("selectedContractId", id).catch(() => {});
+  };
+
+  // Salva automaticamente palavras-chave personalizadas no banco ao digitar
+  useEffect(() => {
+    if (!isStorageReady) return;
+    const timer = setTimeout(() => {
+      saveAppSettingToDB("customKeywords", {
+        descKeyword: customDescKeyword,
+        unitKeyword: customUnitKeyword,
+        qtyKeyword: customQtyKeyword,
+        totalKeyword: customTotalKeyword,
+      }).catch(() => {});
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [isStorageReady, customDescKeyword, customUnitKeyword, customQtyKeyword, customTotalKeyword]);
+
+  const handleResetToDefaultContracts = async () => {
+    if (!window.confirm("Deseja restaurar as configurações e contratos para os padrões originais de fábrica?")) {
+      return;
+    }
+    try {
+      await resetDatabaseToDefaults(INITIAL_CONTRACTS);
+      setContracts(INITIAL_CONTRACTS);
+      setSelectedContractId(INITIAL_CONTRACTS[0].id);
+      showToast("Configurações e contratos restaurados para os padrões originais com sucesso!");
+    } catch {
+      showToast("Erro ao restaurar padrões.");
     }
   };
 
@@ -756,6 +870,7 @@ export default function OrcaBaseDashboard() {
     const updated = [newCard, ...contracts];
     persistContracts(updated);
     setSelectedContractId(newCard.id);
+    saveAppSettingToDB("selectedContractId", newCard.id).catch(() => {});
 
     setNewContractName("");
     setNewContractNumber("");
@@ -765,22 +880,24 @@ export default function OrcaBaseDashboard() {
     setNewContractStudy(null);
     setIsAddingContract(false);
     showToast(
-      `Contrato "${newCard.contractNumber}" salvo! Ajuste será feito na coluna de nome "${newCard.detectedColumns?.qtyHeaderName}".`
+      `Contrato "${newCard.contractNumber}" salvo com persistência no banco de dados!`
     );
   };
 
   const handleDeleteContract = async (id: string) => {
     if (contracts.length <= 1) {
-      showToast("O sistema precisa manter pelo menos 1 Contrato Base cadastrado.");
+      showToast("O sistema precisa manter pelo menos 1 Contrato Base cadastrado. Cadastre o seu novo contrato antes de remover este.");
       return;
     }
-    await deleteContractBinary(id);
+    await deleteContractCardFromDB(id);
     const updated = contracts.filter((c) => c.id !== id);
     persistContracts(updated);
     if (selectedContractId === id) {
-      setSelectedContractId(updated[0].id);
+      const nextId = updated[0].id;
+      setSelectedContractId(nextId);
+      await saveAppSettingToDB("selectedContractId", nextId);
     }
-    showToast("Contrato Base removido.");
+    showToast("Contrato Base removido e excluído permanentemente do banco de dados.");
   };
 
   // ============================================================================
@@ -827,6 +944,7 @@ export default function OrcaBaseDashboard() {
 
   const handleSelectStrategyMode = (newMode: CalculationStrategy["mode"]) => {
     setCalcStrategy(newMode);
+    saveAppSettingToDB("calcStrategy", newMode).catch(() => {});
     if (compositionMatches.length > 0) {
       const updated = applyCalculationStrategyToMatches(
         compositionMatches,
@@ -1507,7 +1625,7 @@ export default function OrcaBaseDashboard() {
                     <select
                       value={selectedContractId}
                       onChange={(e) => {
-                        setSelectedContractId(e.target.value);
+                        handleSelectContract(e.target.value);
                         setCompositionMatches([]);
                       }}
                       className="w-full bg-[#111622] border border-[#26304A] focus:border-[#D4AF37] rounded-xl px-4 py-3 text-sm text-white font-semibold focus:outline-none transition-colors cursor-pointer"
@@ -2319,13 +2437,23 @@ export default function OrcaBaseDashboard() {
                   O sistema procura automaticamente na planilha pelos nomes das colunas (<strong className="text-white">Quantitativo / Quant. / Qtd</strong>, <strong className="text-white">Descrição / Composição / Discriminação</strong>, <strong className="text-white">Unidade / Unid.</strong> e <strong className="text-white">Total Geral</strong>), independentemente da posição em que estejam. Você também pode confirmar ou escolher pelo nome exato abaixo.
                 </p>
               </div>
-              <button
-                onClick={() => setIsAddingContract(true)}
-                className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-bold text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.25)] hover:opacity-95 cursor-pointer self-start"
-              >
-                <Plus className="w-4 h-4" />
-                Novo Contrato Base
-              </button>
+              <div className="flex items-center gap-3 self-start">
+                <button
+                  onClick={handleResetToDefaultContracts}
+                  className="px-4 py-2.5 rounded-xl border border-[#26304A] bg-[#111622] hover:bg-[#1A2234] text-[#9CA3AF] hover:text-white font-medium text-xs flex items-center gap-2 cursor-pointer transition-colors"
+                  title="Restaurar contratos padrão de exemplo do sistema"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Restaurar Exemplos
+                </button>
+                <button
+                  onClick={() => setIsAddingContract(true)}
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-bold text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.25)] hover:opacity-95 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Novo Contrato Base
+                </button>
+              </div>
             </div>
 
             {/* Modal/Card de Criação de Novo Contrato Base */}
@@ -3064,7 +3192,7 @@ export default function OrcaBaseDashboard() {
 
                     <button
                       onClick={() => {
-                        setSelectedContractId(c.id);
+                        handleSelectContract(c.id);
                         setActiveTab("WORKSPACE");
                         showToast(`Contrato "${c.contractNumber}" selecionado para compatibilização!`);
                       }}

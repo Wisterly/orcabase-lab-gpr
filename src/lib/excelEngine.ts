@@ -17,26 +17,36 @@ import {
   ContractCompositionMatch,
   MatchCandidate,
   CalculationStrategy,
+  ContractBaseCard,
 } from "@/types";
 
 // ============================================================================
-// 1. ARMAZENAMENTO BINÁRIO NO INDEXEDDB (SUPORTA PLANILHAS GRANDES SEM LIMITE)
+// 1. BANCO DE DADOS LOCAL E ARMAZENAMENTO INDEXEDDB (PERSISTÊNCIA DEFINITIVA)
 // ============================================================================
 
 const DB_NAME = "OrcaBaseGPR_Storage_v1";
-const STORE_NAME = "contract_binaries";
+const DB_VERSION = 2;
+const STORE_BINARIES = "contract_binaries";
+const STORE_CONTRACTS = "contracts_store";
+const STORE_SETTINGS = "app_settings";
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined" || !window.indexedDB) {
-      reject(new Error("IndexedDB não disponível"));
+      reject(new Error("IndexedDB não disponível neste ambiente"));
       return;
     }
-    const request = window.indexedDB.open(DB_NAME, 1);
+    const request = window.indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+      if (!db.objectStoreNames.contains(STORE_BINARIES)) {
+        db.createObjectStore(STORE_BINARIES);
+      }
+      if (!db.objectStoreNames.contains(STORE_CONTRACTS)) {
+        db.createObjectStore(STORE_CONTRACTS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
+        db.createObjectStore(STORE_SETTINGS);
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -44,12 +54,14 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+// --- Binários dos Arquivos Excel (.xlsx / .xlsm) ---
+
 export async function saveContractBinary(contractId: string, base64Data: string): Promise<void> {
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
+      const tx = db.transaction(STORE_BINARIES, "readwrite");
+      const store = tx.objectStore(STORE_BINARIES);
       store.put(base64Data, contractId);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
@@ -63,8 +75,8 @@ export async function getContractBinary(contractId: string): Promise<string | nu
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, "readonly");
-      const store = tx.objectStore(STORE_NAME);
+      const tx = db.transaction(STORE_BINARIES, "readonly");
+      const store = tx.objectStore(STORE_BINARIES);
       const req = store.get(contractId);
       req.onsuccess = () => resolve(req.result || null);
       req.onerror = () => reject(req.error);
@@ -78,13 +90,156 @@ export async function deleteContractBinary(contractId: string): Promise<void> {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      const store = tx.objectStore(STORE_NAME);
+      const tx = db.transaction(STORE_BINARIES, "readwrite");
+      const store = tx.objectStore(STORE_BINARIES);
       store.delete(contractId);
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
     });
   } catch {}
+}
+
+// --- Contratos e Metadados Estruturados ---
+
+export async function saveAllContractsToDB(contracts: ContractBaseCard[]): Promise<void> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_CONTRACTS, "readwrite");
+      const store = tx.objectStore(STORE_CONTRACTS);
+
+      const clearReq = store.clear();
+      clearReq.onsuccess = () => {
+        for (const card of contracts) {
+          const cleanCard = { ...card };
+          delete cleanCard.rawWorkbookBase64;
+          store.put(cleanCard);
+        }
+      };
+      clearReq.onerror = () => reject(clearReq.error);
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("Aviso ao persistir contratos no IndexedDB:", e);
+  }
+}
+
+export async function getAllContractsFromDB(): Promise<ContractBaseCard[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_CONTRACTS, "readonly");
+      const store = tx.objectStore(STORE_CONTRACTS);
+      const req = store.getAll();
+      req.onsuccess = () => {
+        resolve(req.result || []);
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn("Aviso ao carregar contratos do IndexedDB:", e);
+    return [];
+  }
+}
+
+export async function saveContractCardToDB(contract: ContractBaseCard): Promise<void> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_CONTRACTS, "readwrite");
+      const store = tx.objectStore(STORE_CONTRACTS);
+      const cleanCard = { ...contract };
+      delete cleanCard.rawWorkbookBase64;
+      store.put(cleanCard);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("Aviso ao salvar contrato individual no IndexedDB:", e);
+  }
+}
+
+export async function deleteContractCardFromDB(contractId: string): Promise<void> {
+  try {
+    const db = await openDB();
+    await Promise.all([
+      new Promise<void>((resolve) => {
+        const tx = db.transaction(STORE_CONTRACTS, "readwrite");
+        const store = tx.objectStore(STORE_CONTRACTS);
+        store.delete(contractId);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      }),
+      deleteContractBinary(contractId),
+    ]);
+  } catch (e) {
+    console.warn("Aviso ao excluir contrato do IndexedDB:", e);
+  }
+}
+
+// --- Configurações Gerais da Aplicação ---
+
+export async function saveAppSettingToDB<T>(key: string, value: T): Promise<void> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SETTINGS, "readwrite");
+      const store = tx.objectStore(STORE_SETTINGS);
+      store.put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn(`Aviso ao salvar configuração "${key}" no IndexedDB:`, e);
+  }
+}
+
+export async function getAppSettingFromDB<T>(key: string): Promise<T | null> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_SETTINGS, "readonly");
+      const store = tx.objectStore(STORE_SETTINGS);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result !== undefined ? req.result : null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn(`Aviso ao ler configuração "${key}" do IndexedDB:`, e);
+    return null;
+  }
+}
+
+export async function isDBInitialized(): Promise<boolean> {
+  const val = await getAppSettingFromDB<boolean>("initialized");
+  return Boolean(val);
+}
+
+export async function setDBInitialized(): Promise<void> {
+  await saveAppSettingToDB("initialized", true);
+}
+
+export async function resetDatabaseToDefaults(initialContracts: ContractBaseCard[]): Promise<void> {
+  try {
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction([STORE_CONTRACTS, STORE_BINARIES, STORE_SETTINGS], "readwrite");
+      tx.objectStore(STORE_CONTRACTS).clear();
+      tx.objectStore(STORE_BINARIES).clear();
+      tx.objectStore(STORE_SETTINGS).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    await saveAllContractsToDB(initialContracts);
+    await setDBInitialized();
+    if (initialContracts.length > 0) {
+      await saveAppSettingToDB("selectedContractId", initialContracts[0].id);
+    }
+  } catch (e) {
+    console.warn("Aviso ao resetar banco de dados:", e);
+  }
 }
 
 // ============================================================================

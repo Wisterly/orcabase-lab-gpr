@@ -11,6 +11,37 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.019]
+- **Data/Hora:** 08/11/2026 00:30 (Horário Local)
+- **Tag Git:** `PR.019`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.019 (Persistência Definitiva no Banco de Dados IndexedDB — Fim da Perda de Dados ao Atualizar a Página):
+1. **Diagnóstico da Causa Raiz da Perda de Contratos e Configurações:**
+   - Anteriormente, os metadados dos contratos eram salvos em `localStorage`. Em orçamentos de engenharia civil com centenas ou milhares de itens e descrições detalhadas (SINAPI/ORSE), o tamanho do JSON ultrapassava a cota rígida de 5MB do `localStorage`, provocando erro silencioso de `QuotaExceededError`.
+   - Com isso, ao recarregar a página (F5) ou reabrir o navegador, todos os novos contratos adicionados, exclusões realizadas e configurações de colunas se perdiam, revertendo para a lista padrão em memória.
+2. **Arquitetura de Persistência Canônica no IndexedDB (Sem Limite de 5MB):**
+   - Evolução do banco `OrcaBaseGPR_Storage_v1` para a versão 2 com 3 object stores especializadas:
+     - `contracts_store` (`keyPath: "id"`): armazena a lista completa de contratos com suas colunas detectadas, intervalos de linhas configurados (`startRow`, `endRow`), etapas e todas as composições.
+     - `contract_binaries`: armazena os binários brutos dos arquivos `.xlsm` e `.xlsx` originais indexados por contrato.
+     - `app_settings`: armazena configurações globais persistentes (`initialized`, `selectedContractId`, `customKeywords` de colunas e `calcStrategy`).
+3. **Resiliência de CRUD e Migração Automática:**
+   - Novo Contrato (`handleSaveNewContract`): grava o arquivo original no `contract_binaries`, persiste o contrato no `contracts_store` e define como ativo no `app_settings`.
+   - Exclusão de Contrato (`handleDeleteContract`): remove o contrato e seu binário do banco de forma transacional e seleciona o próximo contrato válido.
+   - Edição de Colunas e Intervalos de Linhas: reflete instantaneamente no IndexedDB.
+   - Migração Suave: se o usuário já possuía contratos no `localStorage`, o sistema migra automaticamente para o IndexedDB no primeiro boot da v2 sem perda de dados.
+4. **Interface e Usabilidade Aprimoradas:**
+   - Adicionado botão "Restaurar Exemplos" na aba Configurações com diálogo de confirmação.
+   - Sincronização automática com debounce para alterações em palavras-chave personalizadas.
+
+---
+
 ### [PR.018]
 - **Data/Hora:** 08/11/2026 00:15 (Horário Local)
 - **Tag Git:** `PR.018`
