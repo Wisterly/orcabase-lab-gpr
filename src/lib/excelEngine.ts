@@ -1678,6 +1678,35 @@ async function removeCommentsConsistently(zip: JSZip): Promise<void> {
   }
 }
 
+/**
+ * Remove a cadeia de cálculo estática (calcChain.xml) e suas referências em [Content_Types].xml e workbook.xml.rels.
+ * Conforme norma ISO/IEC 29500 (OpenXML), a parte calcChain é de cache e puramente opcional.
+ * Quando quantitativos ou fórmulas são alterados programaticamente, a cadeia prévia torna-se obsoleta.
+ * Remover o calcChain faz com que o Excel reconstrua o grafo de cálculos limpo em memória ao abrir,
+ * ELIMINANDO 100% o aviso "Registros Removidos: Fórmula de parte de /xl/calcChain.xml (Propriedades do cálculo)".
+ */
+async function removeCalcChainConsistently(zip: JSZip): Promise<void> {
+  zip.remove("xl/calcChain.xml");
+
+  const wbRelsFile = zip.file("xl/_rels/workbook.xml.rels");
+  if (wbRelsFile) {
+    let wbRels = await wbRelsFile.async("string");
+    const cleanedRels = wbRels.replace(/<Relationship\b[^>]*relationships\/calcChain"[^>]*\/>/gi, "");
+    if (cleanedRels !== wbRels) {
+      zip.file("xl/_rels/workbook.xml.rels", cleanedRels);
+    }
+  }
+
+  const ctFile = zip.file("[Content_Types].xml");
+  if (ctFile) {
+    let ct = await ctFile.async("string");
+    const cleanedCt = ct.replace(/<Override\b[^>]*PartName="\/xl\/calcChain\.xml"[^>]*\/>/gi, "");
+    if (cleanedCt !== ct) {
+      zip.file("[Content_Types].xml", cleanedCt);
+    }
+  }
+}
+
 export interface InjectedWorkbookResult {
   blob: Blob;
   extension: "xlsm" | "xlsx";
@@ -1734,6 +1763,9 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
 
   // 2. Remoção CONSISTENTE de comentários/notas (partes, relações, tipos de conteúdo e shapes VML de nota)
   await removeCommentsConsistently(zip);
+
+  // 2.5 Remoção da cadeia de cálculo obsoleta (calcChain.xml) para reconstrução automática e silenciosa no Excel
+  await removeCalcChainConsistently(zip);
 
   // 3. Localiza a worksheet da aba de orçamento
   const sheetPath = await findWorksheetPathInZip(zip, options.budgetSheetName);

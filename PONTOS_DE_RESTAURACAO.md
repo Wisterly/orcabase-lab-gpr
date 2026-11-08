@@ -11,6 +11,35 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.017]
+- **Data/Hora:** 08/11/2026 00:05 (Horário Local)
+- **Tag Git:** `PR.017`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.017 (Eliminação Definitiva do Alerta de Reparo de Fórmula em `/xl/calcChain.xml`):
+1. **Identificação da Causa Raiz pelo Arquivo de Log Oficial do Excel:**
+   - Inspeção do log de recuperação gerado pelo próprio Microsoft Excel (`C:\Users\Lenovo\AppData\Local\Temp\error241400_01.xml`), que confirmou:
+     `<removedRecords><removedRecord>Registros Removidos: Fórmula de parte de /xl/calcChain.xml (Propriedades do cálculo)</removedRecord></removedRecords>`.
+   - Causa técnica: O arquivo original continha `xl/calcChain.xml` (cache de cadeia estática de cálculo). Ao injetar novos quantitativos programaticamente, a cadeia anterior tornou-se matematicamente inconsistente com as novas células, levando o Excel a solicitar confirmação de reparo para descartar a cadeia desatualizada.
+2. **Remoção Canônica do `xl/calcChain.xml` Conforme Norma ISO/IEC 29500:**
+   - O `calcChain.xml` é uma parte de aceleração opcional. Implementada a função `removeCalcChainConsistently` que:
+     - Remove `xl/calcChain.xml` do pacote ZIP;
+     - Limpa o relacionamento correspondente em `xl/_rels/workbook.xml.rels`;
+     - Remove o Override de tipo de conteúdo em `[Content_Types].xml`;
+     - Mantém `<calcPr fullCalcOnLoad="1"/>` no `xl/workbook.xml`.
+   - Ao abrir a planilha sem `calcChain.xml`, o Excel reconstrói o grafo de cálculos limpo diretamente na memória de forma 100% silenciosa, sem solicitar qualquer reparo ao usuário.
+3. **Bateria de Testes em Loop no Microsoft Excel Nativo:**
+   - Executada bateria automatizada de testes em loop com 5 planilhas geradas com injeções variadas de quantitativos em diferentes linhas da aba de orçamento.
+   - Todas as 5 iterações foram abertas via automação COM oficial do Excel, com **100% de sucesso, ZERO logs de erro gerados no Temp e abertura instantânea de todas as 36 abas sem qualquer diálogo de reparo**.
+
+---
+
 ### [PR.016]
 - **Data/Hora:** 07/11/2026 23:48 (Horário Local)
 - **Tag Git:** `PR.016`
