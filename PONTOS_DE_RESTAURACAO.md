@@ -11,6 +11,30 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.023]
+- **Data/Hora:** 08/11/2026 02:32 (Horário Local)
+- **Tag Git:** `PR.023`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.023 (Lacuna de Valor Alvo Customizado ao Lado de "Novo Total na Planilha Base", Equalização Instantânea e Deploy de Produção):
+1. **Nova Lacuna de Definição de Valor Alvo:**
+   - Criado componente de entrada de valor monetário posicionado diretamente ao lado da métrica *"Novo Total na Planilha Base"*, com suporte total à digitação manual no padrão brasileiro (`R$ 447.912,66` ou `447912.66`).
+   - Incluído botão de atalho rápido *"Copiar Total Planilha 1"* para igualar o orçamento ao valor de referência com apenas um clique.
+2. **Motor de Reescalonamento Proporcional Instantâneo:**
+   - A função `handleApplyCustomTargetTotal` agora pode ser disparada a qualquer momento (inclusive quando o usuário está na Opção 2 de quantitativo exato).
+   - O algoritmo equaliza proporcionalmente todas as composições ativas (`final_injected_quantity`) multiplicando pelo fator de escala exato, aplicando ajuste fino de centavos na maior composição para garantir que a soma das linhas bata 100% no centavo com o valor alvo estipulado.
+3. **Reflexo em Tempo Real e na Planilha Baixada:**
+   - Os quantitativos na tabela da interface são atualizados instantaneamente.
+   - O botão "Baixar Planilha Final" exporta os quantitativos calculados para o arquivo oficial (.xlsx / .xlsm), preservando todas as fórmulas vivas e formatação original.
+
+---
+
 ### [PR.022]
 - **Data/Hora:** 08/11/2026 01:56 (Horário Local)
 - **Tag Git:** `PR.022`

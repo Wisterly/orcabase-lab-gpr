@@ -1400,9 +1400,12 @@ export function applyCalculationStrategyToMatches(
 
   // Modo KEEP_TOTAL_VALUE:
   // Ajusta os quantitativos posicionados (aumentando ou diminuindo) para que a soma total
-  // na Planilha Base do Contrato bata com o targetBudgetTotal (ex: os R$ 300.000,00 da Planilha 1)!
+  // na Planilha Base do Contrato bata exatamente com o targetBudgetTotal desejado pelo usuário!
   const unscaledTotal = matches.reduce(
-    (sum, m) => sum + m.base_quantity_from_sheet1 * m.contract_unit_price,
+    (sum, m) => {
+      const q = m.base_quantity_from_sheet1 > 0 ? m.base_quantity_from_sheet1 : (m.final_injected_quantity || 0);
+      return sum + q * m.contract_unit_price;
+    },
     0
   );
 
@@ -1413,7 +1416,8 @@ export function applyCalculationStrategyToMatches(
   const scaleFactor = targetBudgetTotal / unscaledTotal;
 
   const adjusted = matches.map((m) => {
-    if (m.base_quantity_from_sheet1 <= 0 || m.contract_unit_price <= 0) {
+    const origQ = m.base_quantity_from_sheet1 > 0 ? m.base_quantity_from_sheet1 : (m.final_injected_quantity || 0);
+    if (origQ <= 0 || m.contract_unit_price <= 0) {
       return {
         ...m,
         final_injected_quantity: 0,
@@ -1422,7 +1426,7 @@ export function applyCalculationStrategyToMatches(
       };
     }
 
-    const scaledQty = Number((m.base_quantity_from_sheet1 * scaleFactor).toFixed(2));
+    const scaledQty = Number((origQ * scaleFactor).toFixed(2));
     const finalQty = scaledQty > 0 ? scaledQty : 0.01;
     const calcTot = Number((finalQty * m.contract_unit_price).toFixed(2));
 

@@ -970,21 +970,49 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  const handleApplyCustomTargetTotal = () => {
-    if (compositionMatches.length > 0 && calcStrategy === "KEEP_TOTAL_VALUE") {
-      const updated = applyCalculationStrategyToMatches(
-        compositionMatches,
-        "KEEP_TOTAL_VALUE",
-        effectiveTargetTotal
-      );
-      setCompositionMatches(updated);
-      showToast(
-        `Quantitativos reescalonados para atingir o Valor Final de R$ ${effectiveTargetTotal.toLocaleString(
-          "pt-BR",
-          { minimumFractionDigits: 2 }
-        )}!`
-      );
+  const handleApplyCustomTargetTotal = (specificTarget?: number) => {
+    if (compositionMatches.length === 0) {
+      showToast("Execute a compatibilização antes de ajustar o valor alvo.");
+      return;
     }
+
+    let targetToApply: number;
+    if (specificTarget !== undefined && specificTarget > 0) {
+      targetToApply = specificTarget;
+      setCustomTargetTotal(
+        specificTarget.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      );
+    } else {
+      const parsedCustom = parseFloat(customTargetTotal.replace(/\./g, "").replace(",", "."));
+      if (!isNaN(parsedCustom) && parsedCustom > 0) {
+        targetToApply = parsedCustom;
+      } else if (effectiveTargetTotal > 0) {
+        targetToApply = effectiveTargetTotal;
+      } else if (sheet1Study?.totalGeralValue && sheet1Study.totalGeralValue > 0) {
+        targetToApply = sheet1Study.totalGeralValue;
+      } else {
+        showToast("Digite um valor alvo válido (ex: 447.912,66).");
+        return;
+      }
+    }
+
+    const updated = applyCalculationStrategyToMatches(
+      compositionMatches,
+      "KEEP_TOTAL_VALUE",
+      targetToApply
+    );
+    setCompositionMatches(updated);
+    setCalcStrategy("KEEP_TOTAL_VALUE");
+    saveAppSettingToDB("calcStrategy", "KEEP_TOTAL_VALUE").catch(() => {});
+    showToast(
+      `Quantitativos ajustados com sucesso! Novo Total da Planilha Base: R$ ${targetToApply.toLocaleString(
+        "pt-BR",
+        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+      )}`
+    );
   };
 
   const handleManualQuantityChange = (contractIdx: number, rawVal: string) => {
@@ -1785,12 +1813,12 @@ export default function OrcaBaseDashboard() {
                       type="text"
                       value={customTargetTotal}
                       onChange={(e) => setCustomTargetTotal(e.target.value)}
-                      onBlur={handleApplyCustomTargetTotal}
+                      onBlur={() => handleApplyCustomTargetTotal()}
                       placeholder="Ex: 300.000,00"
                       className="w-32 bg-[#07090E] border border-[#26304A] rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#D4AF37] focus:border-[#F97316] focus:outline-none text-right"
                     />
                     <button
-                      onClick={handleApplyCustomTargetTotal}
+                      onClick={() => handleApplyCustomTargetTotal()}
                       className="px-2.5 py-1 rounded-lg bg-[#D4AF37]/20 hover:bg-[#D4AF37]/30 text-[#D4AF37] text-[11px] font-semibold cursor-pointer"
                     >
                       Aplicar
@@ -1948,6 +1976,65 @@ export default function OrcaBaseDashboard() {
                           maximumFractionDigits: 2,
                         })}
                       </span>
+                    </div>
+
+                    {/* LACUNA SOLICITADA PELO USUÁRIO: Ajustar para Valor Alvo Específico */}
+                    <div className="h-7 w-[1px] bg-[#1E2436] hidden sm:block" />
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 bg-[#0B0F19] p-2 px-3.5 rounded-xl border border-[#D4AF37]/60 shadow-[0_0_20px_rgba(212,175,55,0.12)]">
+                      <div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[10px] font-mono uppercase text-[#D4AF37] font-bold flex items-center gap-1.5">
+                            <Calculator className="w-3.5 h-3.5 text-[#F97316]" />
+                            Definir Valor que Deseja que a Planilha Bata:
+                          </span>
+                          {totalSheet1Value > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleApplyCustomTargetTotal(totalSheet1Value)}
+                              title="Usar exatamente o mesmo valor total da Planilha 1"
+                              className="text-[10px] text-gray-400 hover:text-[#D4AF37] underline cursor-pointer"
+                            >
+                              Copiar Total Planilha 1
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="relative flex items-center">
+                            <span className="absolute left-2.5 text-xs font-bold text-[#D4AF37] font-mono pointer-events-none">
+                              R$
+                            </span>
+                            <input
+                              type="text"
+                              value={customTargetTotal}
+                              onChange={(e) => setCustomTargetTotal(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleApplyCustomTargetTotal();
+                                }
+                              }}
+                              placeholder={
+                                totalCompatibleValue > 0
+                                  ? totalCompatibleValue.toLocaleString("pt-BR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })
+                                  : "Ex: 447.912,66"
+                              }
+                              className="w-40 bg-[#141A28] border border-[#26304A] focus:border-[#F97316] rounded-lg pl-8 pr-2.5 py-1.5 text-xs font-mono font-bold text-white focus:outline-none"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleApplyCustomTargetTotal()}
+                            title="Recalcula e ajusta os quantitativos das composições para que o total da planilha base atinja exatamente este valor"
+                            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#D4AF37] via-[#F97316] to-[#D4AF37] hover:brightness-110 text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                            Ajustar Quantitativos
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
