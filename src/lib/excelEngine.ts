@@ -1322,7 +1322,7 @@ export function triggerBlobDownload(blob: Blob, filename: string): void {
   const a = document.createElement("a");
   a.style.display = "none";
   a.href = url;
-  a.download = filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`;
+  a.download = /\.(xlsx|xlsm|xls|csv)$/i.test(filename) ? filename : `${filename}.xlsx`;
   document.body.appendChild(a);
   a.click();
   setTimeout(() => {
@@ -1439,14 +1439,15 @@ export function injectQuantitiesClientFallback(
 export function buildCompatOutputFileName(
   initialFileName: string | null,
   contractName: string,
-  contractNumber?: string
+  contractNumber?: string,
+  extension: string = "xlsx"
 ): string {
   let base = initialFileName ? initialFileName.trim() : "Planilha_Inicial";
-  base = base.replace(/\.(xlsx|xls|csv)$/i, "").trim();
+  base = base.replace(/\.(xlsx|xlsm|xls|csv)$/i, "").trim();
 
-  let cLabel = contractName ? contractName.replace(/\.(xlsx|xls|csv)$/i, "").trim() : "";
+  let cLabel = contractName ? contractName.replace(/\.(xlsx|xlsm|xls|csv)$/i, "").trim() : "";
   if (!cLabel && contractNumber) {
-    cLabel = contractNumber.replace(/\.(xlsx|xls|csv)$/i, "").trim();
+    cLabel = contractNumber.replace(/\.(xlsx|xlsm|xls|csv)$/i, "").trim();
   }
   if (!cLabel) {
     cLabel = "CONTRATO";
@@ -1454,8 +1455,9 @@ export function buildCompatOutputFileName(
 
   const cleanBase = base.replace(/[\/\\:*?"<>|]/g, "_").trim();
   const cleanContract = cLabel.replace(/[\/\\:*?"<>|]/g, " ").trim();
+  const cleanExt = extension.replace(/^\./, "").toLowerCase() || "xlsx";
 
-  return `${cleanBase} (${cleanContract}).xlsx`;
+  return `${cleanBase} (${cleanContract}).${cleanExt}`;
 }
 
 // ============================================================================
@@ -1638,11 +1640,58 @@ function updateWorksheetXmlWithQuantitiesAndLayout(
 }
 
 /**
- * Clona com fidelidade física 100% o arquivo .xlsx original do Contrato Base através de OpenXML direto com JSZip.
- * PRESERVA 100% de fontes, cores, larguras de colunas (<cols>), alturas de linhas, fórmulas, abas e logotipos,
+ * Remove comentários/notas de forma 100% consistente (sem deixar referências órfãs que fariam o Excel pedir reparo):
+ *  - apaga as partes xl/commentsN.xml, suas relações nas abas e os Overrides em [Content_Types].xml;
+ *  - remove dos arquivos VML apenas os shapes de nota (ObjectType="Note"), preservando imagens de cabeçalho/rodapé.
+ */
+async function removeCommentsConsistently(zip: JSZip): Promise<void> {
+  const commentParts = Object.keys(zip.files).filter((n) => /^xl\/comments[^/]*\.xml$/i.test(n));
+
+  // Relações das abas que apontam para comentários
+  const sheetRels = Object.keys(zip.files).filter((n) => /^xl\/worksheets\/_rels\/[^/]+\.rels$/i.test(n));
+  for (const relPath of sheetRels) {
+    let rels = await zip.file(relPath)!.async("string");
+    const cleaned = rels.replace(/<Relationship\b[^>]*relationships\/comments"[^>]*\/>/gi, "");
+    if (cleaned !== rels) {
+      rels = cleaned;
+      zip.file(relPath, rels);
+    }
+  }
+
+  commentParts.forEach((n) => zip.remove(n));
+
+  const ctFile = zip.file("[Content_Types].xml");
+  if (ctFile) {
+    let ct = await ctFile.async("string");
+    ct = ct.replace(/<Override\b[^>]*PartName="\/xl\/comments[^"]*"[^>]*\/>/gi, "");
+    zip.file("[Content_Types].xml", ct);
+  }
+
+  // VML: remove somente shapes de nota
+  const vmlFiles = Object.keys(zip.files).filter((n) => /^xl\/drawings\/[^/]+\.vml$/i.test(n));
+  for (const vmlPath of vmlFiles) {
+    const vml = await zip.file(vmlPath)!.async("string");
+    const cleaned = vml.replace(/<v:shape\b(?:(?!<v:shape\b)[\s\S])*?<\/v:shape>/gi, (shape) =>
+      /ObjectType\s*=\s*"Note"/i.test(shape) ? "" : shape
+    );
+    if (cleaned !== vml) zip.file(vmlPath, cleaned);
+  }
+}
+
+export interface InjectedWorkbookResult {
+  blob: Blob;
+  extension: "xlsm" | "xlsx";
+  isMacroEnabled: boolean;
+  mimeType: string;
+}
+
+/**
+ * Clona com fidelidade física 100% o arquivo original do Contrato Base (.xlsx ou .xlsm) através de OpenXML direto com JSZip.
+ * PRESERVA 100% de fontes, cores, larguras de colunas (<cols>), alturas de linhas, fórmulas, abas, logotipos e projetos VBA (.xlsm),
  * alterando ESTRITAMENTE o número na célula da coluna de quantitativo na aba de orçamento!
  * Remove comentários, observações e caixas de anotação flutuantes indesejadas sem quebrar referências.
- * Mantém o schema XSD rigorosamente canônico para evitar mensagens de recuperação no Microsoft Excel.
+ * Detecta dinamicamente pastas de trabalho habilitadas para macros (.xlsm) e preserva a extensão nativa,
+ * eliminando categoricamente o erro "o formato ou a extensão de arquivo não é válida" no Microsoft Excel.
  */
 export async function injectQuantitiesPreservingOriginalWorkbook(
   contractBase64: string,
@@ -1650,12 +1699,13 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
     budgetSheetName?: string;
     colQtyOneBased?: number;
     colQtyLetter?: string;
+    contractFileName?: string;
     compositionMatches: {
       contract_row_index?: number;
       final_injected_quantity: number;
     }[];
   }
-): Promise<Blob> {
+): Promise<InjectedWorkbookResult> {
   const cleanB64 = contractBase64.includes(",") ? contractBase64.split(",")[1] : contractBase64;
   const binaryString = window.atob(cleanB64);
   const len = binaryString.length;
@@ -1666,38 +1716,30 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
 
   const zip = await JSZip.loadAsync(bytes);
 
-  // 1. Limpeza segura de comentários (esvazia commentList sem violar schema nem referências)
-  Object.keys(zip.files).forEach((filename) => {
-    if (filename.startsWith("xl/comments") && filename.endsWith(".xml")) {
-      zip.file(
-        filename,
-        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author></author></authors><commentList/></comments>'
-      );
-    }
-  });
-
-  // 2. Oculta e desativa caixas de anotação flutuantes no VML preservando a integridade dos drawings
-  const vmlFiles = Object.keys(zip.files).filter(
-    (f) => f.startsWith("xl/drawings/vmlDrawing") && f.endsWith(".vml")
-  );
-  for (const filename of vmlFiles) {
-    let vml = await zip.file(filename)!.async("string");
-    vml = vml.replace(/<x:Visible\s*\/>/gi, "");
-    vml = vml.replace(/<x:Visible>[\s\S]*?<\/x:Visible>/gi, "");
-    vml = vml.replace(/(<v:shape\b[^>]*style=")([^"]*?)(")/gi, (m, p1, p2, p3) => {
-      if (!p2.includes("visibility:hidden")) {
-        return `${p1}${p2};visibility:hidden${p3}`;
-      }
-      return m;
-    });
-    zip.file(filename, vml);
+  // 1. Detecta dinamicamente se o arquivo original é habilitado para macro (.xlsm)
+  const hasVba = zip.file("xl/vbaProject.bin") !== null;
+  const isXlsmByName = Boolean(options.contractFileName && /\.xlsm$/i.test(options.contractFileName));
+  const ctFile = zip.file("[Content_Types].xml");
+  let ctContent = "";
+  if (ctFile) {
+    ctContent = await ctFile.async("string");
   }
+  const hasMacroType = ctContent.includes("application/vnd.ms-excel.sheet.macroEnabled");
+
+  const isMacroEnabled = hasVba || isXlsmByName || hasMacroType;
+  const extension: "xlsm" | "xlsx" = isMacroEnabled ? "xlsm" : "xlsx";
+  const mimeType = isMacroEnabled
+    ? "application/vnd.ms-excel.sheet.macroEnabled.main+xml"
+    : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+  // 2. Remoção CONSISTENTE de comentários/notas (partes, relações, tipos de conteúdo e shapes VML de nota)
+  await removeCommentsConsistently(zip);
 
   // 3. Localiza a worksheet da aba de orçamento
   const sheetPath = await findWorksheetPathInZip(zip, options.budgetSheetName);
   const sheetXmlFile = zip.file(sheetPath);
   if (!sheetXmlFile) {
-    throw new Error(`Arquivo da aba "${sheetPath}" não encontrado no arquivo .xlsx do contrato.`);
+    throw new Error(`Arquivo da aba "${sheetPath}" não encontrado no arquivo do contrato.`);
   }
 
   let sheetXml = await sheetXmlFile.async("string");
@@ -1733,13 +1775,20 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
     zip.file("xl/workbook.xml", wbXml);
   }
 
-  // 8. Gera o arquivo final .xlsx canônico comprimido em DEFLATE
-  return await zip.generateAsync({
+  // 8. Gera o arquivo final comprimido em DEFLATE com o MIME correto e extensão preservada (.xlsm ou .xlsx)
+  const blob = await zip.generateAsync({
     type: "blob",
-    mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    mimeType,
     compression: "DEFLATE",
     compressionOptions: { level: 6 },
   });
+
+  return {
+    blob,
+    extension,
+    isMacroEnabled,
+    mimeType,
+  };
 }
 
 

@@ -397,7 +397,7 @@ export default function OrcaBaseDashboard() {
       );
     } catch (err) {
       console.error(err);
-      showToast("Erro ao ler a Planilha 1. Verifique se é um arquivo Excel (.xlsx/.xls) válido.");
+      showToast("Erro ao ler a Planilha 1. Verifique se é um arquivo Excel (.xlsx/.xlsm/.xls) válido.");
     } finally {
       setIsProcessing(false);
     }
@@ -992,18 +992,20 @@ export default function OrcaBaseDashboard() {
   };
 
   // Nome oficial do arquivo final baixado conforme a regra estrita do usuário:
-  // [Nome da Planilha 1 sem extensão] ([Nome do Contrato Escolhido]).xlsx
+  // [Nome da Planilha 1 sem extensão] ([Nome do Contrato Escolhido]).[xlsx|xlsm]
   const outputCompatFilename = useMemo(() => {
+    const isXlsm = Boolean(selectedContract?.fileName && /\.xlsm$/i.test(selectedContract.fileName));
     return buildCompatOutputFileName(
       initialFileName,
       selectedContract?.contractName || "",
-      selectedContract?.contractNumber
+      selectedContract?.contractNumber,
+      isXlsm ? "xlsm" : "xlsx"
     );
   }, [initialFileName, selectedContract]);
 
   // ============================================================================
-  // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX)
-  // Preserva 100% rigorosamente do layout, fontes, larguras de colunas, alturas e fórmulas da Planilha Base original!
+  // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX / .XLSM)
+  // Preserva 100% rigorosamente do layout, fontes, larguras de colunas, alturas, fórmulas e macros da Planilha Base original!
   // ============================================================================
   const handleDownloadFinalSpreadsheet = async () => {
     if (compositionMatches.length === 0 || !selectedContract) {
@@ -1012,7 +1014,6 @@ export default function OrcaBaseDashboard() {
     }
 
     setIsDownloading(true);
-    const outputFilename = outputCompatFilename;
 
     try {
       let contractBase64 = await getContractBinary(selectedContract.id);
@@ -1020,14 +1021,15 @@ export default function OrcaBaseDashboard() {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
 
-      // 1. CLONAGEM CIRÚRGICA 100% FIEL NO ARQUIVO .XLSX ORIGINAL (JSZip OpenXML)
-      // Modifica EXCLUSIVAMENTE o número da célula de quantitativo mantendo 100% de layout, estilos, larguras e fórmulas intactos
+      // 1. CLONAGEM CIRÚRGICA 100% FIEL NO ARQUIVO ORIGINAL (JSZip OpenXML)
+      // Modifica EXCLUSIVAMENTE o número da célula de quantitativo mantendo 100% de layout, estilos, larguras, fórmulas e macros intactos
       if (contractBase64 && contractBase64.length > 50) {
         const colQtyOneBased = selectedContract.detectedColumns?.colQty || 6;
         const colQtyLetter = colIndexToLetter(colQtyOneBased);
 
-        const outBlob = await injectQuantitiesPreservingOriginalWorkbook(contractBase64, {
+        const { blob: outBlob, extension } = await injectQuantitiesPreservingOriginalWorkbook(contractBase64, {
           budgetSheetName: selectedContract.budgetSheetName,
+          contractFileName: selectedContract.fileName,
           colQtyOneBased,
           colQtyLetter,
           compositionMatches: compositionMatches
@@ -1038,9 +1040,16 @@ export default function OrcaBaseDashboard() {
             })),
         });
 
-        triggerBlobDownload(outBlob, outputFilename);
+        const finalFilename = buildCompatOutputFileName(
+          initialFileName,
+          selectedContract?.contractName || "",
+          selectedContract?.contractNumber,
+          extension
+        );
+
+        triggerBlobDownload(outBlob, finalFilename);
         showToast(
-          `Download concluído! "${outputFilename}" gerada mantendo 100% da formatação e layout originais do Contrato Base!`
+          `Download concluído! "${finalFilename}" gerada mantendo 100% da formatação e layout originais do Contrato Base!`
         );
         setIsDownloading(false);
         return;
@@ -1063,9 +1072,9 @@ export default function OrcaBaseDashboard() {
           detectedColumns: selectedContract.detectedColumns,
         },
         compositionMatches,
-        outputFilename
+        outputCompatFilename
       );
-      showToast(`Download concluído! "${outputFilename}" baixada com sucesso.`);
+      showToast(`Download concluído! "${outputCompatFilename}" baixada com sucesso.`);
     } catch (error) {
       console.error("Erro na geração da planilha compatibilizada:", error);
       showToast("Não foi possível gerar a planilha com a formatação original. Verifique o console.");
@@ -1275,7 +1284,7 @@ export default function OrcaBaseDashboard() {
                 <input
                   ref={initialFileInputRef}
                   type="file"
-                  accept=".xlsx,.xls,.csv"
+                  accept=".xlsx,.xlsm,.xls,.csv"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -1584,11 +1593,11 @@ export default function OrcaBaseDashboard() {
                         </span>
                       </div>
 
-                      {/* Botão de Ação Rápida: Anexar / Substituir a Planilha Base (.xlsx) deste Contrato */}
+                      {/* Botão de Ação Rápida: Anexar / Substituir a Planilha Base (.xlsx / .xlsm) deste Contrato */}
                       <div>
                         <input
                           type="file"
-                          accept=".xlsx,.xls"
+                          accept=".xlsx,.xlsm,.xls"
                           ref={selectedContractQuickUploadRef}
                           className="hidden"
                           onChange={async (e) => {
@@ -1609,8 +1618,8 @@ export default function OrcaBaseDashboard() {
                           {updatingCardId === selectedContract.id
                             ? "Gravando Planilha Base..."
                             : selectedContract.fileName
-                            ? `Substituir Planilha Base (.xlsx): ${selectedContract.fileName}`
-                            : "Anexar Planilha Base (.xlsx) deste Contrato"}
+                            ? `Substituir Planilha Base (.xlsx/.xlsm): ${selectedContract.fileName}`
+                            : "Anexar Planilha Base (.xlsx/.xlsm) deste Contrato"}
                         </button>
                       </div>
                     </div>
@@ -2477,7 +2486,7 @@ export default function OrcaBaseDashboard() {
                       <input
                         ref={contractFileInputRef}
                         type="file"
-                        accept=".xlsx,.xls"
+                        accept=".xlsx,.xlsm,.xls"
                         className="hidden"
                         onChange={(e) => {
                           const file = e.target.files?.[0];
@@ -2983,11 +2992,11 @@ export default function OrcaBaseDashboard() {
                           </span>
                         </div>
                         <span className="text-[#F97316] font-semibold shrink-0 ml-2">
-                          Substituir / Anexar .XLSX
+                          Substituir / Anexar .XLSX/.XLSM
                         </span>
                         <input
                           type="file"
-                          accept=".xlsx,.xls"
+                          accept=".xlsx,.xlsm,.xls"
                           className="hidden"
                           onChange={(e) => {
                             const file = e.target.files?.[0];

@@ -11,6 +11,36 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.016]
+- **Data/Hora:** 07/11/2026 23:48 (Horário Local)
+- **Tag Git:** `PR.016`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.016 (Eliminação Definitiva do Bloqueio de Extensão/Formato Inválido no Microsoft Excel com Suporte Nativo a Pastas Habilitadas para Macros .XLSM e .XLSX):
+1. **Diagnóstico da Causa Raiz do Erro de Extensão e Formato:**
+   - Identificado que o contrato base cadastrado pelo usuário (`ANTIGA ATA RMELO`) era originalmente um arquivo `.xlsm` (Pasta de Trabalho Habilitada para Macro) contendo projeto VBA (`xl/vbaProject.bin`).
+   - O sistema anterior forçava incondicionalmente a extensão `.xlsx` no download e tentava arrancar o binário VBA ou sanitizar os Content-Types, acionando a proteção nativa do Microsoft Excel contra *macro sniffing* e bloqueando a abertura com a mensagem: *"O Excel não pode abrir o arquivo '...xlsx' porque o formato ou a extensão de arquivo não é válida. Verifique se o arquivo não está corrompido e se a extensão corresponde ao formato do arquivo."*
+2. **Detecção Dinâmica e Preservação da Extensão Nativa (.xlsm / .xlsx):**
+   - O motor OpenXML agora inspeciona por dentro o arquivo do contrato: detecta a presença de `xl/vbaProject.bin`, declarações `macroEnabled` em `[Content_Types].xml` ou extensão de origem `.xlsm`.
+   - Caso o contrato seja `.xlsm`, o download preserva 100% o projeto VBA e é salvo como `.xlsm` com MIME-type oficial `application/vnd.ms-excel.sheet.macroEnabled.main+xml`.
+   - Caso o contrato seja `.xlsx`, é salvo normalmente como `.xlsx` com MIME-type `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`.
+3. **Limpeza Consistente de Comentários sem Quebra de XML:**
+   - O método `removeCommentsConsistently` limpa comentários, referências nas relações das abas (`.rels`), tipos de conteúdo e shapes VML de anotação sem tocar em imagens ou cabeçalhos.
+4. **Modificação Estrita da Célula de Quantitativo:**
+   - Somente os números na coluna de quantitativo na aba de orçamento (`ORÇAMENTO`) são alterados nas linhas compatibilizadas. Todo o restante da pasta (layout, larguras de colunas, formatações, 36 abas, fórmulas e macros) permanece 100% intacto.
+5. **Validação Rigorosa no Microsoft Excel Nativo (COM Automation):**
+   - O arquivo gerado com o nome oficial `08ª GRE - MEIO NORTE - CETI FADE III (ANTIGA ATA RMELO).xlsm` foi submetido a teste automatizado no Excel COM oficial na máquina Windows: abriu com **SUCESSO ABSOLUTO (`ABRIU: abas=36`)**, sem mensagens de erro ou reparo, e os valores injetados nas células foram lidos e validados com precisão cirúrgica.
+6. **Ampliação do Suporte nos Seletores de Arquivo:**
+   - Os inputs de upload nos cards de contratos e na aba de compatibilização agora aceitam explicitamente `.xlsx,.xlsm,.xls` e exibem mensagens condizentes.
+
+---
+
 ### [PR.015]
 - **Data/Hora:** 31/10/2026 21:48 (Horário Local)
 - **Tag Git:** `PR.015`
