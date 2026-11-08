@@ -11,6 +11,42 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.033]
+- **Data/Hora:** 08/11/2026 17:15 (Horário Local)
+- **Tag Git:** `PR.033`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.033 (Integração Oficial com OpenAI / ChatGPT API, Especificação Técnica Completa e Suporte Multimotor):
+1. **Incorporação Integral da Especificação Técnica Oficial de Memoriais Escolares:**
+   - O `SUPER_PROMPT_MEMORIAL` foi enriquecido com todas as 16 seções da especificação operacional do assistente:
+     - Princípios obrigatórios de Fidelidade e Não Invenção (proibição absoluta de inventar medidas, materiais, marcas ou capacidades não informadas);
+     - Regra de Ouro de **ELÉTRICA**: consolidação de todos os serviços de iluminação, tomadas, interruptores e circuitos sob o título exclusivo `ELÉTRICA`;
+     - Formatação rigorosa de títulos em CAIXA ALTA sem numeração e descrições em linha independente iniciando com "Executar" ou "Fornecer e instalar", sem marcadores ou traços;
+     - Atualização Integral: apresentação completa e consolidada de todo o memorial a cada modificação, preservando o contexto do orçamento.
+2. **Nova Rota de Backend em Next.js para OpenAI (`/api/openai`):**
+   - Implementado endpoint seguro `POST /api/openai` para intermediar chamadas com a API oficial da OpenAI (`https://api.openai.com/v1/chat/completions`), blindando a aplicação contra problemas de CORS em qualquer navegador e permitindo uso de `process.env.OPENAI_API_KEY` ou envio de chave do cliente (`sk-...`).
+3. **Mecanismo Resiliente Client/Server com Parse Dual (`queryOpenAISeniorEngineer`):**
+   - Tentativa primária via rota `/api/openai` com fallback automático para requisição direta;
+   - Extrator resiliente de etapas `parseStagesFromPlainText` capaz de interpretar tanto retornos em JSON (`stages`) quanto retornos formatados em texto puro, alimentando instantaneamente o visualizador em folha A4;
+   - Suporte aos modelos da OpenAI:
+     - `gpt-4o-mini`: Padrão recomendado (rápido, altamente eficiente e de baixíssimo custo);
+     - `gpt-4o`: Modelo flagship (máxima capacidade analítica para intervenções prediais complexas);
+     - `gpt-4-turbo`.
+4. **Modal Moderno de Gerenciamento de IA e Indicador Visual Ativo:**
+   - Seletor de motor de IA com abas dedicadas para **OpenAI / ChatGPT (Recomendado)**, **Google Gemini** e **Motor Sênior Local (Offline)**;
+   - Campo para chave OpenAI `sk-...` com alternador de visibilidade de senha, seletor visual de modelo e botão `Testar Conexão com OpenAI` com validação em tempo real;
+   - Badge ativo no cabeçalho do Card 1 (Chat): exibe `ChatGPT · OpenAI (GPT-4o Mini / GPT-4o)` com indicador de pulso verde esmeralda quando conectado.
+5. **Validação de Compilação e Produção:**
+   - Build do Next.js 15 (`npm run build`) validado com 100% de êxito, 0 erros e nova rota `/api/openai` gerada como Serverless Function sob demanda.
+
+---
+
 ### [PR.032]
 - **Data/Hora:** 08/11/2026 16:35 (Horário Local)
 - **Tag Git:** `PR.032`

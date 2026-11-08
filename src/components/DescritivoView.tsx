@@ -43,6 +43,8 @@ import {
   ChatMessage,
   generateLocalSeniorDescription,
   queryGeminiSeniorEngineer,
+  queryOpenAISeniorEngineer,
+  parseStagesFromPlainText,
   generateMemorialPDF,
   generateMemorialWordDoc,
   getMemorialPDFBlobUrl,
@@ -261,7 +263,15 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
   const [inputText, setInputText] = useState("");
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [isListeningAudio, setIsListeningAudio] = useState(false);
+
+  // Estados dos Motores de IA (OpenAI / ChatGPT, Gemini e Local)
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [openaiModel, setOpenaiModel] = useState("gpt-4o-mini");
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [selectedAiProvider, setSelectedAiProvider] = useState<"openai" | "gemini" | "local">("openai");
+  const [modalActiveTab, setModalActiveTab] = useState<"openai" | "gemini" | "local">("openai");
+  const [isTestingApiKey, setIsTestingApiKey] = useState(false);
+  const [showApiKeyPassword, setShowApiKeyPassword] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
 
@@ -283,11 +293,31 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Carrega chave do Gemini do localStorage
+  // Carrega chaves e preferências de IA salvas no localStorage
   useEffect(() => {
     try {
-      const savedKey = localStorage.getItem("orcabase_gemini_api_key");
-      if (savedKey) setGeminiApiKey(savedKey);
+      const savedOpenAiKey = localStorage.getItem("orcabase_openai_api_key");
+      const savedOpenAiModel = localStorage.getItem("orcabase_openai_model");
+      const savedGeminiKey = localStorage.getItem("orcabase_gemini_api_key");
+      const savedProvider = localStorage.getItem("orcabase_ai_provider") as "openai" | "gemini" | "local" | null;
+
+      if (savedOpenAiKey) setOpenaiApiKey(savedOpenAiKey);
+      if (savedOpenAiModel) setOpenaiModel(savedOpenAiModel);
+      if (savedGeminiKey) setGeminiApiKey(savedGeminiKey);
+
+      if (savedProvider) {
+        setSelectedAiProvider(savedProvider);
+        setModalActiveTab(savedProvider);
+      } else if (savedOpenAiKey) {
+        setSelectedAiProvider("openai");
+        setModalActiveTab("openai");
+      } else if (savedGeminiKey) {
+        setSelectedAiProvider("gemini");
+        setModalActiveTab("gemini");
+      } else {
+        setSelectedAiProvider("openai");
+        setModalActiveTab("openai");
+      }
     } catch (e) {
       // Ignora erro de acesso ao localStorage
     }
@@ -384,15 +414,29 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
       let aiResponseText = "";
       let newStages: DescritivoStage[] = [];
 
-      if (geminiApiKey) {
-        // Envia para o Gemini orientado pelo SUPER PROMPT
+      if (selectedAiProvider === "openai" && openaiApiKey) {
+        // Envia para o ChatGPT / OpenAI orientado pela Especificação Técnica Oficial
+        const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, stages, openaiModel);
+        aiResponseText = result.textResponse;
+        newStages = result.stages;
+      } else if (selectedAiProvider === "gemini" && geminiApiKey) {
+        // Envia para o Google Gemini
+        const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
+        aiResponseText = result.textResponse;
+        newStages = result.stages;
+      } else if (openaiApiKey) {
+        // Fallback direto para OpenAI se houver chave configurada
+        const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, stages, openaiModel);
+        aiResponseText = result.textResponse;
+        newStages = result.stages;
+      } else if (geminiApiKey) {
+        // Fallback para Gemini se houver chave
         const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
         aiResponseText = result.textResponse;
         newStages = result.stages;
       } else {
         // Processa via Motor Sênior Local da Engenharia de Infraestrutura Escolar
         newStages = generateLocalSeniorDescription(text, stages);
-        // O Super Prompt exige saída direta sem introduções, no padrão ### TITULO
         aiResponseText = formatStagesToSpreadsheetText(newStages);
       }
 
@@ -480,14 +524,61 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
     }
   };
 
-  // Salvar Chave do Gemini
-  const handleSaveApiKey = () => {
+  // Salvar Chaves e Preferências de IA (OpenAI / Gemini / Local)
+  const handleSaveAiConfig = () => {
     try {
-      localStorage.setItem("orcabase_gemini_api_key", geminiApiKey);
+      if (openaiApiKey.trim()) {
+        localStorage.setItem("orcabase_openai_api_key", openaiApiKey.trim());
+      } else {
+        localStorage.removeItem("orcabase_openai_api_key");
+      }
+      localStorage.setItem("orcabase_openai_model", openaiModel);
+
+      if (geminiApiKey.trim()) {
+        localStorage.setItem("orcabase_gemini_api_key", geminiApiKey.trim());
+      } else {
+        localStorage.removeItem("orcabase_gemini_api_key");
+      }
+
+      localStorage.setItem("orcabase_ai_provider", modalActiveTab);
+      setSelectedAiProvider(modalActiveTab);
       setShowApiKeyModal(false);
-      showToast(geminiApiKey ? "Chave do Google Gemini salva com sucesso!" : "Motor Sênior Local ativado.");
+
+      if (modalActiveTab === "openai" && openaiApiKey.trim()) {
+        const modelLabel = openaiModel === "gpt-4o" ? "GPT-4o" : "GPT-4o Mini";
+        showToast(`ChatGPT (${modelLabel}) ativado com sucesso!`);
+      } else if (modalActiveTab === "gemini" && geminiApiKey.trim()) {
+        showToast("Google Gemini API ativado com sucesso!");
+      } else {
+        showToast("Motor Sênior Local ativado com sucesso.");
+      }
     } catch (e) {
       setShowApiKeyModal(false);
+    }
+  };
+
+  // Testar conexão direta com a OpenAI
+  const handleTestOpenAi = async () => {
+    const key = openaiApiKey.trim();
+    if (!key) {
+      showToast("Insira a chave da OpenAI (sk-...) para testar.");
+      return;
+    }
+    setIsTestingApiKey(true);
+    try {
+      const res = await fetch("https://api.openai.com/v1/models", {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (res.ok) {
+        showToast("✅ Conexão com a OpenAI confirmada com sucesso!");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(`❌ Falha na OpenAI: ${err?.error?.message || "Verifique a chave informada."}`);
+      }
+    } catch (err: any) {
+      showToast(`❌ Erro ao conectar com a OpenAI: ${err.message}`);
+    } finally {
+      setIsTestingApiKey(false);
     }
   };
 
@@ -564,13 +655,28 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
             <button
               type="button"
               onClick={() => setShowApiKeyModal(true)}
-              className="px-3 py-1.5 rounded-lg border border-[#2d374d] bg-[#141926] hover:bg-[#1a2133] hover:border-[#ffaa2c]/60 text-xs text-gray-300 flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-              title="Clique para configurar o motor de IA"
+              className="px-3 py-1.5 rounded-lg border border-[#2d374d] bg-[#141926] hover:bg-[#1a2133] hover:border-[#ffaa2c]/60 text-xs text-gray-300 flex items-center gap-2 transition-all cursor-pointer shrink-0 shadow-sm"
+              title="Clique para configurar o ChatGPT (OpenAI) ou motor de IA"
             >
-              <span className="font-medium">
-                {geminiApiKey ? "Modelo 4 · Gemini" : "Modelo 4 · Chat"}
-              </span>
-              <Info className="w-3.5 h-3.5 text-[#ffaa2c]" />
+              {openaiApiKey ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-semibold text-emerald-300">
+                    ChatGPT · {openaiModel === "gpt-4o" ? "GPT-4o" : "GPT-4o Mini"}
+                  </span>
+                </>
+              ) : geminiApiKey ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="font-semibold text-blue-300">Google Gemini</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="font-medium text-gray-300">Motor Sênior Local</span>
+                </>
+              )}
+              <Key className="w-3.5 h-3.5 text-[#ffaa2c]" />
             </button>
           </div>
 
@@ -1356,65 +1462,292 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
       )}
 
       {/* -------------------------------------------------------------------- */}
-      {/* MODAL: CONFIGURAÇÃO DE CHAVE GOOGLE GEMINI API                       */}
+      {/* MODAL: CONFIGURAÇÃO DE IA (OPENAI / CHATGPT, GEMINI OU MOTOR LOCAL) */}
       {/* -------------------------------------------------------------------- */}
       {showApiKeyModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-[#0c0f17] border border-[#232b3d] rounded-2xl p-6 shadow-2xl">
+          <div className="w-full max-w-lg bg-[#0c0f17] border border-[#232b3d] rounded-2xl p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            {/* Header do Modal */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1f2637]">
-              <div className="flex items-center gap-2 text-white font-bold text-sm">
-                <Key className="w-4 h-4 text-[#ffaa2c]" />
-                <span>Configurar Google Gemini API</span>
+              <div className="flex items-center gap-2.5 text-white font-bold text-base">
+                <div className="w-8 h-8 rounded-lg bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c]">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <span>Motor de IA do Assistente</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowApiKeyModal(false)}
-                className="text-gray-400 hover:text-white cursor-pointer"
+                className="text-gray-400 hover:text-white transition-colors cursor-pointer p-1 rounded-lg hover:bg-[#1f2637]"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-gray-300 mb-4 leading-relaxed">
-              O <strong>Assistente OrçaBase.lab</strong> opera nativamente com o <strong>SUPER PROMPT</strong> de infraestrutura escolar no motor local. Caso queira ativar chamadas online com Gemini 1.5 Flash / Gemini 2.5, insira sua chave da API abaixo:
-            </p>
+            {/* Abas de Seleção de Motor */}
+            <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#090b10] border border-[#1f2637] mb-5">
+              <button
+                type="button"
+                onClick={() => setModalActiveTab("openai")}
+                className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  modalActiveTab === "openai"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-black shadow-md font-black"
+                    : "text-gray-400 hover:text-white hover:bg-[#141926]"
+                }`}
+              >
+                <span>OpenAI / ChatGPT</span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-black/30 text-white font-mono uppercase">
+                  Top
+                </span>
+              </button>
 
-            <div className="space-y-3 mb-5">
-              <label className="block text-xs font-semibold text-gray-300">
-                Chave da API (Gemini):
-              </label>
-              <input
-                type="password"
-                value={geminiApiKey}
-                onChange={(e) => setGeminiApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full h-10 bg-[#0a0d14] border border-[#232c3f] rounded-xl px-3.5 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
-              />
-              <span className="block text-[11px] text-gray-500">
-                A chave é gravada com segurança no seu próprio navegador e nunca sai do seu dispositivo.
-              </span>
+              <button
+                type="button"
+                onClick={() => setModalActiveTab("gemini")}
+                className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  modalActiveTab === "gemini"
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md font-black"
+                    : "text-gray-400 hover:text-white hover:bg-[#141926]"
+                }`}
+              >
+                <span>Google Gemini</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalActiveTab("local")}
+                className={`py-2 px-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  modalActiveTab === "local"
+                    ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-md font-black"
+                    : "text-gray-400 hover:text-white hover:bg-[#141926]"
+                }`}
+              >
+                <span>Motor Local</span>
+              </button>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5">
+            {/* Conteúdo da Aba OPENAI (CHATGPT) */}
+            {modalActiveTab === "openai" && (
+              <div className="space-y-4 mb-6">
+                <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-xs text-gray-300 leading-relaxed space-y-1.5">
+                  <p className="font-semibold text-emerald-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    ChatGPT Estruturado na Especificação Técnica de Engenharia
+                  </p>
+                  <p className="text-[11px] text-gray-300">
+                    O assistente utiliza a API oficial da OpenAI com as diretrizes da SEDUC/GPR: títulos em CAIXA ALTA, regra de ouro de <strong>ELÉTRICA</strong> unificada, descrições em linha única sem marcadores, pronto para colar no Excel e gerar o PDF oficial.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-gray-300 flex items-center gap-1">
+                      <Key className="w-3.5 h-3.5 text-emerald-400" />
+                      Chave da API da OpenAI (API Key):
+                    </label>
+                    <a
+                      href="https://platform.openai.com/api-keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-emerald-400 hover:underline"
+                    >
+                      Obter chave OpenAI ↗
+                    </a>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showApiKeyPassword ? "text" : "password"}
+                      value={openaiApiKey}
+                      onChange={(e) => setOpenaiApiKey(e.target.value)}
+                      placeholder="sk-proj-... ou sk-..."
+                      className="w-full h-10 bg-[#0a0d14] border border-[#232c3f] rounded-xl px-3.5 pr-10 text-xs text-white font-mono focus:outline-none focus:border-emerald-500 transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKeyPassword(!showApiKeyPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white cursor-pointer"
+                      title={showApiKeyPassword ? "Ocultar chave" : "Mostrar chave"}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span className="block text-[10px] text-gray-500">
+                    Sua chave é armazenada de forma segura e local no seu navegador.
+                  </span>
+                </div>
+
+                {/* Seleção do Modelo OpenAI */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-300">
+                    Modelo do ChatGPT:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label
+                      className={`p-2.5 rounded-xl border cursor-pointer flex flex-col gap-0.5 transition-all ${
+                        openaiModel === "gpt-4o-mini"
+                          ? "border-emerald-500 bg-emerald-950/30 text-white"
+                          : "border-[#232c3f] bg-[#0a0d14] text-gray-400 hover:border-[#35435e]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="openai_model"
+                        value="gpt-4o-mini"
+                        checked={openaiModel === "gpt-4o-mini"}
+                        onChange={() => setOpenaiModel("gpt-4o-mini")}
+                        className="hidden"
+                      />
+                      <strong className="text-xs font-bold text-emerald-300">GPT-4o Mini</strong>
+                      <span className="text-[10px] text-gray-400">Rápido, inteligente e de altíssimo custo-benefício</span>
+                    </label>
+
+                    <label
+                      className={`p-2.5 rounded-xl border cursor-pointer flex flex-col gap-0.5 transition-all ${
+                        openaiModel === "gpt-4o"
+                          ? "border-emerald-500 bg-emerald-950/30 text-white"
+                          : "border-[#232c3f] bg-[#0a0d14] text-gray-400 hover:border-[#35435e]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="openai_model"
+                        value="gpt-4o"
+                        checked={openaiModel === "gpt-4o"}
+                        onChange={() => setOpenaiModel("gpt-4o")}
+                        className="hidden"
+                      />
+                      <strong className="text-xs font-bold text-emerald-300">GPT-4o (Flagship)</strong>
+                      <span className="text-[10px] text-gray-400">Inteligência analítica máxima e raciocínio profundo</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Botão de Teste */}
+                <button
+                  type="button"
+                  onClick={handleTestOpenAi}
+                  disabled={isTestingApiKey || !openaiApiKey.trim()}
+                  className="w-full py-2 rounded-xl border border-emerald-500/40 bg-emerald-950/20 hover:bg-emerald-950/40 text-emerald-300 text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  {isTestingApiKey ? (
+                    <>
+                      <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Testando conexão com a OpenAI...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Testar Conexão com OpenAI</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Conteúdo da Aba GEMINI */}
+            {modalActiveTab === "gemini" && (
+              <div className="space-y-4 mb-6">
+                <div className="p-3.5 rounded-xl bg-blue-950/20 border border-blue-500/30 text-xs text-gray-300 leading-relaxed space-y-1.5">
+                  <p className="font-semibold text-blue-300 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-blue-400" />
+                    Google Gemini 1.5 Flash
+                  </p>
+                  <p className="text-[11px] text-gray-300">
+                    Conexão direta com a API do Google Gemini, configurada com o Super Prompt oficial para geração rápida e estruturada.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-gray-300 flex items-center gap-1">
+                      <Key className="w-3.5 h-3.5 text-blue-400" />
+                      Chave da API (Gemini):
+                    </label>
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-blue-400 hover:underline"
+                    >
+                      Obter chave Gemini ↗
+                    </a>
+                  </div>
+                  <input
+                    type="password"
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full h-10 bg-[#0a0d14] border border-[#232c3f] rounded-xl px-3.5 text-xs text-white font-mono focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                  <span className="block text-[10px] text-gray-500">
+                    Armazenada exclusivamente no seu navegador local.
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Conteúdo da Aba MOTOR LOCAL */}
+            {modalActiveTab === "local" && (
+              <div className="space-y-4 mb-6">
+                <div className="p-4 rounded-xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/30 text-xs text-gray-300 leading-relaxed space-y-2">
+                  <p className="font-bold text-[#ffaa2c] flex items-center gap-1.5 text-sm">
+                    <Bot className="w-4 h-4" />
+                    Motor Sênior Local da Engenharia
+                  </p>
+                  <p className="text-xs text-gray-300">
+                    Opera de forma 100% autônoma e offline, utilizando o motor ontológico embutido da infraestrutura escolar:
+                  </p>
+                  <ul className="space-y-1 text-[11px] text-gray-400 list-disc pl-4">
+                    <li>Não requer nenhuma chave de API ou conexão de internet externa;</li>
+                    <li>Aplica a regra absoluta de <strong>ELÉTRICA</strong> como grupo único;</li>
+                    <li>Gera saídas em linhas limpas para cópia direta no Excel;</li>
+                    <li>Produz folhas A4 reais em PDF e Word (.DOC).</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Rodapé com Ações */}
+            <div className="flex items-center justify-between pt-4 border-t border-[#1f2637]">
               <button
                 type="button"
                 onClick={() => {
+                  setOpenaiApiKey("");
                   setGeminiApiKey("");
+                  localStorage.removeItem("orcabase_openai_api_key");
                   localStorage.removeItem("orcabase_gemini_api_key");
+                  setSelectedAiProvider("local");
                   setShowApiKeyModal(false);
-                  showToast("Motor Sênior Local com Super Prompt reativado.");
+                  showToast("Chaves removidas. Motor Local reativado.");
                 }}
-                className="px-4 py-2 rounded-xl border border-[#2d3952] text-xs text-gray-300 hover:text-white cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-[#2d3952] hover:bg-[#1a2233] text-xs text-gray-400 hover:text-white transition-all cursor-pointer"
               >
-                Usar Motor Local
+                Limpar Chaves
               </button>
-              <button
-                type="button"
-                onClick={handleSaveApiKey}
-                className="px-4 py-2 rounded-xl bg-[#ff861c] hover:bg-[#ff981f] text-black font-bold text-xs cursor-pointer transition-all"
-              >
-                Salvar Chave
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowApiKeyModal(false)}
+                  className="px-4 py-2 rounded-xl border border-[#2d3952] hover:bg-[#1a2233] text-xs text-gray-300 hover:text-white transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAiConfig}
+                  className={`px-5 py-2 rounded-xl text-black font-black text-xs transition-all shadow-lg cursor-pointer ${
+                    modalActiveTab === "openai"
+                      ? "bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400"
+                      : modalActiveTab === "gemini"
+                      ? "bg-gradient-to-r from-blue-400 to-indigo-500 text-white"
+                      : "bg-gradient-to-r from-[#ffaa2c] to-[#f97316]"
+                  }`}
+                >
+                  Salvar e Ativar {modalActiveTab === "openai" ? "ChatGPT" : modalActiveTab === "gemini" ? "Gemini" : "Motor Local"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

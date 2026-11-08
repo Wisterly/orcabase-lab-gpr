@@ -98,66 +98,75 @@ export interface ChatMessage {
 // SUPER PROMPT MESTRE — DIRETRIZES DA ENGENHARIA DE INFRAESTRUTURA ESCOLAR
 // ----------------------------------------------------------------------------
 export const SUPER_PROMPT_MEMORIAL = `
-# SUPER PROMPT — ASSISTENTE INTELIGENTE PARA ELABORAÇÃO DE MEMORIAIS DESCRITIVOS DE SERVIÇOS DE INFRAESTRUTURA ESCOLAR
+# ESPECIFICAÇÃO TÉCNICA — ASSISTENTE DE MEMORIAIS DESCRITIVOS DE INFRAESTRUTURA ESCOLAR
+(Arquitetura Funcional e Manual Operacional da SEDUC / GPR)
 
-## 1. IDENTIDADE E FUNÇÃO DO ASSISTENTE
-Você é um assistente especializado em interpretação de demandas, organização de serviços de engenharia, manutenção, reforma e adequação de unidades escolares, com foco na elaboração de memoriais descritivos para orçamentos de obras e serviços de infraestrutura escolar.
-Sua função é transformar uma descrição informal em um texto técnico, claro, objetivo, coerente e adequado para utilização em orçamentos de obras escolares.
-PRIORIDADE: CLAREZA + OBJETIVIDADE + PADRONIZAÇÃO.
+## 1. OBJETIVO E IDENTIDADE
+Você é um Assistente Técnico Especialista em engenharia e infraestrutura escolar.
+Sua função principal é receber demandas, descrições informais, listas de serviços e transcrições de áudio do usuário e convertê-las em um Memorial Descritivo de Serviços padronizado, técnico, conciso, organizado e pronto para orçamentos escolares e importação no Microsoft Excel.
+PRIORIDADE ABSOLUTA: CLAREZA + OBJETIVIDADE + PADRONIZAÇÃO + FIDELIDADE.
 
-## 2. PADRÃO OBRIGATÓRIO DE FORMATAÇÃO (REGRAS ABSOLUTAS)
-1. TÍTULOS DOS GRUPOS/ITENS:
-   - Estar SEMPRE em CAIXA ALTA (Ex: FORROS, PINTURA GERAL, BANHEIROS, COZINHA, ELÉTRICA, COBERTURA, ESQUADRIAS E FERRAGENS, LABORATÓRIO DE INFORMÁTICA, ÁREAS EXTERNAS, ESTACIONAMENTO, AUDITÓRIO, DORMITÓRIOS, LIMPEZA PÓS-OBRA, SERVIÇOS GERAIS).
-   - NÃO possuir numeração inicial (NUNCA usar "1. FORROS", "1.0 PINTURA GERAL", "ITEM 01 - BANHEIROS").
-   - Apresentar somente o nome do ambiente, serviço ou especialidade. Curtos e objetivos.
+## 2. PRINCÍPIOS OBRIGATÓRIOS
+1. FIDELIDADE: Não retirar nenhum serviço solicitado pelo usuário.
+2. NÃO INVENÇÃO: Não criar quantidades, medidas, espessuras, materiais, marcas, capacidades (ex: 10.000L), métodos executivos ou especificações que o usuário não tenha informado expressamente.
+3. ORGANIZAÇÃO: Agrupar serviços correlatos em grupos coerentes por ambiente ou especialidade.
+4. CLAREZA E CONCISÃO: Escrever de forma objetiva, técnica e compreensível, sem explicações longas quando uma frase técnica resolve.
+5. ATUALIZAÇÃO INTEGRAL (REGRA DE OURO): Sempre que o usuário acrescentar, excluir, corrigir ou reorganizar serviços, reapresente NOVAMENTE o descritivo COMPLETO, CONSOLIDADO E ATUALIZADO. Nunca entregue apenas o trecho alterado.
 
-2. REGRA ESPECIAL E OBRIGATÓRIA PARA ELÉTRICA (PRIORIDADE MÁXIMA):
-   - O título do grupo DEVE ser EXATAMENTE: ELÉTRICA.
-   - NUNCA utilizar "INSTALAÇÕES ELÉTRICAS", "ILUMINAÇÃO", "SISTEMA ELÉTRICO" ou variações.
-   - TODOS os serviços elétricos (incluindo iluminação, luminárias, luminárias slim, tomadas, interruptores, quadros de distribuição, disjuntores, chuveiros elétricos, alimentação de bombas) DEVEM ser agrupados no item ELÉTRICA, mesmo que relacionados a ambientes diferentes.
-   - Quando o usuário especificar que luminárias slim serão instaladas em ambientes com forro novo, preserve essa informação exata na redação dentro de ELÉTRICA.
+## 3. PADRÃO OBRIGATÓRIO DE FORMATAÇÃO
+### TÍTULOS:
+- Sempre em CAIXA ALTA (Ex: FORROS, PINTURA GERAL, BANHEIROS, COZINHA, ELÉTRICA, COBERTURA, ESQUADRIAS E FERRAGENS, LABORATÓRIO DE INFORMÁTICA, POÇO, ABASTECIMENTO DE ÁGUA, LIMPEZA PÓS-OBRA).
+- SEM numeração inicial (NUNCA usar "1. FORROS", "ITEM 01 - BANHEIROS").
+- Curtos e objetivos.
 
-3. DESCRIÇÃO DOS SERVIÇOS:
-   - Cada serviço DEVE ser apresentado em uma linha independente.
-   - NÃO utilizar marcadores, bolinhas, traços (-) ou numeração de serviços no início da linha.
-   - NÃO inserir linhas em branco entre os serviços do mesmo grupo.
-   - O objetivo é permitir que o usuário copie o conteúdo diretamente para células do Excel, mantendo cada serviço em uma linha.
+### REGRA ESPECIAL: ELÉTRICA (OBRIGATÓRIO)
+- Todo serviço de natureza elétrica, tomadas, interruptores, pontos de luz, luminárias, luminárias slim, quadros, disjuntores ou circuitos DEVE ser agrupado exclusivamente sob o título EXATO: ELÉTRICA.
+- NUNCA criar títulos como "INSTALAÇÕES ELÉTRICAS", "ILUMINAÇÃO" ou "ELÉTRICA E ILUMINAÇÃO".
+- Quando informado que luminárias slim serão instaladas em ambientes com forro novo, manter essa especificação exata dentro de ELÉTRICA.
+- Rede lógica/cabeamento de dados de laboratório pode permanecer em LABORATÓRIO DE INFORMÁTICA, mas a infraestrutura elétrica do laboratório vai para ELÉTRICA.
 
-4. PADRÃO DE REDAÇÃO DOS SERVIÇOS:
-   - Inicie a descrição preferencialmente com "Executar...".
-   - Quando o serviço envolver aquisição e instalação de materiais/equipamentos, utilize "Fornecer e instalar...".
-   - Não inventar especificações não fornecidas pelo usuário (não inventar dimensões, espessuras, marcas, modelos, capacidades como 10.000L).
-   - Sem procedimento executivo excessivamente longo. Redação objetiva e técnica.
+### DESCRIÇÕES DOS SERVIÇOS:
+- Cada serviço em uma linha independente.
+- SEM marcadores, bolinhas, traços (-) ou numeração inicial.
+- SEM linhas em branco entre serviços do mesmo grupo.
+- Iniciar preferencialmente com "Executar..." ou "Fornecer e instalar..." (quando envolver aquisição).
+- Texto em português correto, linguagem técnica sem floreios desnecessários.
+- Pronto para copiar e colar diretamente nas células da planilha orçamentária do Excel.
 
-5. TRATAMENTO DE ALTERAÇÕES E COMPLEMENTAÇÕES (REGRA ABSOLUTA):
-   - TODA ALTERAÇÃO OU COMPLEMENTAÇÃO DEVE GERAR A REAPRESENTAÇÃO DO DESCRITIVO COMPLETO E ATUALIZADO.
-   - Nunca responda somente com o trecho alterado. Preserve todo o histórico acumulado do orçamento atual.
+## 4. MODELOS DE REDAÇÃO POR ESPECIALIDADE
+- FORROS: "Executar instalação de forro nas salas de aula da unidade escolar.", "Executar substituição dos elementos de sustentação danificados, quando necessário." (Não presumir material se não informado).
+- PINTURA GERAL: "Executar pintura das áreas internas e externas da unidade escolar, incluindo paredes, muros e fachada."
+- BANHEIROS: Revisão hidrossanitária, reparo ou substituição de torneiras, desobstrução e reparos pontuais em louças/metais especificados.
+- COZINHA: Casa de gás externa, instalação de exaustores/coifas, adequações, bancadas, pias e prateleiras.
+- COBERTURA: Retelhamento, substituição de telhas quebradas, correção de goteiras e infiltrações, reparo na trama de madeira/metálica.
+- ESQUADRIAS E FERRAGENS: Revisão de portas e esquadrias, trincos, fechaduras e dobradiças danificadas.
+- LABORATÓRIO DE INFORMÁTICA: Adaptação de sala, bancadas, cabeamento de lógica (elétrica em ELÉTRICA).
+- DRENAGEM E ACESSOS: Construção de passagem de acesso com sistema de drenagem e grade/grelha metálica.
+- POÇO E ABASTECIMENTO: Quando solicitado separadamente, manter POÇO e ABASTECIMENTO DE ÁGUA.
+- LIMPEZA PÓS-OBRA: "Executar limpeza geral da área de intervenção após a conclusão dos serviços, com remoção dos resíduos gerados e entrega dos ambientes em condições de uso."
 
-6. PADRÃO DE SAÍDA:
-   - A resposta deve apresentar DIRETAMENTE o descritivo no formato:
-### NOME DO GRUPO EM CAIXA ALTA
-Executar descrição técnica do primeiro serviço na linha.
-Executar descrição técnica do segundo serviço na linha.
+## 5. SAÍDA DIRETA E ESTRUTURAÇÃO JSON
+Apresente DIRETAMENTE o descritivo no texto (sem introduções nem conversas antes):
+### FORROS
+Executar instalação de forro nas salas de aula da unidade escolar.
 
-### OUTRO GRUPO
-Executar descrição do serviço...
+### ELÉTRICA
+Executar revisão geral das instalações elétricas, incluindo tomadas, interruptores e iluminação.
 
-- NÃO colocar introduções ("Segue abaixo o memorial...", "Conforme solicitado...").
-- No final da sua resposta, inclua OBRIGATORIAMENTE um bloco JSON delimitado por \`\`\`json contendo a lista estruturada das etapas e itens:
+E no final da resposta, inclua OBRIGATORIAMENTE o bloco JSON estruturado:
 \`\`\`json
 {
   "stages": [
     {
       "title": "FORROS",
       "items": [
-        { "description": "Executar instalação de forro em todas as salas de aula da unidade escolar." }
+        { "description": "Executar instalação de forro nas salas de aula da unidade escolar." }
       ]
     },
     {
       "title": "ELÉTRICA",
       "items": [
-        { "description": "Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados." },
-        { "description": "Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro." }
+        { "description": "Executar revisão geral das instalações elétricas, incluindo tomadas, interruptores e iluminação." }
       ]
     }
   ]
@@ -533,6 +542,214 @@ Analise a nova demanda, incorpore ou altere os serviços no memorial existente e
     };
   } catch (err) {
     console.warn("Erro ao consultar Gemini, acionando Motor Local Sênior:", err);
+    const localStages = generateLocalSeniorDescription(userInput, currentStages);
+    return {
+      textResponse: formatStagesToSpreadsheetText(localStages),
+      stages: localStages,
+    };
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Extrator Resiliente de Etapas a partir de Texto Formatado (Fallback Seguro)
+// ----------------------------------------------------------------------------
+export function parseStagesFromPlainText(text: string): DescritivoStage[] {
+  const clean = text
+    .replace(/```json[\s\S]*?```/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .trim();
+
+  const lines = clean.split("\n").map((l) => l.trim()).filter(Boolean);
+  const stages: DescritivoStage[] = [];
+  let currentStage: DescritivoStage | null = null;
+  let stageCount = 1;
+  let itemCount = 1;
+
+  for (const line of lines) {
+    const isMarkdownHeader = /^#{1,4}\s+/.test(line);
+    const candidateTitle = line.replace(/^#{1,4}\s+/, "").replace(/^\d+[\.\s\-]+/, "").trim();
+    const isAllUpper =
+      candidateTitle.length >= 3 &&
+      candidateTitle === candidateTitle.toUpperCase() &&
+      !candidateTitle.startsWith("EXECUTAR") &&
+      !candidateTitle.startsWith("FORNECER");
+
+    if (isMarkdownHeader || isAllUpper) {
+      const stageTitle = candidateTitle.toUpperCase();
+      currentStage = {
+        id: `parsed-stg-${Date.now()}-${stageCount}`,
+        stageCode: `${stageCount}`,
+        title: stageTitle,
+        items: [],
+      };
+      stages.push(currentStage);
+      stageCount++;
+      itemCount = 1;
+    } else if (currentStage) {
+      const cleanDesc = line.replace(/^[\s•\-\*\d\.]+\s*/, "").trim();
+      if (cleanDesc.length > 3) {
+        currentStage.items.push({
+          id: `parsed-it-${Date.now()}-${stageCount}-${itemCount}`,
+          itemNumber: `${itemCount}`,
+          description: cleanDesc,
+        });
+        itemCount++;
+      }
+    }
+  }
+
+  return stages;
+}
+
+// ----------------------------------------------------------------------------
+// Chamada à OpenAI API / ChatGPT (Orientada pela Especificação Técnica Oficial)
+// ----------------------------------------------------------------------------
+export async function queryOpenAISeniorEngineer(
+  userInput: string,
+  apiKey: string,
+  metadata: MemorialMetadata,
+  currentStages: DescritivoStage[] = [],
+  model: string = "gpt-4o-mini"
+): Promise<{ textResponse: string; stages: DescritivoStage[] }> {
+  const contextMessage = `
+DADOS DO PROJETO ATUAL:
+- Unidade Escolar / Imóvel: ${metadata.propertyId || metadata.schoolName || metadata.projectName || "Não informado"}
+- Município / UF: ${metadata.city || "São João do Piauí"} / ${metadata.uf || "PI"}
+- Órgão: ${metadata.organization || "Secretaria da Educação / GPR"}
+- Finalidade / Objeto: ${metadata.purpose || metadata.objectDescription || "Reforma e Manutenção da Unidade Escolar"}
+- BDI da Obra (%): ${metadata.bdiPercent || "24,50%"}
+- Mês/Ano Ref: ${metadata.mesAnoRef || "Novembro de 2026"}
+- Data Extensa: ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}
+
+ESTADO ATUAL DO MEMORIAL (Contexto Acumulado):
+${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente."}
+
+NOVA DEMANDA DO USUÁRIO (Texto / Áudio Transcrito):
+"${userInput}"
+
+INSTRUÇÃO:
+Analise a nova demanda com a metodologia de Engenheiro Sênior de Infraestrutura Escolar da SEDUC/GPR.
+Incorpore, altere ou exclua os serviços no memorial existente e apresente o DESCRITIVO COMPLETO, CONSOLIDADO E ATUALIZADO no padrão obrigatório:
+1. Títulos em CAIXA ALTA e sem numeração.
+2. Todo serviço de natureza elétrica ou iluminação no grupo único chamado exatamente ELÉTRICA.
+3. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar" ou "Fornecer e instalar".
+4. Sem marcadores, traços (-), asteriscos ou bolinhas no início das linhas.
+5. Sem linhas em branco entre serviços do mesmo grupo.
+6. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
+7. Incluir no final o bloco JSON estruturado com a chave "stages".
+`;
+
+  try {
+    let rawText = "";
+
+    // 1. Tenta via Rota Segura Next.js (/api/openai)
+    try {
+      const res = await fetch("/api/openai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userInput,
+          apiKey,
+          metadata,
+          stages: currentStages,
+          model,
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.rawText) {
+          rawText = json.rawText;
+        }
+      }
+    } catch (routeErr) {
+      console.warn("Rota /api/openai inacessível, tentando chamada direta:", routeErr);
+    }
+
+    // 2. Se a rota interna não retornou texto e a chave existe no cliente, tenta conexão direta
+    if (!rawText && apiKey) {
+      const directRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model: model || "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: SUPER_PROMPT_MEMORIAL,
+            },
+            {
+              role: "user",
+              content: contextMessage,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 3500,
+        }),
+      });
+
+      if (directRes.ok) {
+        const openAiData = await directRes.json();
+        rawText = openAiData?.choices?.[0]?.message?.content || "";
+      } else {
+        const errJson = await directRes.json().catch(() => ({}));
+        throw new Error(errJson?.error?.message || `Erro OpenAI HTTP ${directRes.status}`);
+      }
+    }
+
+    if (!rawText) {
+      throw new Error("Não foi possível obter resposta da OpenAI.");
+    }
+
+    // Extrai o JSON estruturado do texto gerado
+    let parsedStages: DescritivoStage[] = [];
+    const jsonMatch =
+      rawText.match(/```json\s*([\s\S]*?)\s*```/) || rawText.match(/\{[\s\S]*"stages"[\s\S]*\}/);
+
+    if (jsonMatch) {
+      try {
+        const jsonStr = jsonMatch[1] || jsonMatch[0];
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed.stages)) {
+          parsedStages = parsed.stages.map((stg: any, sIdx: number) => ({
+            id: `openai-stg-${Date.now()}-${sIdx}`,
+            stageCode: `${sIdx + 1}`,
+            title: String(stg.title || "").toUpperCase().replace(/^\d+[\.\s\-]+/, "").trim(),
+            items: (stg.items || []).map((it: any, iIdx: number) => ({
+              id: `openai-it-${Date.now()}-${sIdx}-${iIdx}`,
+              itemNumber: `${iIdx + 1}`,
+              description: String(it.description || "").replace(/^[\s•\-\*\d\.]+\s*/, "").trim(),
+            })),
+          }));
+        }
+      } catch (err) {
+        console.warn("Falha ao fazer parse do JSON da OpenAI:", err);
+      }
+    }
+
+    // Se o modelo retornou texto formatado mas não gerou o bloco JSON, faz o parse linha a linha
+    if (parsedStages.length === 0) {
+      parsedStages = parseStagesFromPlainText(rawText);
+    }
+
+    // Fallback de segurança para o motor sênior local
+    if (parsedStages.length === 0) {
+      parsedStages = generateLocalSeniorDescription(userInput, currentStages);
+    }
+
+    // Limpa a resposta retirando o bloco JSON para manter a saída do chat limpa e elegante
+    const cleanChatText =
+      rawText.replace(/```json[\s\S]*?```/g, "").trim() || formatStagesToSpreadsheetText(parsedStages);
+
+    return {
+      textResponse: cleanChatText,
+      stages: parsedStages,
+    };
+  } catch (err) {
+    console.warn("Erro ao consultar OpenAI, acionando Motor Local Sênior:", err);
     const localStages = generateLocalSeniorDescription(userInput, currentStages);
     return {
       textResponse: formatStagesToSpreadsheetText(localStages),
