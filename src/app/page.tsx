@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
+  BrainCircuit,
+  FileText,
   UploadCloud,
   Sparkles,
   Download,
@@ -65,6 +67,7 @@ import {
   buildCompatOutputFileName,
   calculateItemSimilarity,
 } from "../lib/excelEngine";
+import DescritivoView from "@/components/DescritivoView";
 
 const STORAGE_KEY_CONTRACTS = "orcabase_gpr_contracts_v9";
 
@@ -250,7 +253,10 @@ const INITIAL_CONTRACTS: ContractBaseCard[] = [
 ];
 
 export default function OrcaBaseDashboard() {
-  // Navegação de Abas
+  // Navegação Principal de Módulos (Orçamentos vs Descritivos)
+  const [mainModule, setMainModule] = useState<"ORCAMENTOS" | "DESCRITIVOS">("ORCAMENTOS");
+
+  // Navegação de Abas do Módulo Orçamentos
   const [activeTab, setActiveTab] = useState<"WORKSPACE" | "SETTINGS">("WORKSPACE");
 
   // Contratos Base cadastrados nas Configurações
@@ -1369,43 +1375,84 @@ export default function OrcaBaseDashboard() {
             </div>
           </div>
 
-          {/* Navegação Principal */}
-          <div className="flex items-center gap-2 bg-[#111622] p-1.5 rounded-xl border border-[#1E2436]">
+          {/* Navegação Superior de Módulos: Orçamentos vs Descritivos */}
+          <div className="flex items-center gap-2 bg-[#111622] p-1.5 rounded-2xl border border-[#1E2436] shadow-lg">
             <button
-              onClick={() => setActiveTab("WORKSPACE")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === "WORKSPACE"
-                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_15px_rgba(212,175,55,0.3)]"
-                  : "text-[#9CA3AF] hover:text-white"
+              onClick={() => setMainModule("ORCAMENTOS")}
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                mainModule === "ORCAMENTOS"
+                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_20px_rgba(212,175,55,0.35)] scale-[1.02]"
+                  : "text-[#9CA3AF] hover:text-white hover:bg-[#141A28]"
               }`}
             >
-              <Layers className="w-4 h-4" />
-              Área de Compatibilização (2 Planilhas)
+              <Calculator className="w-4 h-4" />
+              Orçamentos
             </button>
             <button
-              onClick={() => setActiveTab("SETTINGS")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === "SETTINGS"
-                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_15px_rgba(212,175,55,0.3)]"
-                  : "text-[#9CA3AF] hover:text-white"
+              onClick={() => setMainModule("DESCRITIVOS")}
+              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                mainModule === "DESCRITIVOS"
+                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_20px_rgba(212,175,55,0.35)] scale-[1.02]"
+                  : "text-[#9CA3AF] hover:text-white hover:bg-[#141A28]"
               }`}
             >
-              <Settings className="w-4 h-4" />
-              Configurações (Contratos Base)
-              <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                  activeTab === "SETTINGS" ? "bg-black/20 text-black" : "bg-[#1E2436] text-[#D4AF37]"
-                }`}
-              >
-                {contracts.length}
+              <BrainCircuit className="w-4 h-4 text-[#D4AF37]" />
+              Descritivos
+              <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
+                IA
               </span>
             </button>
           </div>
+
+          {/* Sub-Navegação de Orçamentos (Compatibilização vs Contratos Base) */}
+          {mainModule === "ORCAMENTOS" && (
+            <div className="hidden lg:flex items-center gap-2 bg-[#111622] p-1.5 rounded-xl border border-[#1E2436]">
+              <button
+                onClick={() => setActiveTab("WORKSPACE")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === "WORKSPACE"
+                    ? "bg-[#1E2436] text-white border border-[#D4AF37]/50"
+                    : "text-[#9CA3AF] hover:text-white"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                Compatibilização
+              </button>
+              <button
+                onClick={() => setActiveTab("SETTINGS")}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === "SETTINGS"
+                    ? "bg-[#1E2436] text-white border border-[#D4AF37]/50"
+                    : "text-[#9CA3AF] hover:text-white"
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Contratos Base
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                    activeTab === "SETTINGS"
+                      ? "bg-[#D4AF37]/20 text-[#D4AF37]"
+                      : "bg-[#1E2436] text-[#9CA3AF]"
+                  }`}
+                >
+                  {contracts.length}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col gap-8">
-        {activeTab === "WORKSPACE" ? (
+        {mainModule === "DESCRITIVOS" ? (
+          <DescritivoView
+            initialSchoolName={initialFileName?.replace(/\.(xlsx|xlsm|xls)$/i, "") || "CETI FADE III"}
+            initialProjectName={selectedContract?.contractName}
+            initialCity="São João do Piauí - PI"
+            initialGre={selectedContract?.contractNumber || "12ª GRE"}
+            showToast={showToast}
+          />
+        ) : activeTab === "WORKSPACE" ? (
           <>
             {/* =====================================================================
                 PASSO 1: ÁREA DE TRABALHO DUPLA — ESTUDO DAS DUAS PLANILHAS POR NOME DE COLUNA

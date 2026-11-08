@@ -11,6 +11,37 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.024]
+- **Data/Hora:** 08/11/2026 02:55 (Horário Local)
+- **Tag Git:** `PR.024`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.024 (Abas Principais "Orçamentos" e "Descritivos", Chat com IA Sênior, Transcrição de Voz e Exportação em PDF Oficial):
+1. **Nova Arquitetura de Abas Principais no Header:**
+   - Implementada a divisão oficial do sistema em duas abas de topo no padrão Dark Industrial Luxury:
+     - **Aba "Orçamentos":** Todo o módulo de compatibilização inteligente entre 2 planilhas, contratos base, matriz de similaridade e exportação de Excel com fórmulas vivas.
+     - **Aba "Descritivos":** O novo ambiente integrado de elaboração de Memoriais Descritivos e Cadernos de Encargos Técnicos guiado por Inteligência Artificial.
+2. **Chat com IA de Engenharia Sênior (Voz e Texto):**
+   - **Reconhecimento de Voz Nativo (Web Speech API):** Botão de microfone interativo que permite ao orçamentista/fiscal falar livremente no microfone do celular ou computador, convertendo a fala em texto em tempo real.
+   - **Tradução Técnica e Estruturação:** A IA interpreta demandas informais (ex: *"fazer nova calçada, pintar as salas, revisar o telhado e colocar nova caixa d'água"*) e gera automaticamente Títulos Gerais (Grandes Disciplinas) e Itens Técnicos com linguagem técnica executiva de um Engenheiro Civil Sênior.
+   - **Motor Híbrido (Gemini API + Motor Sênior Local):** Suporte nativo ao Google Gemini com inserção de chave no navegador e Motor Heurístico Local com ontologia civil completa (funciona 100% mesmo sem chave ou offline).
+3. **Editor Estruturado do Memorial Descritivo:**
+   - Exibição em tempo real de todas as etapas (1.0, 2.0, 3.0...) e itens numerados (1.1, 1.2, 2.1...).
+   - Edição inline direta de títulos e textos de serviços, adição de novas etapas, inclusão de novos itens e exclusão.
+   - Quadro de identificação da obra com Nome da Escola, Município, GRE, Objeto e Responsável Técnico.
+4. **Exportação Oficial em PDF e Word:**
+   - **Geração de PDF Oficial A4 (jsPDF):** Criação de documento executivo oficial com cabeçalho institucional, seções técnicas, itens justificados, numeração de páginas e blocos de assinatura para engenheiro e fiscal.
+   - **Exportação para Microsoft Word (.DOC):** Permite baixar o arquivo compatível com o Word para edições complementares.
+   - **Copiar Texto:** Cópia formatada para a área de transferência em 1 clique.
+
+---
+
 ### [PR.023]
 - **Data/Hora:** 08/11/2026 02:32 (Horário Local)
 - **Tag Git:** `PR.023`
