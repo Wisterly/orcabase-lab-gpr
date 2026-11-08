@@ -11,6 +11,40 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.018]
+- **Data/Hora:** 08/11/2026 00:15 (Horário Local)
+- **Tag Git:** `PR.018`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.018 (Correção Cirúrgica de Alinhamento Absoluto de Colunas e Injeção Ativa nas Fórmulas do Excel):
+1. **Identificação da Causa Raiz dos Quantitativos Zerados e Valor Total 0,00:**
+   - Na leitura de planilhas onde o range não começava na coluna A (como no contrato `ANTIGA ATA RMELO`, cujo `!ref` começa em `B1:AF346`), o array do SheetJS começava na coluna B.
+   - O código anterior somava apenas `+1` relativo, fazendo com que a coluna real do Excel `I` ("QUANT.") fosse detectada como `H` ("FREQ=") ou `F` ("UND").
+   - A fórmula de Preço Parcial na planilha (`L = I * K`) multiplica exclusivamente a coluna `I`. Como os quantitativos estavam sendo gravados na coluna errada, a coluna `I` ficava vazia, fazendo com que todas as multiplicações resultassem em 0, zerando os subtotais de etapas e o Total Geral.
+   - Além disso, o regex anterior de injeção casava tags auto-fechadas (`<c r="I22" s="606"/>`) como tags de abertura e engolia a célula adjacente (`J22`, que continha o preço unitário), gerando um XML inválido com barra solta (`<c .../ t="n">`).
+2. **Alinhamento Absoluto 1:1 com Forçamento de Início em A1 (`range.s.r = 0; range.s.c = 0`):**
+   - No `inspectSpreadsheetStructure`, qualquer planilha agora é lida com range forçado a partir de `A1` (coluna 0 e linha 0), garantindo alinhamento físico absoluto entre os índices do código e as letras/números reais do Microsoft Excel.
+   - A coluna de quantitativo é identificada com 100% de exatidão na coluna `I` (coluna 9), `colDesc` na coluna `E`, `colUnit` na coluna `F`, `colCode` na coluna `D` e `colUnitPrice` na coluna `K`.
+3. **Novo Motor Regex Preciso para Injeção de Células no OpenXML:**
+   - Substituição do regex frágil pelo padrão robusto `(<c\b[^>]*\br="${cellRef}"[^>]*?)(?:\/>|>([\s\S]*?)<\/c>)`.
+   - Modifica única e exclusivamente a célula alvo, preservando atributos, estilos e mantendo as células vizinhas intactas.
+4. **Autovalidação Cruzada via Fórmulas do Excel:**
+   - No `injectQuantitiesPreservingOriginalWorkbook`, o sistema inspeciona as fórmulas ativas da aba de orçamento (ex: `L18 = I18 * K18`) e garante que a coluna de injeção seja a coluna multiplicada na fórmula, blindando o arquivo contra qualquer divergência cadastral.
+5. **Validação Rigorosa no Excel Nativo (COM Automation):**
+   - Injetados quantitativos reais na coluna `I` da aba `ORÇAMENTO`.
+   - O Microsoft Excel abriu instantaneamente e executou o recálculo com precisão matemática perfeita:
+     - `I22 = 22.6`, `K22 = 1.39` ➔ `L22 = 31.41`
+     - `I26 = 1.17`, `K26 = 215.84` ➔ `L26 = 252.53`
+     - Total da Etapa recalculado para `R$ 294,08` (não mais zerado!).
+
+---
+
 ### [PR.017]
 - **Data/Hora:** 08/11/2026 00:05 (Horário Local)
 - **Tag Git:** `PR.017`

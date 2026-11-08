@@ -374,7 +374,10 @@ export function studySpreadsheetFromBuffer(
       if (nLow.includes("capa") || nLow.includes("resumo") || nLow.includes("cronograma") || nLow.includes("bdi")) sScore -= 20;
 
       const wsTemp = workbook.Sheets[name];
-      const rowsTemp: any[][] = XLSX.utils.sheet_to_json(wsTemp, { header: 1, defval: "" });
+      const rTemp = XLSX.utils.decode_range(wsTemp["!ref"] || "A1:A1");
+      rTemp.s.r = 0;
+      rTemp.s.c = 0;
+      const rowsTemp: any[][] = XLSX.utils.sheet_to_json(wsTemp, { header: 1, defval: "", range: rTemp });
       sScore += Math.min(40, Math.floor(rowsTemp.length / 5));
 
       if (sScore > bestSheetScore) {
@@ -385,7 +388,10 @@ export function studySpreadsheetFromBuffer(
   }
 
   const worksheet = workbook.Sheets[selectedSheet];
-  const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+  const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1:A1");
+  range.s.r = 0; // Força início estrito na Linha 1 (0-based) para indexação absoluta 1:1 com o Excel
+  range.s.c = 0; // Força início estrito na Coluna A (0-based) para alinhamento 1:1 com as letras A..Z
+  const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", range });
 
   const totalRows = rows.length;
   const totalCols = rows.reduce((max, r) => Math.max(max, r ? r.length : 0), 0);
@@ -1531,17 +1537,23 @@ async function findWorksheetPathInZip(zip: JSZip, preferredSheetName?: string): 
     if (partial && zip.file(partial.target)) return partial.target;
   }
 
-  const budgetCandidate = sheets.find((s) => {
-    const n = s.name.toLowerCase();
-    return (
-      n.includes("sintetico") ||
-      n.includes("sintético") ||
-      n.includes("orçamento") ||
-      n.includes("orcamento") ||
-      n.includes("planilha") ||
-      n.includes("geral")
-    );
-  });
+  const budgetCandidate =
+    sheets.find((s) => {
+      const n = s.name.toLowerCase().trim();
+      return n === "orçamento" || n === "orcamento" || n === "planilha orçamentária" || n === "planilha orcamentaria";
+    }) ||
+    sheets.find((s) => {
+      const n = s.name.toLowerCase();
+      return (
+        (n.includes("orçamento") || n.includes("orcamento") || n.includes("sintetico") || n.includes("sintético") || n.includes("planilha")) &&
+        !n.includes("resumo") &&
+        !n.includes("justificativa") &&
+        !n.includes("memoria") &&
+        !n.includes("curva") &&
+        !n.includes("bdi")
+      );
+    });
+
   if (budgetCandidate && zip.file(budgetCandidate.target)) {
     return budgetCandidate.target;
   }
@@ -1588,30 +1600,14 @@ function updateWorksheetXmlWithQuantitiesAndLayout(
       const cellRef = `${colLetter}${rowNum}`;
 
       let body = rowBody;
-      const cellRegex = new RegExp(
-        `(<c\\b[^>]*\\br="${cellRef}"[^>]*>)([\\s\\S]*?)(<\\/c>)|(<c\\b[^>]*\\br="${cellRef}"[^>]*\\/>)`,
-        "i"
-      );
-
+      const cellRegex = new RegExp(`(<c\\b[^>]*\\br="${cellRef}"[^>]*?)(?:\\/>|>([\\s\\S]*?)<\\/c>)`, "i");
       const cellMatch = cellRegex.exec(body);
+
       if (cellMatch) {
-        if (cellMatch[1]) {
-          let openTag = cellMatch[1];
-          if (openTag.includes('t="s"') || openTag.includes("t='s'")) {
-            openTag = openTag.replace(/t=["']s["']/, 't="n"');
-          } else if (!openTag.includes("t=")) {
-            openTag = openTag.replace(/>$/, ' t="n">');
-          }
-          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
-          body = body.replace(cellMatch[0], updatedCell);
-        } else if (cellMatch[4]) {
-          let openTag = cellMatch[4].replace(/\/>$/, ">");
-          if (!openTag.includes("t=")) {
-            openTag = openTag.replace(/>$/, ' t="n">');
-          }
-          const updatedCell = `${openTag}<v>${formattedQty}</v></c>`;
-          body = body.replace(cellMatch[0], updatedCell);
-        }
+        let tagOpen = cellMatch[1].replace(/\s+t=["'][^"']*["']/i, "");
+        tagOpen = `${tagOpen} t="n">`;
+        const updatedCell = `${tagOpen}<v>${formattedQty}</v></c>`;
+        body = body.replace(cellMatch[0], updatedCell);
       } else {
         const newCell = `<c r="${cellRef}" t="n"><v>${formattedQty}</v></c>`;
         const anyCellRegex = /<c\b[^>]*\br="([A-Z]+)\d+"/gi;
@@ -1776,10 +1772,22 @@ export async function injectQuantitiesPreservingOriginalWorkbook(
 
   let sheetXml = await sheetXmlFile.async("string");
 
-  // 4. Determina a letra da coluna de quantitativo
-  const colLetter =
+  // 4. Determina a letra da coluna de quantitativo com validação cruzada nas fórmulas do Excel
+  let colLetter =
     options.colQtyLetter ||
-    (options.colQtyOneBased ? colIndexToLetter(options.colQtyOneBased) : "F");
+    (options.colQtyOneBased ? colIndexToLetter(options.colQtyOneBased) : "I");
+
+  // Autovalidação: verifica se as fórmulas de preço parcial da aba de orçamento multiplicam uma coluna específica (ex: I18*K18)
+  const formulaMatch = sheetXml.match(/<f\b[^>]*>[^<]*?\b([A-Z]+)(\d+)\*([A-Z]+)\2/i);
+  if (formulaMatch) {
+    const cand1 = formulaMatch[1].toUpperCase();
+    const cand2 = formulaMatch[3].toUpperCase();
+    if (colLetter !== cand1 && colLetter !== cand2) {
+      const idx1 = letterToColIndex(cand1);
+      const idx2 = letterToColIndex(cand2);
+      colLetter = idx1 < idx2 ? cand1 : cand2;
+    }
+  }
 
   // 5. Mapeia as linhas e quantitativos validados
   const qtyByRow = new Map<number, number>();

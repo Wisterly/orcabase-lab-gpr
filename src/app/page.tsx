@@ -50,6 +50,7 @@ import {
   triggerBlobDownload,
   injectQuantitiesPreservingOriginalWorkbook,
   colIndexToLetter,
+  letterToColIndex,
   injectQuantitiesClientFallback,
   buildCompatOutputFileName,
   calculateItemSimilarity,
@@ -1024,8 +1025,12 @@ export default function OrcaBaseDashboard() {
       // 1. CLONAGEM CIRÚRGICA 100% FIEL NO ARQUIVO ORIGINAL (JSZip OpenXML)
       // Modifica EXCLUSIVAMENTE o número da célula de quantitativo mantendo 100% de layout, estilos, larguras, fórmulas e macros intactos
       if (contractBase64 && contractBase64.length > 50) {
-        const colQtyOneBased = selectedContract.detectedColumns?.colQty || 6;
-        const colQtyLetter = colIndexToLetter(colQtyOneBased);
+        const colQtyLetter =
+          selectedContract.detectedColumns?.colQtyLetter ||
+          (selectedContract.detectedColumns?.colQty
+            ? colIndexToLetter(selectedContract.detectedColumns.colQty)
+            : "I");
+        const colQtyOneBased = letterToColIndex(colQtyLetter);
 
         const { blob: outBlob, extension } = await injectQuantitiesPreservingOriginalWorkbook(contractBase64, {
           budgetSheetName: selectedContract.budgetSheetName,

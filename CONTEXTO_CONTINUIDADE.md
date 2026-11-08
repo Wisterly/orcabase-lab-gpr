@@ -1,13 +1,14 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.017
-O ciclo **`PR.017`** eliminou categoricamente o alerta de reparo de fórmulas do Microsoft Excel relacionado ao `/xl/calcChain.xml`:
-1. **Fim do Alerta de Reparo de Fórmulas:** Com base no log oficial gerado pelo Excel (`C:\Users\Lenovo\AppData\Local\Temp\error241400_01.xml`), removeu-se de forma 100% canônica o cache desatualizado de `xl/calcChain.xml` (e suas referências em `[Content_Types].xml` e `workbook.xml.rels`).
-2. **Reconstrução Limpa em Memória:** Ao carregar sem `calcChain.xml`, o Excel recalcula as fórmulas com base no `<calcPr fullCalcOnLoad="1"/>` silenciosamente, sem exibir nenhuma janela de aviso ou reparo.
-3. **Bateria de Testes em Loop Real:** Validada a geração contínua de múltiplas planilhas com injeções variadas de quantitativos e abertura via automação COM oficial do Microsoft Excel, atingindo 100% de sucesso e zero logs de erro no Temp.
+## 📍 Ponto Atual de Entrega — Ciclo PR.018
+O ciclo **`PR.018`** corrigiu o alinhamento absoluto de colunas, o regex de injeção OpenXML e a autovalidação cruzada por fórmulas, resolvendo definitivamente a questão dos quantitativos vazios e planilha com valor zerado:
+1. **Alinhamento Absoluto 1:1 com o Excel (`range.s.r = 0; range.s.c = 0`):** Elimina o desvio de colunas em planilhas que começam na coluna B ou C, garantindo que "QUANT." mapeie exatamente na coluna `I` (coluna 9) e não mais em F ou H.
+2. **Correção do Regex OpenXML:** A célula alvo é atualizada sem engolir células vizinhas (`J22`), eliminando o erro de tags malformadas com barra solta (`<c .../ t="n">`).
+3. **Autovalidação por Fórmulas:** O motor OpenXML lê a fórmula de cálculo da planilha (`L = I * K`) e injeta os quantitativos na coluna que o Excel de fato utiliza para calcular os preços parciais e o Total Geral.
+4. **Validação Rigorosa no Excel Nativo:** Testado e aprovado com recálculo comprovado via Excel COM (`L22 = 31.41`, `L26 = 252.53`, total de etapa `R$ 294,08`).
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.018)
+## 🎯 Próximo Passo do Agente (Ciclo PR.019)
 1. **Persistência em Nuvem (Supabase / Postgres):** Sincronização remota dos Contratos Base entre múltiplos dispositivos.
 2. **Relatório Analítico Comparativo:** Visão detalhada de variações percentuais e memória de cálculo de quantitativos exportável em PDF executivo.
