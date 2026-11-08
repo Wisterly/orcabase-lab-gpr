@@ -1,14 +1,14 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.024
-O ciclo **`PR.024`** inaugurou a arquitetura de **Abas Principais** ("Orçamentos" e "Descritivos") e entregou o novo **Módulo de Memorial Descritivo com Chat IA de Engenharia Sênior**:
-1. **Navegação Superior:** Abas no Header alternando entre o motor de Orçamentos e o novo ambiente de Descritivos.
-2. **Chat com IA Sênior:** Entrada por voz nativa (microfone) ou texto, transformando solicitações coloquiais em Títulos Gerais e Itens Técnicos resumidos e formais de engenharia civil.
-3. **Motor Híbrido:** Operação com Google Gemini (com API Key) ou Motor Heurístico Local Sênior com ontologia civil integrada (zero dependência de chave).
-4. **Editor Estruturado & Exportações:** Edição direta das etapas/itens e download imediato em **PDF Oficial A4** e **Microsoft Word (.DOC)** com cabeçalhos institucionais e assinaturas.
+## 📍 Ponto Atual de Entrega — Ciclo PR.025
+O ciclo **`PR.025`** adaptou integralmente a interface do **OrçaBase.Lab - GPR** para seguir a linguagem visual institucional do **MediSEI.lab - GPR** (`https://medisei-lab-gpr.vercel.app/`):
+1. **Cabeçalho & Marca SEDUC:** Exibição da logo oficial da SEDUC com o mapa do Piauí sem fundo branco no canto esquerdo, nome `OrçaBase.Lab - GPR` em destaque de linha única, e banner com a fachada institucional ilustrada e subtítulo com barra laranja.
+2. **Navegação Estrita de 2 Abas:** Abas 3D (`app-navigation`) contendo exclusivamente **Orçamento** e **Descritivos**, com destaque laranja vibrante na aba ativa e inicialização padrão em **Orçamento**.
+3. **Tema Visual Sincronizado:** Fundo `#101113`, painéis em azul profundo `#111622`, bordas discretas `#232a3b`, tipografia nítida e responsividade mobile-first.
+4. **Preservação Funcional:** Todos os cálculos, compatibilizações, persistência IndexedDB, lacuna de valor alvo, IA de engenharia e exportações em PDF/Excel/Word preservadas intactas.
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.025)
-1. **Upload de Modelo Base Customizado (.DOCX / PDF):** Mecanismo de injeção automática de variáveis em templates corporativos próprios do usuário.
-2. **Histórico de Memoriais Descritivos:** Persistência de múltiplos descritivos salvos por contrato no IndexedDB.
+## 🎯 Próximo Passo do Agente (Ciclo PR.026)
+1. **Auditoria de Desvios de Quantitativos:** Indicador visual de variação percentual dos itens compatibilizados.
+2. **Histórico em Nuvem:** Compartilhamento multiusuário via Supabase/PostgreSQL.

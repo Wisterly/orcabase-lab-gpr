@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OrçaBase.lab - GPR | Engenharia de Orçamentos e AI Matching",
-  description: "Módulo Inteligente de Compatibilização Semântica e AI Matching com openpyxl",
+  title: "OrçaBase.Lab - GPR | Gestão de Orçamentos e Memoriais Descritivos",
+  description: "Módulo Inteligente de Compatibilização Semântica de Orçamentos e Geração Técnica de Memoriais Descritivos",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className="dark">
-      <body className="bg-navy-950 text-gray-100 antialiased selection:bg-gold-500 selection:text-navy-950">
+      <body className="antialiased selection:bg-[#ff861c] selection:text-black">
         {children}
       </body>
     </html>

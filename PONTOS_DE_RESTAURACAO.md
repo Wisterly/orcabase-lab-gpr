@@ -11,6 +11,38 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.025]
+- **Data/Hora:** 08/11/2026 03:36 (Horário Local)
+- **Tag Git:** `PR.025`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.025 (Adaptação Visual Fiel ao MediSEI.lab - GPR, Banner SEDUC e Navegação Estrita de 2 Abas):
+1. **Cabeçalho Institucional Fiel ao MediSEI.lab - GPR:**
+   - Incorporada a marca oficial da SEDUC-PI com o mapa do Piauí estilizado no canto esquerdo através de máscara CSS sem fundo branco (`seduc-logo`).
+   - Nome oficial `OrçaBase.Lab - GPR` em destaque com tipografia de peso executivo, mantido em uma única linha sempre que a largura permitir (`whitespace-nowrap`).
+   - Banner ilustrado da Secretaria de Estado da Educação com a fachada (`/medisei-facade-banner.webp`), barra lateral laranja `#ffaa2c` e cópia institucional de contextualização da gestão orçamentária e de memoriais.
+   - Pano de fundo sutil `institutional-backdrop` com rotação e gradiente suave da fachada da SEDUC (`/seduc-facade.png`).
+2. **Navegação de 2 Abas Principais (Orçamento e Descritivos):**
+   - Posicionada logo abaixo do cabeçalho, com abas estilo pasta/tab 3D com perspectiva e cantos arredondados superiores (`app-navigation`).
+   - Exatamente e estritamente **duas abas**:
+     1. **Orçamento:** Ícone de calculadora, abrindo o sistema por padrão na inicialização.
+     2. **Descritivos:** Ícone de cérebro com o memorial inteligente de engenharia sênior.
+   - Aba ativa destacada com gradiente laranja vibrante (`linear-gradient(165deg, #a94a0b, #66300e)`), borda superior dourada e glow refinado.
+3. **Harmonização do Tema Visual & Painéis em Azul Profundo:**
+   - Paleta oficial sincronizada com o MediSEI: fundo `#101113`, painéis `#111622` e `#131826`, bordas discretas `#232a3b` e `#3c3a38`, textos claros `#f2efeb` e `#b8b5b1`.
+   - Sub-navegação interna de Orçamento (Área de Compatibilização vs Contratos Base) integrada discretamente em painel horizontal estilizado.
+4. **Preservação Integral de 100% das Funcionalidades:**
+   - Fórmulas vivas no Excel, OpenXML nativo via JSZip, persistência no IndexedDB v2, cálculo proporcional para atingir o valor alvo customizado, microfone com áudio para o memorial descritivo e exportações oficiais em PDF e Word (.DOC).
+   - Título da página atualizado em `src/app/layout.tsx`: `OrçaBase.Lab - GPR | Gestão de Orçamentos e Memoriais Descritivos`.
+
+---
+
 ### [PR.024]
 - **Data/Hora:** 08/11/2026 02:55 (Horário Local)
 - **Tag Git:** `PR.024`

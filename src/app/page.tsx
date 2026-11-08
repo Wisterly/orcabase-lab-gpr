@@ -253,8 +253,8 @@ const INITIAL_CONTRACTS: ContractBaseCard[] = [
 ];
 
 export default function OrcaBaseDashboard() {
-  // Navegação Principal de Módulos (Orçamentos vs Descritivos)
-  const [mainModule, setMainModule] = useState<"ORCAMENTOS" | "DESCRITIVOS">("ORCAMENTOS");
+  // Navegação Principal de Módulos (Orçamento vs Descritivos)
+  const [mainModule, setMainModule] = useState<"ORCAMENTO" | "DESCRITIVOS">("ORCAMENTO");
 
   // Navegação de Abas do Módulo Orçamentos
   const [activeTab, setActiveTab] = useState<"WORKSPACE" | "SETTINGS">("WORKSPACE");
@@ -1353,97 +1353,96 @@ export default function OrcaBaseDashboard() {
         </div>
       )}
 
-      {/* Topbar Minimalista Luxury */}
-      <header className="border-b border-[#1E2436] bg-[#0B0F19]/90 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#F97316] p-[1px] shadow-[0_0_25px_rgba(249,115,22,0.25)]">
-              <div className="w-full h-full bg-[#07090E] rounded-[11px] flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5">
-                <span className="font-bold text-lg tracking-tight text-white">OrçaBase</span>
-                <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#F97316]/15 text-[#F97316] border border-[#F97316]/30 font-semibold">
-                  LAB • GPR
-                </span>
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
-                Busca Inteligente por Nome de Coluna & Alocação de Quantitativos
-              </p>
+      {/* Fundo Institucional MediSEI / SEDUC */}
+      <div className="institutional-backdrop" aria-hidden="true" />
+
+      {/* Topbar Oficial MediSEI.lab - GPR */}
+      <header className="border-b border-[#ffffff19] bg-[#0c0c0d]/90 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between gap-4">
+          {/* Marca SEDUC com Mapa do Piauí + Nome Oficial em Destaque */}
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0">
+            <span
+              className="seduc-logo"
+              role="img"
+              aria-label="Secretaria da Educação — Governo do Piauí"
+            >
+              <img src="/seduc-pi.png" alt="" />
+            </span>
+            <div className="min-w-0">
+              <strong className="block text-lg sm:text-2xl md:text-[26px] font-black text-white leading-tight tracking-tight whitespace-nowrap">
+                OrçaBase.Lab <span className="text-[#ffaa2c] font-bold">- GPR</span>
+              </strong>
+              <small className="block text-xs text-[#b8b5b1] mt-0.5 tracking-wide truncate">
+                Gestão de Orçamentos e Memoriais Descritivos
+              </small>
             </div>
           </div>
 
-          {/* Navegação Superior de Módulos: Orçamentos vs Descritivos */}
-          <div className="flex items-center gap-2 bg-[#111622] p-1.5 rounded-2xl border border-[#1E2436] shadow-lg">
-            <button
-              onClick={() => setMainModule("ORCAMENTOS")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mainModule === "ORCAMENTOS"
-                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_20px_rgba(212,175,55,0.35)] scale-[1.02]"
-                  : "text-[#9CA3AF] hover:text-white hover:bg-[#141A28]"
-              }`}
-            >
-              <Calculator className="w-4 h-4" />
-              Orçamentos
-            </button>
-            <button
-              onClick={() => setMainModule("DESCRITIVOS")}
-              className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                mainModule === "DESCRITIVOS"
-                  ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_20px_rgba(212,175,55,0.35)] scale-[1.02]"
-                  : "text-[#9CA3AF] hover:text-white hover:bg-[#141A28]"
-              }`}
-            >
-              <BrainCircuit className="w-4 h-4 text-[#D4AF37]" />
-              Descritivos
-              <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
-                IA
+          {/* Badges Institucionais SEDUC no Canto Direito */}
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="text-right">
+              <span className="block text-[11px] font-mono uppercase text-[#e2eaf4] font-bold tracking-wider">
+                SEDUC-PI / SUPEX / UGERF / GPR
               </span>
-            </button>
-          </div>
-
-          {/* Sub-Navegação de Orçamentos (Compatibilização vs Contratos Base) */}
-          {mainModule === "ORCAMENTOS" && (
-            <div className="hidden lg:flex items-center gap-2 bg-[#111622] p-1.5 rounded-xl border border-[#1E2436]">
-              <button
-                onClick={() => setActiveTab("WORKSPACE")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "WORKSPACE"
-                    ? "bg-[#1E2436] text-white border border-[#D4AF37]/50"
-                    : "text-[#9CA3AF] hover:text-white"
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                Compatibilização
-              </button>
-              <button
-                onClick={() => setActiveTab("SETTINGS")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "SETTINGS"
-                    ? "bg-[#1E2436] text-white border border-[#D4AF37]/50"
-                    : "text-[#9CA3AF] hover:text-white"
-                }`}
-              >
-                <Settings className="w-3.5 h-3.5" />
-                Contratos Base
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
-                    activeTab === "SETTINGS"
-                      ? "bg-[#D4AF37]/20 text-[#D4AF37]"
-                      : "bg-[#1E2436] text-[#9CA3AF]"
-                  }`}
-                >
-                  {contracts.length}
-                </span>
-              </button>
+              <span className="block text-[10px] text-[#b8b5b1]">
+                Engenharia de Manutenção Predial
+              </span>
             </div>
-          )}
+            <div
+              className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
+              title="Sistema Operacional e Sincronizado"
+            />
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col gap-8">
+      {/* Banner da Secretaria da Educação (MediSEI management-banner) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5">
+        <section className="management-banner">
+          <div className="measurement-banner-art">
+            <img
+              src="/medisei-facade-banner.webp"
+              alt="Fachada ilustrada com a marca da Secretaria da Educação do Piauí e o letreiro OrçaBase.lab / GPR"
+            />
+          </div>
+          <div className="banner-copy">
+            <h1>
+              {mainModule === "ORCAMENTO"
+                ? "Gestão Orçamentária"
+                : "Memoriais Descritivos"}
+            </h1>
+            <p>
+              {mainModule === "ORCAMENTO"
+                ? "Compatibilização inteligente de quantitativos entre planilhas e contratos base oficiais."
+                : "Elaboração técnica de memoriais e especificações de serviços com IA Sênior e áudio."}
+            </p>
+          </div>
+        </section>
+      </div>
+
+      {/* Navegação Principal: Exatamente 2 Abas (Orçamento e Descritivos) estilo MediSEI 3D */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-4">
+        <nav className="app-navigation" aria-label="Áreas do sistema">
+          <button
+            type="button"
+            aria-pressed={mainModule === "ORCAMENTO"}
+            onClick={() => setMainModule("ORCAMENTO")}
+          >
+            <Calculator className="w-4 h-4 text-[#ffb457]" />
+            <span>Orçamento</span>
+          </button>
+          <button
+            type="button"
+            aria-pressed={mainModule === "DESCRITIVOS"}
+            onClick={() => setMainModule("DESCRITIVOS")}
+          >
+            <BrainCircuit className="w-4 h-4 text-[#ffb457]" />
+            <span>Descritivos</span>
+          </button>
+        </nav>
+      </div>
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
         {mainModule === "DESCRITIVOS" ? (
           <DescritivoView
             initialSchoolName={initialFileName?.replace(/\.(xlsx|xlsm|xls)$/i, "") || "CETI FADE III"}
@@ -1452,7 +1451,47 @@ export default function OrcaBaseDashboard() {
             initialGre={selectedContract?.contractNumber || "12ª GRE"}
             showToast={showToast}
           />
-        ) : activeTab === "WORKSPACE" ? (
+        ) : (
+          <>
+            {/* Sub-navegação interna de Orçamento: Área de Compatibilização vs Contratos Base */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111622] p-2.5 rounded-xl border border-[#232a3b]">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("WORKSPACE")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "WORKSPACE"
+                      ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-md"
+                      : "text-[#b8b5b1] hover:text-white bg-[#0e1015]"
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  Área de Compatibilização (2 Planilhas)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("SETTINGS")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === "SETTINGS"
+                      ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-md"
+                      : "text-[#b8b5b1] hover:text-white bg-[#0e1015]"
+                  }`}
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  Contratos Base Cadastrados
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-black/30 text-white">
+                    {contracts.length}
+                  </span>
+                </button>
+              </div>
+
+              <div className="text-right text-xs text-[#b8b5b1] hidden md:block">
+                Contrato Selecionado:{" "}
+                <strong className="text-[#ffb457]">{selectedContract?.contractNumber || "045/2026"}</strong>
+              </div>
+            </div>
+
+            {activeTab === "WORKSPACE" ? (
           <>
             {/* =====================================================================
                 PASSO 1: ÁREA DE TRABALHO DUPLA — ESTUDO DAS DUAS PLANILHAS POR NOME DE COLUNA
@@ -3347,6 +3386,8 @@ export default function OrcaBaseDashboard() {
             </div>
           </section>
         )}
+        </>
+      )}
       </main>
 
       {/* =====================================================================
