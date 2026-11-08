@@ -11,6 +11,33 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.028]
+- **Data/Hora:** 08/11/2026 04:20 (Horário Local)
+- **Tag Git:** `PR.028`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.028 (Incorporação Integral do SUPER PROMPT de Infraestrutura Escolar, Regra Absoluta de ELÉTRICA e Saída Direta para Excel):
+1. **Incorporação Integral do SUPER PROMPT ao Motor de IA (Gemini & Motor Sênior Local):**
+   - Integrado o texto oficial do Super Prompt no `systemPrompt` do Google Gemini e na ontologia técnica `CIVIL_ONTOLOGY`.
+   - **Regra de Ouro dos Títulos:** Estritamente em CAIXA ALTA e sem qualquer numeração inicial (`FORROS`, `PINTURA GERAL`, `BANHEIROS`, `COZINHA`, `ELÉTRICA`, `COBERTURA`, `ESQUADRIAS E FERRAGENS`, `LABORATÓRIO DE INFORMÁTICA`, `ÁREAS EXTERNAS`, `ESTACIONAMENTO`, `AUDITÓRIO`, `DORMITÓRIOS`, `LIMPEZA PÓS-OBRA`, `SERVIÇOS GERAIS`).
+   - **Regra Absoluta de ELÉTRICA:** Título único obrigatório `ELÉTRICA` (sem variações como "INSTALAÇÕES ELÉTRICAS" ou "ILUMINAÇÃO"). Todos os serviços elétricos (tomadas, interruptores, iluminação, luminárias slim, quadros de distribuição, disjuntores, chuveiros elétricos) são rigidamente unificados sob este grupo.
+2. **Formatação Linha por Linha Pronta para o Excel:**
+   - Cada serviço é redigido em uma linha independente iniciando preferencialmente com "Executar..." ou "Fornecer e instalar...", sem marcadores, bolinhas ou traços no início da linha, pronto para ser copiado diretamente para células do Excel.
+   - Adicionado botão interativo `📋 Copiar Descritivo para Planilha Excel` na interface e no modal de visualização.
+3. **Preservação Contínua de Contexto:**
+   - Qualquer acréscimo, remoção, alteração ou transferência de serviços mantém o histórico acumulado e reapresenta o descritivo técnico completo e atualizado.
+4. **Sincronização no PDF e Word:**
+   - O documento em PDF oficial (jsPDF) e Word (.DOC) reflete os títulos em caixa alta sem códigos numéricos e com as linhas de serviços organizadas.
+   - Build do Next.js 15 compilado com sucesso (código 0).
+
+---
+
 ### [PR.027]
 - **Data/Hora:** 08/11/2026 04:08 (Horário Local)
 - **Tag Git:** `PR.027`

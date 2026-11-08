@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   RefreshCw,
   FileCode,
+  Copy,
   CheckCircle2,
 } from "lucide-react";
 import {
@@ -40,6 +41,7 @@ import {
   generateMemorialPDF,
   generateMemorialWordDoc,
   getMemorialPDFBlobUrl,
+  formatStagesToSpreadsheetText,
 } from "@/lib/descritivoAI";
 
 interface DescritivoViewProps {
@@ -93,76 +95,92 @@ export default function DescritivoView({
   );
 
   // --------------------------------------------------------------------------
-  // 2. ETAPAS E ITENS TÉCNICOS DO MEMORIAL
+  // 2. ETAPAS E ITENS TÉCNICOS (Padrão Oficial do SUPER PROMPT: Títulos em CAIXA ALTA sem numeração)
   // --------------------------------------------------------------------------
   const [stages, setStages] = useState<DescritivoStage[]>([
     {
-      id: "stg-1",
-      stageCode: "1.0",
-      title: "IDENTIFICAÇÃO E DELIMITAÇÃO DO IMÓVEL",
+      id: "stg-forros",
+      stageCode: "1",
+      title: "FORROS",
       items: [
         {
-          id: "it-1-1",
-          itemNumber: "1.1",
-          description:
-            "O presente memorial descritivo refere-se ao imóvel identificado como Lote 05 da Quadra B, situado no município de Florianópolis/SC, cadastrado sob a matrícula imobiliária com perímetro total georreferenciado.",
+          id: "it-forros-1",
+          itemNumber: "1",
+          description: "Executar instalação de forro em todas as salas de aula da unidade escolar.",
         },
         {
-          id: "it-1-2",
-          itemNumber: "1.2",
-          description:
-            "A área total delimitada é de 525,00 m² (quinhentos e vinte e cinco metros quadrados), com perímetro total de 96,40 m (noventa e seis metros e quarenta centímetros), projetada no sistema geodésico SIRGAS2000.",
+          id: "it-forros-2",
+          itemNumber: "2",
+          description: "Executar substituição dos trechos de forro danificados ou comprometidos.",
         },
       ],
     },
     {
-      id: "stg-2",
-      stageCode: "2.0",
-      title: "CONFRONTAÇÕES E DESCRIÇÃO PERIMÉTRICA DOS VÉRTICES",
+      id: "stg-eletrica",
+      stageCode: "2",
+      title: "ELÉTRICA",
       items: [
         {
-          id: "it-2-1",
-          itemNumber: "2.1",
+          id: "it-el-1",
+          itemNumber: "1",
           description:
-            "Inicia-se a descrição no vértice V-01 de coordenadas UTM (N: 6.945.120,00m e E: 742.310,00m); deste segue confrontando com o alinhamento da via pública com azimute de 85°15'00\" e distância de 15,00m até o vértice V-02.",
+            "Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados.",
         },
         {
-          id: "it-2-2",
-          itemNumber: "2.2",
-          description:
-            "Do vértice V-02 deflete à direita confrontando com o Lote 06 com azimute de 175°15'00\" e distância de 35,00m até o vértice V-03; deste segue aos fundos confrontando com o Lote 12 com distância de 15,00m até o vértice V-04.",
+          id: "it-el-2",
+          itemNumber: "2",
+          description: "Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.",
         },
         {
-          id: "it-2-3",
-          itemNumber: "2.3",
-          description:
-            "Do vértice V-04 deflete no sentido norte confrontando com o Lote 04 com distância de 35,00m até o vértice inicial V-01, fechando assim o polígono perimétrico.",
+          id: "it-el-3",
+          itemNumber: "3",
+          description: "Executar adequação dos quadros de distribuição de circuitos com instalação de proteção termomagnética e DR.",
         },
       ],
     },
     {
-      id: "stg-3",
-      stageCode: "3.0",
-      title: "SERVIÇOS DE MANUTENÇÃO E ADEQUAÇÃO PREDIAL",
+      id: "stg-cobertura",
+      stageCode: "3",
+      title: "COBERTURA",
       items: [
         {
-          id: "it-3-1",
-          itemNumber: "3.1",
-          description:
-            "Execução de nova calçada perimetral de proteção em concreto simples desempenado e sarrafeado, fck ≥ 20 MPa, espessura e=7cm, sobre lastro de brita compactado com caimento para escoamento pluvial.",
+          id: "it-cob-1",
+          itemNumber: "1",
+          description: "Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção das goteiras.",
         },
         {
-          id: "it-3-2",
-          itemNumber: "3.2",
-          description:
-            "Revisão e retelhamento geral com substituição de telhas cerâmicas quebradas visando erradicação total de goteiras e infiltrações, com aplicação de pintura acrílica impermeabilizante.",
+          id: "it-cob-2",
+          itemNumber: "2",
+          description: "Executar revisão da estrutura da cobertura, com recuperação dos trechos comprometidos.",
+        },
+      ],
+    },
+    {
+      id: "stg-banheiros",
+      stageCode: "4",
+      title: "BANHEIROS",
+      items: [
+        {
+          id: "it-ban-1",
+          itemNumber: "1",
+          description: "Executar revisão geral das instalações hidrossanitárias dos banheiros.",
+        },
+        {
+          id: "it-ban-2",
+          itemNumber: "2",
+          description: "Executar substituição das torneiras danificadas, com adequação dos pontos hidráulicos, quando necessário.",
+        },
+        {
+          id: "it-ban-3",
+          itemNumber: "3",
+          description: "Executar desobstrução e revisão dos vasos sanitários dos banheiros.",
         },
       ],
     },
   ]);
 
   // --------------------------------------------------------------------------
-  // 3. ESTADO DO CHAT (Idêntico ao Diálogo da Referência)
+  // 3. ESTADO DO CHAT (Conforme Diálogo de Referência e Regras do Super Prompt)
   // --------------------------------------------------------------------------
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -176,7 +194,7 @@ export default function DescritivoView({
       sender: "assistant",
       text: `Claro! Vou te ajudar a gerar o memorial descritivo no padrão técnico.
 
-Para começar, confirme (ou preencha ao lado) os dados principais do imóvel:
+Para começar, confirme (ou preencho ao lado) os dados principais do imóvel:
 • Identificação do imóvel (ex.: Lote, Quadra, Loteamento)
 • Município/UF
 • Área (m²)
@@ -196,7 +214,20 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
     {
       id: "msg-ai-2",
       sender: "assistant",
-      text: "Ótimo! Com os dados informados, gerei o memorial descritivo em PDF no padrão oficial da SEDUC. O arquivo está disponível para visualização e download na área de visualização ao lado.",
+      text: `### FORROS
+Executar instalação de forro em todas as salas de aula da unidade escolar.
+Executar substituição dos trechos de forro danificados ou comprometidos.
+
+### ELÉTRICA
+Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados.
+Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.
+
+### COBERTURA
+Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção das goteiras.
+
+### BANHEIROS
+Executar revisão geral das instalações hidrossanitárias dos banheiros.
+Executar substituição das torneiras danificadas, com adequação dos pontos hidráulicos.`,
       timestamp: "10:27",
     },
   ]);
@@ -266,7 +297,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
 
       recognition.onstart = () => {
         setIsListeningAudio(true);
-        showToast("Escutando... Descreva a obra ou dados do imóvel.");
+        showToast("Escutando... Descreva os serviços ou correções.");
       };
 
       recognition.onresult = (event: any) => {
@@ -294,7 +325,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
     }
   };
 
-  // Envio de Mensagem no Chat
+  // Envio de Mensagem no Chat (Respeitando a Regra de Ouro: Reapresentar Todo o Descritivo Atualizado)
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
     if (!text && !selectedFileName) return;
@@ -321,12 +352,15 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
       let newStages: DescritivoStage[] = [];
 
       if (geminiApiKey) {
+        // Envia para o Gemini orientado pelo SUPER PROMPT
         const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
         aiResponseText = result.textResponse;
         newStages = result.stages;
       } else {
+        // Processa via Motor Sênior Local da Engenharia de Infraestrutura Escolar
         newStages = generateLocalSeniorDescription(text, stages);
-        aiResponseText = `Com base nas informações enviadas, estruturei as especificações técnicas no padrão oficial da engenharia civil institucional:\n\nForam geradas/atualizadas ${newStages.length} etapas técnicas prontas para compor o Memorial Descritivo.\n\nVocê pode conferir a pré-visualização do PDF ao lado ou ajustar qualquer campo do formulário.`;
+        // O Super Prompt exige saída direta sem introduções, no padrão ### TITULO
+        aiResponseText = formatStagesToSpreadsheetText(newStages);
       }
 
       setStages(newStages);
@@ -342,7 +376,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      showToast("Memorial Descritivo atualizado com sucesso!");
+      showToast("Descritivo completo atualizado com sucesso!");
     } catch (err) {
       console.error("Erro ao processar com IA:", err);
       showToast("Erro ao processar demanda com a IA.");
@@ -354,7 +388,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
   // Ação do Botão Principal "Gerar Memorial"
   const handleGerarMemorial = () => {
     setIsProcessingAI(true);
-    showToast("Gerando memorial descritivo no padrão oficial...");
+    showToast("Gerando memorial descritivo conforme diretrizes do Super Prompt...");
 
     setTimeout(() => {
       const generated = generateLocalSeniorDescription(
@@ -369,18 +403,31 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
         minute: "2-digit",
       });
 
+      const fullOutput = formatStagesToSpreadsheetText(generated);
+
       setMessages((prev) => [
         ...prev,
         {
           id: `ai-gen-${Date.now()}`,
           sender: "assistant",
-          text: `Ótimo! Com os dados informados para "${formData.propertyId}" em ${formData.municipio}/${formData.uf}, o memorial descritivo em PDF foi gerado no padrão oficial da SEDUC com sucesso. O documento está pronto para visualização e download ao lado.`,
+          text: fullOutput,
           timestamp: currentTime,
         },
       ]);
 
-      showToast("Memorial Descritivo gerado com sucesso!");
-    }, 600);
+      showToast("Memorial Descritivo gerado no padrão oficial!");
+    }, 500);
+  };
+
+  // Ação de Copiar para Excel (Linha por linha, sem marcadores)
+  const handleCopyForExcel = () => {
+    try {
+      const text = formatStagesToSpreadsheetText(stages);
+      navigator.clipboard.writeText(text);
+      showToast("Descritivo copiado! Pronto para colar diretamente nas células do Excel.");
+    } catch (e) {
+      showToast("Falha ao copiar para a área de transferência.");
+    }
   };
 
   // Ação do Botão "Visualizar PDF"
@@ -411,26 +458,46 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
     }
   };
 
-  // Formatação de linhas com bullet points laranjas nas respostas da IA
+  // Renderização estilizada das mensagens no chat respeitando o padrão ### GRUPO
   const renderMessageContent = (text: string) => {
     const lines = text.split("\n");
     return lines.map((line, idx) => {
       const trimmed = line.trim();
-      if (trimmed.startsWith("•") || trimmed.startsWith("-") || trimmed.startsWith("*")) {
+
+      // Renderiza Títulos de Grupos (### FORROS, ### ELÉTRICA, etc.)
+      if (trimmed.startsWith("###")) {
+        const titleText = trimmed.replace(/^###\s*/, "").toUpperCase();
         return (
-          <div key={idx} className="flex items-start gap-2 my-1 pl-1">
-            <span className="w-2 h-2 rounded-full bg-[#ffaa2c] shrink-0 mt-1.5 shadow-[0_0_6px_rgba(255,170,44,0.6)]" />
-            <span className="text-gray-200 text-xs sm:text-[13px] leading-relaxed">
-              {trimmed.substring(1).trim()}
+          <div key={idx} className="mt-3.5 mb-1.5 first:mt-0">
+            <span className="inline-block px-2 py-0.5 rounded bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 text-[#ffaa2c] font-black text-xs tracking-wider uppercase">
+              {titleText}
             </span>
           </div>
         );
       }
-      return (
-        <p key={idx} className="text-gray-200 text-xs sm:text-[13px] leading-relaxed my-1">
-          {line}
-        </p>
-      );
+
+      // Renderiza marcadores com bolinhas laranjas se houver
+      if (trimmed.startsWith("•") || trimmed.startsWith("-") || trimmed.startsWith("*")) {
+        return (
+          <div key={idx} className="flex items-start gap-2 my-1 pl-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ffaa2c] shrink-0 mt-2 shadow-[0_0_6px_rgba(255,170,44,0.6)]" />
+            <span className="text-gray-200 text-xs sm:text-[13px] leading-relaxed">
+              {trimmed.replace(/^[\s•\-\*]+\s*/, "")}
+            </span>
+          </div>
+        );
+      }
+
+      // Linhas normais de serviços (cada serviço em uma linha independente)
+      if (trimmed.length > 0) {
+        return (
+          <p key={idx} className="text-gray-200 text-xs sm:text-[13px] leading-relaxed my-0.5">
+            {trimmed}
+          </p>
+        );
+      }
+
+      return <div key={idx} className="h-1" />;
     });
   };
 
@@ -497,7 +564,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                   )}
 
                   {/* Bolha de Mensagem */}
-                  <div className={`max-w-[85%] sm:max-w-[80%] flex flex-col ${isUser ? "items-end" : "items-start"}`}>
+                  <div className={`max-w-[88%] sm:max-w-[82%] flex flex-col ${isUser ? "items-end" : "items-start"}`}>
                     {/* Header da Mensagem (Nome + Horário) */}
                     <div className={`flex items-center gap-2 mb-1 text-[11px] text-[#9ca3af] ${isUser ? "flex-row-reverse" : "flex-row"}`}>
                       <span className="font-semibold text-gray-300">
@@ -516,39 +583,53 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                     >
                       {renderMessageContent(msg.text)}
 
-                      {/* Botões de Like / Dislike na resposta da IA */}
+                      {/* Botões de Ação na resposta da IA */}
                       {!isUser && (
-                        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-[#1f2637] text-gray-400">
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-[#1f2637] text-gray-400">
                           <button
                             type="button"
-                            onClick={() =>
-                              setFeedbackState((prev) => ({
-                                ...prev,
-                                [msg.id]: "up",
-                              }))
-                            }
-                            className={`p-1 rounded hover:text-white transition-colors cursor-pointer ${
-                              feedbackState[msg.id] === "up" ? "text-[#ffaa2c]" : ""
-                            }`}
-                            title="Resposta útil"
+                            onClick={() => {
+                              navigator.clipboard.writeText(msg.text.replace(/###\s*/g, ""));
+                              showToast("Texto copiado para a área de transferência!");
+                            }}
+                            className="text-[11px] text-gray-400 hover:text-[#ffaa2c] flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Copiar texto puro para o Excel"
                           >
-                            <ThumbsUp className="w-3.5 h-3.5" />
+                            <Copy className="w-3 h-3" /> Copiar para Excel
                           </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setFeedbackState((prev) => ({
-                                ...prev,
-                                [msg.id]: "down",
-                              }))
-                            }
-                            className={`p-1 rounded hover:text-white transition-colors cursor-pointer ${
-                              feedbackState[msg.id] === "down" ? "text-red-400" : ""
-                            }`}
-                            title="Resposta precisa de ajustes"
-                          >
-                            <ThumbsDown className="w-3.5 h-3.5" />
-                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFeedbackState((prev) => ({
+                                  ...prev,
+                                  [msg.id]: "up",
+                                }))
+                              }
+                              className={`p-1 rounded hover:text-white transition-colors cursor-pointer ${
+                                feedbackState[msg.id] === "up" ? "text-[#ffaa2c]" : ""
+                              }`}
+                              title="Resposta útil"
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFeedbackState((prev) => ({
+                                  ...prev,
+                                  [msg.id]: "down",
+                                }))
+                              }
+                              className={`p-1 rounded hover:text-white transition-colors cursor-pointer ${
+                                feedbackState[msg.id] === "down" ? "text-red-400" : ""
+                              }`}
+                              title="Resposta precisa de ajustes"
+                            >
+                              <ThumbsDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -560,7 +641,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
             {isProcessingAI && (
               <div className="flex items-center gap-3 p-3 rounded-xl bg-[#141924] border border-[#ffaa2c]/30 text-xs text-[#ffaa2c] animate-pulse">
                 <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
-                <span>O Assistente OrçaBase está redigindo o memorial técnico com vocabulário de engenharia...</span>
+                <span>O Assistente OrçaBase está aplicando as diretrizes do Super Prompt de Engenharia...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -618,7 +699,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Digite sua mensagem..."
+                  placeholder="Digite sua mensagem ou descreva os serviços..."
                   className="w-full h-11 bg-[#0a0d14] border border-[#232c3f] rounded-xl px-4 text-xs sm:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#ffaa2c] transition-colors"
                 />
               </div>
@@ -885,11 +966,11 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                       </span>
                     </div>
 
-                    <h4 className="text-center font-bold text-[11px] text-slate-900 tracking-tight mb-2">
+                    <h4 className="text-center font-bold text-[11px] text-slate-900 tracking-tight mb-2 uppercase">
                       MEMORIAL DESCRITIVO
                     </h4>
 
-                    {/* Simulação/Conteúdo de Linhas de Texto */}
+                    {/* Simulação/Conteúdo de Linhas de Texto no Padrão do Super Prompt */}
                     {currentPage === 1 && (
                       <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
                         <div className="bg-slate-100 p-1 rounded border border-slate-200 space-y-0.5 mb-2">
@@ -900,25 +981,29 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                           <p>Área: {formData.areaM2} m² | Perímetro: {formData.perimeterM} m</p>
                           <p>Datum: {formData.datumSystem}</p>
                         </div>
-                        <p className="font-bold text-slate-800 uppercase">1.0 DISPOSIÇÕES GERAIS</p>
+                        <p className="font-bold text-slate-800 uppercase">FORROS</p>
                         <p className="line-clamp-2">
-                          Fixa as diretrizes técnicas e normas executivas para a realização dos serviços em estrita observância às normas técnicas vigentes.
+                          Executar instalação de forro em todas as salas de aula da unidade escolar.
                         </p>
-                        <p className="font-bold text-slate-800 uppercase mt-1">2.0 DESCRIÇÃO PERIMÉTRICA</p>
-                        <p className="line-clamp-3">
-                          Inicia-se no vértice V-01 seguindo com azimute e distâncias perimétricas confrontando com o logradouro e propriedades adjacentes.
+                        <p className="font-bold text-slate-800 uppercase mt-1">ELÉTRICA</p>
+                        <p className="line-clamp-2">
+                          Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação.
+                        </p>
+                        <p className="line-clamp-2">
+                          Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.
                         </p>
                       </div>
                     )}
 
                     {currentPage === 2 && (
                       <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
-                        <p className="font-bold text-slate-800 uppercase">3.0 ESPECIFICAÇÕES DOS SERVIÇOS</p>
+                        <p className="font-bold text-slate-800 uppercase">COBERTURA</p>
                         <p className="line-clamp-3">
-                          3.1 Demolição e recuperação pontual de trechos de calçada, com aplicação de concreto fck ≥ 20 MPa desempenado e lastro de brita.
+                          Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção das goteiras.
                         </p>
+                        <p className="font-bold text-slate-800 uppercase mt-1">BANHEIROS</p>
                         <p className="line-clamp-3">
-                          3.2 Revisão estrutural na cobertura, substituição de telhas danificadas e alinhamento de tramas de sustentação.
+                          Executar revisão geral das instalações hidrossanitárias dos banheiros da unidade escolar.
                         </p>
                       </div>
                     )}
@@ -927,7 +1012,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                       <div className="space-y-2 text-[7px] text-slate-600 leading-tight">
                         <p className="font-bold text-slate-800 uppercase">RECEBIMENTO E CONCLUSÃO</p>
                         <p className="line-clamp-2">
-                          Vistoria conclusiva da equipe técnica para ateste final de conformidade da intervenção predial e topográfica.
+                          Vistoria conclusiva da equipe técnica para ateste final de conformidade da intervenção predial e escolar.
                         </p>
                         <div className="pt-4 flex justify-between gap-2 border-t border-slate-200 mt-4 text-[6px] text-center">
                           <div className="flex-1">
@@ -991,7 +1076,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                   <span>Gerar Memorial</span>
                 </button>
 
-                {/* Linha com Botões Secundários: Visualizar PDF e Baixar PDF */}
+                {/* Linha com Botões: Visualizar PDF, Baixar PDF e Copiar Excel */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <button
                     type="button"
@@ -1012,6 +1097,16 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                   </button>
                 </div>
 
+                {/* Botão Especial: Copiar para Planilha Excel (Super Prompt) */}
+                <button
+                  type="button"
+                  onClick={handleCopyForExcel}
+                  className="w-full py-2.5 px-3 rounded-xl border border-[#2d3952] bg-[#141926] hover:bg-[#1b2336] hover:border-[#ffaa2c]/60 text-xs font-semibold text-gray-200 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <Copy className="w-4 h-4 text-[#ffaa2c]" />
+                  <span>Copiar Descritivo para Planilha Excel (1 item por linha)</span>
+                </button>
+
                 {/* Opção adicional para exportação em Word */}
                 <button
                   type="button"
@@ -1019,7 +1114,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                     generateMemorialWordDoc(metadata, stages);
                     showToast("Download do Memorial (.DOC Word) iniciado!");
                   }}
-                  className="w-full py-2 px-3 rounded-lg border border-[#232b3d] bg-transparent hover:bg-[#141924] text-[11px] text-gray-400 hover:text-gray-200 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full py-1.5 px-3 rounded-lg border border-transparent hover:border-[#232b3d] bg-transparent text-[11px] text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                 >
                   <FileCode className="w-3.5 h-3.5 text-blue-400" />
                   <span>Exportar cópia editável para Microsoft Word (.DOC)</span>
@@ -1053,6 +1148,13 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={handleCopyForExcel}
+                  className="px-3 py-1.5 rounded-lg border border-[#2d3952] bg-[#141926] text-xs font-semibold text-gray-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Copy className="w-3.5 h-3.5 text-[#ffaa2c]" /> Copiar Excel
+                </button>
+                <button
+                  type="button"
                   onClick={handleBaixarPDF}
                   className="px-3.5 py-1.5 rounded-lg bg-[#ff861c] text-black font-bold text-xs flex items-center gap-1.5 hover:bg-[#ff981f] transition-all cursor-pointer"
                 >
@@ -1076,10 +1178,10 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                   <p className="font-extrabold text-[13px] text-slate-900 uppercase">
                     GOVERNO DO ESTADO — SECRETARIA DA EDUCAÇÃO
                   </p>
-                  <p className="text-[11px] font-bold text-[#e65c00]">
-                    SUPERINTENDÊNCIA DE ENGENHARIA E INFRAESTRUTURA / GPR
+                  <p className="text-[11px] font-bold text-[#e65c00] uppercase">
+                    SUPERINTENDÊNCIA DE ENGENHARIA E INFRAESTRUTURA ESCOLAR / GPR
                   </p>
-                  <div className="mt-3 py-1.5 px-4 bg-slate-900 text-[#ffaa2c] font-black text-sm rounded">
+                  <div className="mt-3 py-1.5 px-4 bg-slate-900 text-[#ffaa2c] font-black text-sm rounded uppercase">
                     MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS
                   </div>
                 </div>
@@ -1087,7 +1189,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                 {/* Quadro de Identificação */}
                 <div className="p-3 bg-slate-100 rounded border border-slate-200 grid grid-cols-2 gap-2 text-[10px]">
                   <div>
-                    <span className="font-bold text-slate-700">IDENTIFICAÇÃO / IMÓVEL: </span>
+                    <span className="font-bold text-slate-700">UNIDADE ESCOLAR / IMÓVEL: </span>
                     <span className="text-slate-900">{formData.propertyId}</span>
                   </div>
                   <div>
@@ -1108,18 +1210,17 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                   </div>
                 </div>
 
-                {/* Etapas e Itens */}
+                {/* Etapas e Itens Técnicos (Padrão Oficial: Título em CAIXA ALTA sem numeração, cada serviço em uma linha) */}
                 <div className="space-y-5">
                   {stages.map((stg) => (
                     <div key={stg.id} className="space-y-2">
-                      <div className="bg-slate-200 px-3 py-1 font-bold text-slate-900 border-l-4 border-[#ffaa2c] text-xs">
-                        {stg.stageCode} — {stg.title}
+                      <div className="bg-slate-200 px-3 py-1 font-bold text-slate-900 border-l-4 border-[#ffaa2c] text-xs uppercase">
+                        {stg.title.toUpperCase()}
                       </div>
-                      <div className="space-y-2 pl-2">
+                      <div className="space-y-1.5 pl-2">
                         {stg.items.map((it) => (
-                          <div key={it.id} className="text-justify text-slate-700">
-                            <span className="font-bold text-slate-900">{it.itemNumber} </span>
-                            <span>{it.description}</span>
+                          <div key={it.id} className="text-slate-800 text-[11px] leading-relaxed">
+                            {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
                           </div>
                         ))}
                       </div>
@@ -1167,7 +1268,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
             </div>
 
             <p className="text-xs text-gray-300 mb-4 leading-relaxed">
-              O <strong>Assistente OrçaBase.lab</strong> utiliza por padrão o <strong>Motor Sênior Local</strong> institucional. Caso queira ativar modelos generativos como Gemini 1.5 Flash ou Gemini 2.5, insira sua chave da API abaixo:
+              O <strong>Assistente OrçaBase.lab</strong> opera nativamente com o <strong>SUPER PROMPT</strong> de infraestrutura escolar no motor local. Caso queira ativar chamadas online com Gemini 1.5 Flash / Gemini 2.5, insira sua chave da API abaixo:
             </p>
 
             <div className="space-y-3 mb-5">
@@ -1193,7 +1294,7 @@ Você pode me enviar os documentos (planta, matrícula, etc.) aqui no chat ou in
                   setGeminiApiKey("");
                   localStorage.removeItem("orcabase_gemini_api_key");
                   setShowApiKeyModal(false);
-                  showToast("Motor Sênior Local reativado.");
+                  showToast("Motor Sênior Local com Super Prompt reativado.");
                 }}
                 className="px-4 py-2 rounded-xl border border-[#2d3952] text-xs text-gray-300 hover:text-white cursor-pointer"
               >

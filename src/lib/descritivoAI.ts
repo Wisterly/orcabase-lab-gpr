@@ -1,42 +1,41 @@
 // ============================================================================
-// MEMORIAL DESCRITIVO INTELIGENTE — MOTOR DE IA DE ENGENHARIA CIVIL SÊNIOR
-// Processamento de linguagem natural (texto e voz), estruturação técnica ABNT/SINAPI
-// e geração de Memorial Descritivo oficial em PDF e Word (.doc).
+// MEMORIAL DESCRITIVO INTELIGENTE — SUPER MOTOR DE IA DE INFRAESTRUTURA ESCOLAR
+// Implementação do SUPER PROMPT oficial para elaboração de Memoriais Descritivos
+// com padronização técnica, prioridade de ELÉTRICA e saída pronta para Excel.
 // ============================================================================
 
 import jsPDF from "jspdf";
 
 export interface DescritivoItem {
   id: string;
-  itemNumber: string; // Ex: "1.1", "1.2"
-  description: string; // Redação técnica concisa
+  itemNumber: string; // Ex: "1.1" ou apenas identificador interno
+  description: string; // Redação técnica padronizada iniciando com "Executar" ou "Fornecer e instalar"
   observations?: string;
 }
 
 export interface DescritivoStage {
   id: string;
-  stageCode: string; // Ex: "1.0", "2.0"
-  title: string; // Ex: "COBERTURA E ESTRUTURA DE TELHADO"
+  stageCode: string; // Código de ordenação interna
+  title: string; // Ex: "FORROS", "PINTURA GERAL", "ELÉTRICA" (Sem numeração, SEMPRE em CAIXA ALTA)
   items: DescritivoItem[];
 }
 
 export interface MemorialMetadata {
-  projectName: string; // Ex: "12ª GRE - CETI DEP. FRANCISCO ANTONIO PAES LANDIM NETO"
-  schoolName: string; // Ex: "CETI FADE III"
-  city: string; // Ex: "São João do Piauí - PI"
-  gre: string; // Ex: "12ª GRE"
-  organization: string; // Ex: "Secretaria de Estado da Educação - SEDUC / GPR"
-  objectDescription: string; // Ex: "Reforma, Manutenção Predial e Adequação Geral"
-  engineerName: string; // Ex: "Eng. Responsável Técnico"
-  creaNumber: string; // Ex: "CREA-PI nº 12345/D"
-  dateStr: string; // Ex: "08/11/2026"
-  // Campos Imobiliários e Topográficos Oficiais (conforme referência)
-  propertyId?: string; // Ex: "Lote 05 – Quadra B"
-  uf?: string; // Ex: "SC" ou "PI"
-  areaM2?: string; // Ex: "525,00"
-  perimeterM?: string; // Ex: "96,40"
-  datumSystem?: string; // Ex: "SIRGAS2000"
-  purpose?: string; // Ex: "Desmembramento" ou "Reforma Predial"
+  projectName: string;
+  schoolName: string;
+  city: string;
+  gre: string;
+  organization: string;
+  objectDescription: string;
+  engineerName: string;
+  creaNumber: string;
+  dateStr: string;
+  propertyId?: string;
+  uf?: string;
+  areaM2?: string;
+  perimeterM?: string;
+  datumSystem?: string;
+  purpose?: string;
 }
 
 export interface ChatMessage {
@@ -49,7 +48,78 @@ export interface ChatMessage {
 }
 
 // ----------------------------------------------------------------------------
-// Ontologia da Engenharia Civil para Reconhecimento e Redação Técnica Local
+// SUPER PROMPT MESTRE — DIRETRIZES DA ENGENHARIA DE INFRAESTRUTURA ESCOLAR
+// ----------------------------------------------------------------------------
+export const SUPER_PROMPT_MEMORIAL = `
+# SUPER PROMPT — ASSISTENTE INTELIGENTE PARA ELABORAÇÃO DE MEMORIAIS DESCRITIVOS DE SERVIÇOS DE INFRAESTRUTURA ESCOLAR
+
+## 1. IDENTIDADE E FUNÇÃO DO ASSISTENTE
+Você é um assistente especializado em interpretação de demandas, organização de serviços de engenharia, manutenção, reforma e adequação de unidades escolares, com foco na elaboração de memoriais descritivos para orçamentos de obras e serviços de infraestrutura escolar.
+Sua função é transformar uma descrição informal em um texto técnico, claro, objetivo, coerente e adequado para utilização em orçamentos de obras escolares.
+PRIORIDADE: CLAREZA + OBJETIVIDADE + PADRONIZAÇÃO.
+
+## 2. PADRÃO OBRIGATÓRIO DE FORMATAÇÃO (REGRAS ABSOLUTAS)
+1. TÍTULOS DOS GRUPOS/ITENS:
+   - Estar SEMPRE em CAIXA ALTA (Ex: FORROS, PINTURA GERAL, BANHEIROS, COZINHA, ELÉTRICA, COBERTURA, ESQUADRIAS E FERRAGENS, LABORATÓRIO DE INFORMÁTICA, ÁREAS EXTERNAS, ESTACIONAMENTO, AUDITÓRIO, DORMITÓRIOS, LIMPEZA PÓS-OBRA, SERVIÇOS GERAIS).
+   - NÃO possuir numeração inicial (NUNCA usar "1. FORROS", "1.0 PINTURA GERAL", "ITEM 01 - BANHEIROS").
+   - Apresentar somente o nome do ambiente, serviço ou especialidade. Curtos e objetivos.
+
+2. REGRA ESPECIAL E OBRIGATÓRIA PARA ELÉTRICA (PRIORIDADE MÁXIMA):
+   - O título do grupo DEVE ser EXATAMENTE: ELÉTRICA.
+   - NUNCA utilizar "INSTALAÇÕES ELÉTRICAS", "ILUMINAÇÃO", "SISTEMA ELÉTRICO" ou variações.
+   - TODOS os serviços elétricos (incluindo iluminação, luminárias, luminárias slim, tomadas, interruptores, quadros de distribuição, disjuntores, chuveiros elétricos, alimentação de bombas) DEVEM ser agrupados no item ELÉTRICA, mesmo que relacionados a ambientes diferentes.
+   - Quando o usuário especificar que luminárias slim serão instaladas em ambientes com forro novo, preserve essa informação exata na redação dentro de ELÉTRICA.
+
+3. DESCRIÇÃO DOS SERVIÇOS:
+   - Cada serviço DEVE ser apresentado em uma linha independente.
+   - NÃO utilizar marcadores, bolinhas, traços (-) ou numeração de serviços no início da linha.
+   - NÃO inserir linhas em branco entre os serviços do mesmo grupo.
+   - O objetivo é permitir que o usuário copie o conteúdo diretamente para células do Excel, mantendo cada serviço em uma linha.
+
+4. PADRÃO DE REDAÇÃO DOS SERVIÇOS:
+   - Inicie a descrição preferencialmente com "Executar...".
+   - Quando o serviço envolver aquisição e instalação de materiais/equipamentos, utilize "Fornecer e instalar...".
+   - Não inventar especificações não fornecidas pelo usuário (não inventar dimensões, espessuras, marcas, modelos, capacidades como 10.000L).
+   - Sem procedimento executivo excessivamente longo. Redação objetiva e técnica.
+
+5. TRATAMENTO DE ALTERAÇÕES E COMPLEMENTAÇÕES (REGRA ABSOLUTA):
+   - TODA ALTERAÇÃO OU COMPLEMENTAÇÃO DEVE GERAR A REAPRESENTAÇÃO DO DESCRITIVO COMPLETO E ATUALIZADO.
+   - Nunca responda somente com o trecho alterado. Preserve todo o histórico acumulado do orçamento atual.
+
+6. PADRÃO DE SAÍDA:
+   - A resposta deve apresentar DIRETAMENTE o descritivo no formato:
+### NOME DO GRUPO EM CAIXA ALTA
+Executar descrição técnica do primeiro serviço na linha.
+Executar descrição técnica do segundo serviço na linha.
+
+### OUTRO GRUPO
+Executar descrição do serviço...
+
+- NÃO colocar introduções ("Segue abaixo o memorial...", "Conforme solicitado...").
+- No final da sua resposta, inclua OBRIGATORIAMENTE um bloco JSON delimitado por \`\`\`json contendo a lista estruturada das etapas e itens:
+\`\`\`json
+{
+  "stages": [
+    {
+      "title": "FORROS",
+      "items": [
+        { "description": "Executar instalação de forro em todas as salas de aula da unidade escolar." }
+      ]
+    },
+    {
+      "title": "ELÉTRICA",
+      "items": [
+        { "description": "Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados." },
+        { "description": "Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro." }
+      ]
+    }
+  ]
+}
+\`\`\`
+`;
+
+// ----------------------------------------------------------------------------
+// Ontologia da Engenharia de Infraestrutura Escolar (Classificação Local)
 // ----------------------------------------------------------------------------
 interface KnowledgeDiscipline {
   keywords: string[];
@@ -57,215 +127,277 @@ interface KnowledgeDiscipline {
   defaultItemsGenerator: (input: string) => string[];
 }
 
-const CIVIL_ONTOLOGY: KnowledgeDiscipline[] = [
+export const CIVIL_ONTOLOGY: KnowledgeDiscipline[] = [
   {
-    keywords: ["calçada", "calcada", "passeio", "acesso", "piso externo", "rampa", "acessibilidade", "concreto desempenado"],
-    stageTitle: "PAVIMENTAÇÃO, CALÇADAS E ACESSIBILIDADE",
+    keywords: ["forro", "pvc", "gesso", "desplacamento", "forros"],
+    stageTitle: "FORROS",
     defaultItemsGenerator: (text) => {
       const items: string[] = [];
-      items.push("Execução de nova calçada perimetral de proteção em concreto simples desempenado e sarrafeado, fck ≥ 20 MPa, espessura e=7cm, sobre lastro de brita compactado.");
-      if (text.includes("recupera") || text.includes("danific") || text.includes("rachad") || text.includes("fissur") || text.includes("conserto")) {
-        items.push("Demolição e recuperação pontual de trechos de calçadas existentes fissuradas ou desniveladas, visando garantir a estanqueidade junto aos alicerces do edifício.");
+      items.push("Executar instalação de forro em todas as salas de aula da unidade escolar.");
+      if (text.includes("troca") || text.includes("substitu") || text.includes("danific") || text.includes("caído")) {
+        items.push("Executar substituição dos trechos de forro danificados ou comprometidos por novos forros.");
       }
-      if (text.includes("rampa") || text.includes("acessib") || text.includes("tátil")) {
-        items.push("Adequação de rampas de acessibilidade conforme NBR 9050, com instalação de piso tátil direcional e de alerta em placas pré-moldadas.");
+      if (text.includes("revis") || text.includes("fixa")) {
+        items.push("Executar revisão e fixação dos forros existentes nos demais ambientes.");
+      }
+      return items;
+    },
+  },
+  {
+    keywords: ["pintura", "pintar", "tinta", "parede", "sala", "muro", "fachada", "látex", "acrílica", "selador"],
+    stageTitle: "PINTURA GERAL",
+    defaultItemsGenerator: (text) => {
+      const items: string[] = [];
+      items.push("Executar pintura geral da unidade escolar, contemplando as áreas internas e externas, incluindo paredes, muro e fachada.");
+      if (text.includes("esquadria") || text.includes("grade") || text.includes("portão") || text.includes("porta")) {
+        items.push("Executar pintura em esmalte sintético sobre esquadrias metálicas e portas de madeira.");
+      }
+      return items;
+    },
+  },
+  {
+    keywords: ["vaso", "torneira", "tubo", "hidráulica", "hidraulica", "esgoto", "sanitário", "banheiro", "desentup", "desobstru"],
+    stageTitle: "BANHEIROS",
+    defaultItemsGenerator: (text) => {
+      const items: string[] = [];
+      items.push("Executar revisão geral das instalações hidrossanitárias dos banheiros da unidade escolar.");
+      if (text.includes("torneira") || text.includes("troca") || text.includes("vazamento")) {
+        items.push("Executar substituição das torneiras danificadas, com adequação dos pontos hidráulicos.");
+      }
+      if (text.includes("vaso") || text.includes("desentup") || text.includes("desobstru")) {
+        items.push("Executar desobstrução e revisão das bacias sanitárias dos banheiros.");
+      }
+      return items;
+    },
+  },
+  {
+    keywords: ["gás", "gas", "exaustor", "cozinha", "bancada", "refeitório", "refeitorio", "fogão"],
+    stageTitle: "COZINHA",
+    defaultItemsGenerator: (text) => {
+      const items: string[] = [];
+      if (text.includes("gás") || text.includes("gas") || text.includes("abrigo")) {
+        items.push("Executar construção de casa de gás na área externa da cozinha, incluindo adequação do espaço para acomodação dos recipientes.");
+      }
+      if (text.includes("exaust") || text.includes("coifa") || text.includes("ventila")) {
+        items.push("Executar instalação de exaustores na cozinha, incluindo as adequações necessárias ao funcionamento.");
+      }
+      if (text.includes("bancada") || text.includes("pia") || text.includes("revest")) {
+        items.push("Executar adequações nas bancadas e pias da cozinha, com aplicação de revestimento cerâmico lavável.");
+      }
+      if (items.length === 0) {
+        items.push("Executar adequações físicas gerais na cozinha da unidade escolar.");
+      }
+      return items;
+    },
+  },
+  {
+    keywords: [
+      "elétrica", "eletrica", "luz", "lâmpada", "lampada", "led", "fio", "cabo",
+      "tomada", "interruptor", "disjuntor", "quadro", "qdc", "slim", "iluminação",
+      "iluminacao", "luminária", "luminaria", "chuveiro"
+    ],
+    stageTitle: "ELÉTRICA",
+    defaultItemsGenerator: (text) => {
+      const items: string[] = [];
+      items.push("Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados.");
+      if (text.includes("slim") || text.includes("forro") || text.includes("luminár") || text.includes("luminar") || text.includes("painel")) {
+        items.push("Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.");
+      }
+      if (text.includes("quadro") || text.includes("disjuntor") || text.includes("proteção") || text.includes("qdc")) {
+        items.push("Executar adequação dos quadros de distribuição de circuitos, com instalação de proteções adequadas e balanceamento de cargas.");
+      }
+      if (text.includes("chuveiro") || text.includes("banho")) {
+        items.push("Executar adequação de circuito elétrico e instalação elétrica para chuveiros.");
       }
       return items;
     },
   },
   {
     keywords: ["telhado", "cobertura", "telha", "goteira", "infiltra", "ripa", "caibro", "terça", "madeira", "calha", "rufo", "retelhamento"],
-    stageTitle: "COBERTURA, ESTRUTURA E RETELHAMENTO",
+    stageTitle: "COBERTURA",
     defaultItemsGenerator: (text) => {
       const items: string[] = [];
-      items.push("Revisão minuciosa em toda a estrutura de cobertura existente, incluindo alinhamento, reaperto de tirantes e substituição de peças de madeira danificadas (terças, caibros e ripas) por cupins ou umidade.");
-      items.push("Execução de retelhamento geral com substituição de telhas cerâmicas/fibrocimento quebradas ou trincadas, com vedação estanque para eliminação total de goteiras e infiltrações.");
-      if (text.includes("calha") || text.includes("rufo") || text.includes("pluvia") || text.includes("infiltra")) {
-        items.push("Instalação e recuperação de rufos e calhas em chapa galvanizada nº 24 com caimento adequado e bocais de descida interligados à rede pluvial.");
+      items.push("Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção dos pontos de infiltração e goteiras.");
+      if (text.includes("madeira") || text.includes("estrutura") || text.includes("terça") || text.includes("caibro")) {
+        items.push("Executar revisão da estrutura da cobertura, com recuperação dos trechos comprometidos.");
+      }
+      if (text.includes("calha") || text.includes("rufo") || text.includes("pluvial")) {
+        items.push("Executar revisão e substituição de calhas e rufos metálicos com bocal de descida.");
       }
       return items;
     },
   },
   {
-    keywords: ["pintura", "pintar", "tinta", "parede", "sala", "muro", "fachada", "látex", "acrílica", "selador", "massa"],
-    stageTitle: "PINTURA E ACABAMENTOS DE PAREDES E TETO",
+    keywords: ["porta", "janela", "vidro", "fechadura", "esquadria", "grade", "trinco", "ferragens", "dobradiça"],
+    stageTitle: "ESQUADRIAS E FERRAGENS",
+    defaultItemsGenerator: () => [
+      "Executar revisão das portas e esquadrias de toda a unidade escolar, incluindo trincos e fechaduras, com reparo ou substituição dos componentes danificados.",
+      "Executar substituição de vidros quebrados ou danificados nas janelas das salas de aula.",
+    ],
+  },
+  {
+    keywords: ["informática", "informatica", "computador", "laboratório", "laboratorio", "rede", "lógica", "logica"],
+    stageTitle: "LABORATÓRIO DE INFORMÁTICA",
+    defaultItemsGenerator: () => [
+      "Executar adaptação de sala de aula para implantação de laboratório de informática.",
+      "Executar construção e instalação de bancadas, incluindo revestimento das superfícies.",
+      "Executar instalação de cabeamento de lógica e pontos de rede para atendimento aos equipamentos do laboratório.",
+    ],
+  },
+  {
+    keywords: ["calçada", "calcada", "acesso", "rampa", "drenagem", "sarjeta", "canaleta", "passagem", "externa"],
+    stageTitle: "ÁREAS EXTERNAS",
     defaultItemsGenerator: (text) => {
       const items: string[] = [];
-      items.push("Lixamento, raspagem de partes soltas, aplicação de fundo selador acrílico e emassamento pontual para correção de imperfeições nas paredes internas e externas.");
-      items.push("Aplicação de pintura em tinta látex acrílica fosca premium de alta durabilidade, lavável, em duas a três demãos sobre paredes internas de salas de aula e circulações.");
-      if (text.includes("fachada") || text.includes("extern") || text.includes("muro")) {
-        items.push("Pintura em tinta acrílica emborrachada impermeabilizante para fachadas e muros externos, resistente a intempéries e raios UV.");
-      }
-      if (text.includes("porta") || text.includes("grade") || text.includes("portão") || text.includes("ferro")) {
-        items.push("Aplicação de pintura em esmalte sintético acetinado sobre esquadrias metálicas e portas de madeira, precedido de fundo anticorrosivo zarcão.");
+      items.push("Executar recuperação e construção de novas calçadas de proteção perimetral na unidade escolar.");
+      if (text.includes("drenag") || text.includes("sarjeta") || text.includes("canaleta") || text.includes("grade")) {
+        items.push("Executar construção de sistema de drenagem pluvial com instalação de grade metálica para proteção e passagem de pedestres.");
       }
       return items;
     },
   },
   {
-    keywords: ["caixa", "água", "agua", "reservatório", "reservatorio", "tubo", "bomba", "hidráulica", "hidraulica", "esgoto", "torneira", "sanitário", "banheiro"],
-    stageTitle: "INSTALAÇÕES HIDROSSANITÁRIAS E RESERVAÇÃO",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      if (text.includes("caixa") || text.includes("reservat")) {
-        items.push("Fornecimento e instalação de novo reservatório d'água cilíndrico em polietileno com tampa de encaixe rápido, capacidade nominal adequada, sobre base de apoio nivelada.");
-        items.push("Reestruturação completa do barrilete de distribuição, ramais de extravasor (ladrão) e limpeza em tubos de PVC soldável com registros de gaveta brutos.");
-      }
-      if (text.includes("banheiro") || text.includes("sanit") || text.includes("torneira") || text.includes("esgoto")) {
-        items.push("Revisão de instalações sanitárias com desobstrução e substituição de sifões, torneiras de pressão temporizadas antivandalismo e reparos em válvulas de descarga.");
-      }
-      return items;
-    },
+    keywords: ["estacionamento", "moto", "carro", "veículo", "veiculo", "brita", "garagem"],
+    stageTitle: "ESTACIONAMENTO",
+    defaultItemsGenerator: () => [
+      "Executar adequação do estacionamento com nivelamento, regularização e aplicação de colchão de brita.",
+      "Executar revisão e pintura da estrutura e portões de acesso do estacionamento.",
+    ],
   },
   {
-    keywords: ["elétrica", "eletrica", "luz", "lâmpada", "lampada", "led", "fio", "cabo", "tomada", "interruptor", "disjuntor", "quadro"],
-    stageTitle: "INSTALAÇÕES ELÉTRICAS E ILUMINAÇÃO",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Revisão e readequação do Quadro de Distribuição de Circuitos (QDC), com identificação de barramentos, balanceamento de fases e instalação de disjuntores termomagnéticos padrão DIN com proteção DR.");
-      items.push("Substituição de luminárias fluorescentes antigas por painéis/luminárias de LED de alta eficiência energética (sobrepor/embutir) e substituição de interruptores e tomadas 2P+T padrão NBR 14136.");
-      return items;
-    },
+    keywords: ["auditório", "auditorio", "palco"],
+    stageTitle: "AUDITÓRIO",
+    defaultItemsGenerator: () => [
+      "Executar adequações no auditório, incluindo rampas de acesso e revisão das esquadrias.",
+    ],
   },
   {
-    keywords: ["porta", "janela", "vidro", "fechadura", "esquadria", "grade", "basculante", "compensado"],
-    stageTitle: "ESQUADRIAS DE MADEIRA E METÁLICAS",
-    defaultItemsGenerator: () => {
-      return [
-        "Revisão de esquadrias com substituição de portas em madeira compensada lisa semi-oca, incluindo jogos de aduelas, alizares e ferragens completas (dobradiças de aço e fechadura de embutir cilíndrica com maçaneta tipo alavanca).",
-        "Recuperação de janelas metálicas e básculas, com lubrificação de eixos articulados e substituição de vidros lisos transparentes ou canelados quebrados e colocação de baguetes.",
-      ];
-    },
+    keywords: ["dormitório", "dormitorio", "alojamento", "rede", "armador"],
+    stageTitle: "DORMITÓRIOS",
+    defaultItemsGenerator: () => [
+      "Executar instalação de armadores de rede reforçados nas paredes dos dormitórios.",
+      "Executar revisão geral hidrossanitária dos banheiros dos dormitórios.",
+    ],
   },
   {
-    keywords: ["piso", "cerâmica", "ceramica", "revestimento", "azulejo", "rejunte", "porcelanato"],
-    stageTitle: "PISOS E REVESTIMENTOS CERÂMICOS",
-    defaultItemsGenerator: () => {
-      return [
-        "Execução de contrapiso regularizado em argamassa traço 1:3, com espessura média e=3cm sobre base limpa e despolvilhada.",
-        "Assentamento de piso cerâmico esmaltado de tráfego intenso (PEI 5) com argamassa colante AC-II e rejuntamento cimentício resinado antifúngico.",
-      ];
-    },
+    keywords: ["limpeza", "entulho", "bota-fora", "resíduo", "residuos", "pós-obra", "pos-obra"],
+    stageTitle: "LIMPEZA PÓS-OBRA",
+    defaultItemsGenerator: () => [
+      "Executar limpeza geral da obra, incluindo remoção e retirada de todo o entulho gerado pelos serviços.",
+    ],
   },
   {
-    keywords: ["limpeza", "entulho", "bota-fora", "placa", "demolição", "demolicao", "final"],
-    stageTitle: "SERVIÇOS PRELIMINARES E LIMPEZA FINAL",
-    defaultItemsGenerator: () => {
-      return [
-        "Fornecimento e instalação de placa de identificação da obra em chapa de aço galvanizado estruturada em madeira, conforme padrão institucional.",
-        "Remoção contínua de entulhos decorrentes das intervenções com bota-fora em aterro sanitário ou área de descarte licenciada pelo município.",
-        "Limpeza geral e fina de toda a área interna e externa após a conclusão das obras, entregando a edificação em plenas condições higiênicas de uso.",
-      ];
-    },
+    keywords: ["geral", "diversos", "serviços gerais"],
+    stageTitle: "SERVIÇOS GERAIS",
+    defaultItemsGenerator: () => [
+      "Executar serviços gerais de manutenção predial conforme alinhamento com a fiscalização.",
+    ],
   },
 ];
 
 // ----------------------------------------------------------------------------
-// Processador de IA Local (Engenharia Civil Sênior)
+// Processador de IA Local (Engenharia Civil de Infraestrutura Escolar)
 // ----------------------------------------------------------------------------
-export function generateLocalSeniorDescription(userInput: string, existingStages: DescritivoStage[] = []): DescritivoStage[] {
+export function generateLocalSeniorDescription(
+  userInput: string,
+  existingStages: DescritivoStage[] = []
+): DescritivoStage[] {
   const normalized = userInput.toLowerCase();
-  const stages: DescritivoStage[] = [];
+  const stagesMap = new Map<string, DescritivoStage>();
 
-  // Sempre inicia com Serviços Preliminares se não existir
-  let stageCounter = existingStages.length + 1;
-  const hasPrelim = existingStages.some((s) => s.title.includes("PRELIMINAR"));
-
-  if (!hasPrelim && (normalized.includes("placa") || normalized.includes("limpeza") || normalized.includes("início") || existingStages.length === 0)) {
-    stages.push({
-      id: `stg-${Date.now()}-0`,
-      stageCode: `${stageCounter}.0`,
-      title: "SERVIÇOS PRELIMINARES E MOBILIZAÇÃO",
-      items: [
-        {
-          id: `it-${Date.now()}-0-1`,
-          itemNumber: `${stageCounter}.1`,
-          description: "Mobilização de equipe técnica, ferramentas e equipamentos de proteção individual (EPI) necessários para a execução dos serviços em conformidade com as normas regulamentadoras (NR-18 e NR-35).",
-        },
-        {
-          id: `it-${Date.now()}-0-2`,
-          itemNumber: `${stageCounter}.2`,
-          description: "Fornecimento e afixação de placa de obra indicativa em chapa galvanizada e estrutura de madeira conforme padronização do órgão contratante.",
-        },
-      ],
+  // 1. Carrega as etapas existentes preservando o contexto do orçamento atual
+  existingStages.forEach((stg) => {
+    stagesMap.set(stg.title.toUpperCase(), {
+      id: stg.id,
+      stageCode: stg.stageCode,
+      title: stg.title.toUpperCase(),
+      items: [...stg.items],
     });
-    stageCounter++;
+  });
+
+  // 2. Trata comandos explícitos de remoção
+  if (normalized.includes("tire") || normalized.includes("remova") || normalized.includes("exclua")) {
+    if (normalized.includes("elétrica") || normalized.includes("eletrica")) stagesMap.delete("ELÉTRICA");
+    if (normalized.includes("pintura")) stagesMap.delete("PINTURA GERAL");
+    if (normalized.includes("forro")) stagesMap.delete("FORROS");
+    if (normalized.includes("cobertura") || normalized.includes("telhado")) stagesMap.delete("COBERTURA");
+    if (normalized.includes("banheiro")) stagesMap.delete("BANHEIROS");
+    if (normalized.includes("cozinha")) stagesMap.delete("COZINHA");
   }
 
-  // Percorre as disciplinas da ontologia civil
+  // 3. Identifica as disciplinas demandadas
   CIVIL_ONTOLOGY.forEach((discipline) => {
-    const matched = discipline.keywords.some((k) => normalized.includes(k));
-    if (matched) {
-      // Verifica se já existe um stage com título similar
-      const alreadyExists = existingStages.some((s) => s.title.toUpperCase().includes(discipline.stageTitle.split(" ")[0]));
-      if (!alreadyExists) {
-        const itemTexts = discipline.defaultItemsGenerator(normalized);
-        const stageItems: DescritivoItem[] = itemTexts.map((text, idx) => ({
-          id: `it-${Date.now()}-${stageCounter}-${idx + 1}`,
-          itemNumber: `${stageCounter}.${idx + 1}`,
-          description: text,
-        }));
+    const hasMatch = discipline.keywords.some((kw) => normalized.includes(kw));
+    if (hasMatch) {
+      const generatedItems = discipline.defaultItemsGenerator(normalized);
+      const stageTitle = discipline.stageTitle.toUpperCase();
 
-        stages.push({
-          id: `stg-${Date.now()}-${stageCounter}`,
-          stageCode: `${stageCounter}.0`,
-          title: discipline.stageTitle,
-          items: stageItems,
+      if (stagesMap.has(stageTitle)) {
+        // Se já existe, adiciona novos itens evitando repetições exatas
+        const existing = stagesMap.get(stageTitle)!;
+        generatedItems.forEach((newItemText) => {
+          const isDuplicate = existing.items.some((it) => it.description.toLowerCase().trim() === newItemText.toLowerCase().trim());
+          if (!isDuplicate) {
+            existing.items.push({
+              id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              itemNumber: `${existing.items.length + 1}`,
+              description: newItemText,
+            });
+          }
         });
-        stageCounter++;
+      } else {
+        // Cria nova etapa sem numeração no título
+        stagesMap.set(stageTitle, {
+          id: `stg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+          stageCode: `${stagesMap.size + 1}`,
+          title: stageTitle,
+          items: generatedItems.map((text, idx) => ({
+            id: `it-${Date.now()}-${idx}`,
+            itemNumber: `${idx + 1}`,
+            description: text,
+          })),
+        });
       }
     }
   });
 
-  // Se nenhuma disciplina bateu com as palavras-chave, gera uma especificação customizada inteligente
-  if (stages.length === 0) {
-    stages.push({
-      id: `stg-${Date.now()}-${stageCounter}`,
-      stageCode: `${stageCounter}.0`,
-      title: "SERVIÇOS DE MANUTENÇÃO E RECUPERAÇÃO GERAL",
+  // Se nenhum serviço específico for detectado, adiciona ao menos SERVIÇOS GERAIS
+  if (stagesMap.size === 0) {
+    stagesMap.set("SERVIÇOS GERAIS", {
+      id: `stg-default-${Date.now()}`,
+      stageCode: "1",
+      title: "SERVIÇOS GERAIS",
       items: [
         {
-          id: `it-${Date.now()}-${stageCounter}-1`,
-          itemNumber: `${stageCounter}.1`,
-          description: `Execução de intervenções civis especializadas conforme demanda informada: "${userInput.trim()}". Os serviços serão realizados com materiais de primeira qualidade e mão de obra qualificada.`,
-        },
-        {
-          id: `it-${Date.now()}-${stageCounter}-2`,
-          itemNumber: `${stageCounter}.2`,
-          description: "Inspeção e liberação técnica pelo engenheiro fiscal antes do fechamento das etapas construtivas.",
-        },
-      ],
-    });
-    stageCounter++;
-  }
-
-  // Adiciona a etapa final de Limpeza Final se for obra nova e não tiver
-  const hasCleaning = existingStages.some((s) => s.title.includes("LIMPEZA FINAL"));
-  if (!hasCleaning && stages.length > 0) {
-    stages.push({
-      id: `stg-${Date.now()}-${stageCounter}`,
-      stageCode: `${stageCounter}.0`,
-      title: "SERVIÇOS COMPLEMENTARES E LIMPEZA FINAL",
-      items: [
-        {
-          id: `it-${Date.now()}-${stageCounter}-1`,
-          itemNumber: `${stageCounter}.1`,
-          description: "Remoção e transporte de todos os resíduos sólidos e entulhos gerados durante a execução dos serviços para bota-fora autorizado.",
-        },
-        {
-          id: `it-${Date.now()}-${stageCounter}-2`,
-          itemNumber: `${stageCounter}.2`,
-          description: "Limpeza geral minuciosa de vidros, pisos, louças e áreas externas, entregando o imóvel completamente desimpedido e pronto para uso.",
+          id: `it-def-1`,
+          itemNumber: "1",
+          description: "Executar serviços especializados de manutenção e adequação predial na unidade escolar.",
         },
       ],
     });
   }
 
-  return stages;
+  return Array.from(stagesMap.values());
 }
 
 // ----------------------------------------------------------------------------
-// Chamada ao Google Gemini API (Quando o usuário fornecer chave ou via servidor)
+// Formata as etapas em texto limpo para visualização direta e cópia no Excel
+// ----------------------------------------------------------------------------
+export function formatStagesToSpreadsheetText(stages: DescritivoStage[]): string {
+  const blocks: string[] = [];
+  stages.forEach((stg) => {
+    const lines: string[] = [`### ${stg.title.toUpperCase()}`];
+    stg.items.forEach((it) => {
+      // Cada serviço em uma linha, sem marcadores, sem bolinhas e sem traços
+      lines.push(it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim());
+    });
+    blocks.push(lines.join("\n"));
+  });
+  return blocks.join("\n\n");
+}
+
+// ----------------------------------------------------------------------------
+// Chamada ao Google Gemini API (Orientada pelo SUPER PROMPT)
 // ----------------------------------------------------------------------------
 export async function queryGeminiSeniorEngineer(
   userInput: string,
@@ -273,45 +405,21 @@ export async function queryGeminiSeniorEngineer(
   metadata: MemorialMetadata,
   currentStages: DescritivoStage[] = []
 ): Promise<{ textResponse: string; stages: DescritivoStage[] }> {
-  const systemPrompt = `
-Você é o Engenheiro Civil Sênior Coordenador de Obras Públicas e Manutenção Predial Escolar do Estado.
-Sua missão é ouvir a demanda informada pelo orçamentista/fiscal (que muitas vezes é dita em linguagem coloquial ou gravação de voz) e redigir o MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS oficial.
-
-DIRETRIZES TÉCNICAS E DE REDAÇÃO:
-1. Redija como um Engenheiro Sênior: linguagem técnica, concisa, formal, executiva e direta (verbos no infinitivo como "Executar", "Fornecer e instalar", "Proceder à revisão", "Substituir").
-2. Organize em TÍTULOS GERAIS (ex: 1.0 SERVIÇOS PRELIMINARES, 2.0 COBERTURA E TELHADO, 3.0 PAVIMENTAÇÃO E CALÇADAS, 4.0 INSTALAÇÕES HIDROSSANITÁRIAS, 5.0 PINTURA GERAL, 6.0 LIMPEZA FINAL).
-3. Cada etapa deve conter ITENS numerados sequencialmente (ex: 1.1, 1.2, 2.1, 2.2...).
-4. Não utilize textos longos e cansativos. O texto deve ser objetivo e descrever com precisão técnica o que deve ser feito e os padrões de materiais (ex: cimento, fck, espessura, tipo de tinta, telha).
-5. O retorno DEVE conter um resumo explicativo para o chat E OBRIGATORIAMENTE um bloco JSON delimitado por \`\`\`json contendo a lista estruturada das etapas e itens no formato:
-{
-  "stages": [
-    {
-      "stageCode": "1.0",
-      "title": "NOME DA ETAPA EM MAIÚSCULAS",
-      "items": [
-        {
-          "itemNumber": "1.1",
-          "description": "Texto técnico objetivo do item..."
-        }
-      ]
-    }
-  ]
-}
-`;
-
   const contextMessage = `
 DADOS DO PROJETO ATUAL:
-- Escola / Unidade: ${metadata.schoolName} (${metadata.projectName})
-- Município / Local: ${metadata.city}
-- Órgão: ${metadata.organization} (${metadata.gre})
-- Objeto: ${metadata.objectDescription}
+- Unidade Escolar / Imóvel: ${metadata.propertyId || metadata.schoolName || metadata.projectName}
+- Município: ${metadata.city} / ${metadata.uf || "PI"}
+- Órgão: ${metadata.organization || "Secretaria da Educação / GPR"}
+- Finalidade: ${metadata.purpose || metadata.objectDescription}
 
-DEMANDA DO USUÁRIO (Voz/Texto):
+ESTADO ATUAL DO MEMORIAL (Contexto Acumulado):
+${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente."}
+
+NOVA DEMANDA DO USUÁRIO (Texto / Áudio):
 "${userInput}"
 
-Etapas já existentes no memorial: ${currentStages.map((s) => `${s.stageCode} ${s.title} (${s.items.length} itens)`).join(", ") || "Nenhuma, criar a partir do zero."}
-
-Por favor, elabore ou incremente o Memorial Descritivo Técnico com base nessa solicitação.
+INSTRUÇÃO:
+Analise a nova demanda, incorpore ou altere os serviços no memorial existente e apresente o DESCRITIVO COMPLETO E ATUALIZADO no padrão obrigatório (títulos em CAIXA ALTA sem numeração, ELÉTRICA como título único para serviços elétricos/iluminação, cada serviço em uma linha iniciando com Executar/Fornecer e instalar, sem marcadores ou bolinhas, e o bloco JSON estruturado no final).
 `;
 
   try {
@@ -323,12 +431,12 @@ Por favor, elabore ou incremente o Memorial Descritivo Técnico com base nessa s
         contents: [
           {
             role: "user",
-            parts: [{ text: `${systemPrompt}\n\n${contextMessage}` }],
+            parts: [{ text: `${SUPER_PROMPT_MEMORIAL}\n\n${contextMessage}` }],
           },
         ],
         generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 2500,
+          temperature: 0.1,
+          maxOutputTokens: 3000,
         },
       }),
     });
@@ -351,12 +459,12 @@ Por favor, elabore ou incremente o Memorial Descritivo Técnico com base nessa s
         if (Array.isArray(parsed.stages)) {
           parsedStages = parsed.stages.map((stg: any, sIdx: number) => ({
             id: `gemini-stg-${Date.now()}-${sIdx}`,
-            stageCode: stg.stageCode || `${sIdx + 1}.0`,
-            title: String(stg.title || "").toUpperCase(),
+            stageCode: `${sIdx + 1}`,
+            title: String(stg.title || "").toUpperCase().replace(/^\d+[\.\s\-]+/, ""),
             items: (stg.items || []).map((it: any, iIdx: number) => ({
               id: `gemini-it-${Date.now()}-${sIdx}-${iIdx}`,
-              itemNumber: it.itemNumber || `${sIdx + 1}.${iIdx + 1}`,
-              description: String(it.description || ""),
+              itemNumber: `${iIdx + 1}`,
+              description: String(it.description || "").replace(/^[\s•\-\*\d\.]+\s*/, "").trim(),
             })),
           }));
         }
@@ -369,8 +477,8 @@ Por favor, elabore ou incremente o Memorial Descritivo Técnico com base nessa s
       parsedStages = generateLocalSeniorDescription(userInput, currentStages);
     }
 
-    // Limpa a resposta em texto retirando o bloco JSON para ficar agradável no balão do chat
-    const cleanChatText = rawText.replace(/```json[\s\S]*?```/g, "").trim() || "Memorial Descritivo estruturado com sucesso!";
+    // Limpa a resposta retirando o bloco JSON para manter a saída limpa
+    const cleanChatText = rawText.replace(/```json[\s\S]*?```/g, "").trim() || formatStagesToSpreadsheetText(parsedStages);
 
     return {
       textResponse: cleanChatText,
@@ -380,7 +488,7 @@ Por favor, elabore ou incremente o Memorial Descritivo Técnico com base nessa s
     console.warn("Erro ao consultar Gemini, acionando Motor Local Sênior:", err);
     const localStages = generateLocalSeniorDescription(userInput, currentStages);
     return {
-      textResponse: `Estruturei as especificações técnicas da sua demanda com base na engenharia civil institucional:\n\nForam geradas ${localStages.length} etapas técnicas prontas para compor o Memorial Descritivo.`,
+      textResponse: formatStagesToSpreadsheetText(localStages),
       stages: localStages,
     };
   }
@@ -419,7 +527,6 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
     doc.setLineWidth(0.3);
     doc.line(margin, margin - 3, pageWidth - margin, margin - 3);
 
-    const totalPages = doc.getNumberOfPages();
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
@@ -443,7 +550,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(249, 115, 22);
-  doc.text(`${(metadata.gre || "GPR").toUpperCase()} — DEPARTAMENTO DE ENGENHARIA E INFRAESTRUTURA`, pageWidth / 2, currentY, { align: "center" });
+  doc.text(`${(metadata.gre || "GPR").toUpperCase()} — DEPARTAMENTO DE ENGENHARIA E INFRAESTRUTURA ESCOLAR`, pageWidth / 2, currentY, { align: "center" });
   currentY += 8;
 
   // Caixa Título Principal
@@ -456,7 +563,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.text("MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS", pageWidth / 2, currentY + 7.5, { align: "center" });
   currentY += 16;
 
-  // 2. QUADRO RESUMO DE IDENTIFICAÇÃO DO IMÓVEL / OBRA
+  // 2. QUADRO RESUMO DE IDENTIFICAÇÃO DO IMÓVEL / UNIDADE ESCOLAR
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.4);
@@ -471,9 +578,9 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   let qY = currentY + 5;
 
   doc.setFont("helvetica", "bold");
-  doc.text("IDENTIFICAÇÃO / IMÓVEL:", col1X, qY);
+  doc.text("UNIDADE ESCOLAR / IMÓVEL:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.propertyId || metadata.schoolName || "-", col1X + 42, qY);
+  doc.text(metadata.propertyId || metadata.schoolName || "-", col1X + 46, qY);
 
   doc.setFont("helvetica", "bold");
   doc.text("MUNICÍPIO / UF:", col2X, qY);
@@ -484,7 +591,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.setFont("helvetica", "bold");
   doc.text("FINALIDADE / OBJETO:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.purpose || metadata.objectDescription || "-", col1X + 42, qY);
+  doc.text(metadata.purpose || metadata.objectDescription || "-", col1X + 46, qY);
 
   doc.setFont("helvetica", "bold");
   doc.text("DATA DE EMISSÃO:", col2X, qY);
@@ -496,7 +603,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
     doc.setFont("helvetica", "bold");
     doc.text("ÁREA TOTAL / PERÍMETRO:", col1X, qY);
     doc.setFont("helvetica", "normal");
-    doc.text(`${metadata.areaM2 ? `${metadata.areaM2} m²` : "-"}  |  Perímetro: ${metadata.perimeterM ? `${metadata.perimeterM} m` : "-"}`, col1X + 42, qY);
+    doc.text(`${metadata.areaM2 ? `${metadata.areaM2} m²` : "-"}  |  Perímetro: ${metadata.perimeterM ? `${metadata.perimeterM} m` : "-"}`, col1X + 46, qY);
 
     doc.setFont("helvetica", "bold");
     doc.text("SISTEMA REF. / DATUM:", col2X, qY);
@@ -508,28 +615,28 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.setFont("helvetica", "bold");
   doc.text("RESPONSÁVEL TÉCNICO:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(`${metadata.engineerName || "Engenheiro Civil"} (${metadata.creaNumber || "CREA/CAU"})`, col1X + 42, qY);
+  doc.text(`${metadata.engineerName || "Engenheiro Civil"} (${metadata.creaNumber || "CREA/CAU"})`, col1X + 46, qY);
 
   currentY += quadroHeight + 6;
 
-  // 3. INTRODUÇÃO NORMATIVA
+  // 3. INTRODUÇÃO
   checkPageBreak(25);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("1. DISPOSIÇÕES GERAIS E NORMAS APLICÁVEIS", margin, currentY);
+  doc.text("DISPOSIÇÕES GERAIS E NORMAS APLICÁVEIS", margin, currentY);
   currentY += 4.5;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(60, 60, 60);
   const introText =
-    "O presente Memorial Descritivo tem por finalidade fixar as diretrizes técnicas, métodos executivos e padrões de qualidade exigidos para a execução dos serviços de engenharia e adequação predial, em estrita observância às normas da ABNT, legislação de segurança do trabalho (NRs) e especificações do órgão contratante.";
+    "O presente Memorial Descritivo tem por finalidade fixar as diretrizes técnicas, métodos executivos e padrões de qualidade exigidos para a execução dos serviços de engenharia e adequação da infraestrutura escolar, em estrita observância às normas da ABNT e especificações do órgão contratante.";
   const splitIntro = doc.splitTextToSize(introText, printableWidth);
   doc.text(splitIntro, margin, currentY);
   currentY += splitIntro.length * 4 + 6;
 
-  // 4. ETAPAS E ITENS TÉCNICOS
+  // 4. ETAPAS E ITENS TÉCNICOS (Sem numeração no título, cada serviço em uma linha)
   stages.forEach((stage) => {
     checkPageBreak(25);
 
@@ -541,46 +648,35 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
-    doc.text(`${stage.stageCode} — ${stage.title}`, margin + 3, currentY + 5);
+    // Título em CAIXA ALTA sem numeração inicial
+    doc.text(stage.title.toUpperCase(), margin + 3, currentY + 5);
     currentY += 10;
 
     stage.items.forEach((item) => {
-      const itemHeader = `${item.itemNumber} `;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.5);
-      doc.setTextColor(249, 115, 22);
-
-      const headerWidth = doc.getTextWidth(itemHeader);
-      const textWidth = printableWidth - headerWidth - 2;
-
       doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
       doc.setTextColor(40, 40, 40);
-      const splitItem = doc.splitTextToSize(item.description, textWidth);
+
+      const cleanDesc = item.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim();
+      const splitItem = doc.splitTextToSize(cleanDesc, printableWidth - 4);
 
       checkPageBreak(splitItem.length * 4 + 4);
 
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(15, 23, 42);
-      doc.text(itemHeader, margin + 2, currentY);
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(50, 50, 50);
-      doc.text(splitItem, margin + 2 + headerWidth, currentY);
-
-      currentY += splitItem.length * 4 + 3.5;
+      doc.text(splitItem, margin + 2, currentY);
+      currentY += splitItem.length * 4 + 3;
     });
 
-    currentY += 3;
+    currentY += 2;
   });
 
-  // 5. RECEBIMENTO DOS SERVIÇOS & ASSINATURA
+  // 5. RECEBIMENTO E CONCLUSÃO
   checkPageBreak(40);
   currentY += 4;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
-  doc.text("RECEBIMENTO E CONCLUSÃO", margin, currentY);
+  doc.text("RECEBIMENTO E CONCLUSÃO DOS SERVIÇOS", margin, currentY);
   currentY += 4.5;
 
   doc.setFont("helvetica", "normal");
@@ -626,7 +722,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
 
 export function generateMemorialPDF(metadata: MemorialMetadata, stages: DescritivoStage[]): void {
   const doc = buildMemorialPDFDoc(metadata, stages);
-  const safeFilename = `Memorial_Descritivo_${(metadata.propertyId || metadata.schoolName || metadata.projectName || "Obra").replace(/[\/\\:\*\?"<>\|]/g, "_").trim()}.pdf`;
+  const safeFilename = `Memorial_Descritivo_${(metadata.propertyId || metadata.schoolName || metadata.projectName || "Obra").replace(/[\/\\:\*\?\"<>\|]/g, "_").trim()}.pdf`;
   doc.save(safeFilename);
 }
 
@@ -636,86 +732,67 @@ export function getMemorialPDFBlobUrl(metadata: MemorialMetadata, stages: Descri
   return URL.createObjectURL(blob);
 }
 
+// ============================================================================
+// EXPORTAÇÃO PARA MICROSOFT WORD (.DOC FORMATADO)
+// ============================================================================
 export function generateMemorialWordDoc(metadata: MemorialMetadata, stages: DescritivoStage[]): void {
   const content = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
       <meta charset="utf-8">
-      <title>Memorial Descritivo — ${metadata.schoolName || metadata.projectName}</title>
+      <title>Memorial Descritivo — ${metadata.propertyId || metadata.schoolName || metadata.projectName}</title>
       <style>
         body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.4; color: #1e293b; }
         h1 { font-size: 14pt; color: #0f172a; text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 4px; }
-        h2 { font-size: 12pt; color: #0f172a; background-color: #f1f5f9; padding: 6px; border-left: 4px solid #f97316; margin-top: 18px; }
-        .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10pt; }
-        .meta-table td { border: 1px solid #cbd5e1; padding: 6px 10px; }
-        .meta-label { font-weight: bold; background-color: #f8fafc; width: 25%; }
-        .item-row { margin-bottom: 8px; text-align: justify; }
-        .item-num { font-weight: bold; color: #0f172a; margin-right: 6px; }
-        .sign-table { width: 100%; margin-top: 40px; text-align: center; }
-        .sign-table td { width: 50%; padding-top: 30px; font-size: 10pt; }
-        .sign-line { border-top: 1px solid #334155; width: 80%; margin: 0 auto; }
+        h2 { font-size: 12pt; color: #0f172a; background-color: #f1f5f9; padding: 6px; border-left: 4px solid #f97316; margin-top: 18px; text-transform: uppercase; }
+        p.service-line { margin: 4px 0; font-size: 11pt; color: #334155; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        td { padding: 4px 8px; border: 1px solid #cbd5e1; font-size: 10pt; }
+        .label { font-weight: bold; background: #f8fafc; width: 30%; }
       </style>
     </head>
     <body>
-      <h1>${metadata.organization.toUpperCase()}</h1>
-      <p style="text-align: center; font-weight: bold; color: #f97316; margin-top: -6px;">${metadata.gre.toUpperCase()}</p>
-      <h1 style="color: #0f172a; border-bottom: 2px solid #d4af37; font-size: 13pt;">MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS</h1>
-
-      <table class="meta-table">
+      <h1>MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS</h1>
+      <table>
         <tr>
-          <td class="meta-label">UNIDADE / ESCOLA:</td>
-          <td>${metadata.schoolName || "-"}</td>
-          <td class="meta-label">MUNICÍPIO / UF:</td>
-          <td>${metadata.city || "-"}</td>
+          <td class="label">UNIDADE / IMÓVEL:</td>
+          <td>${metadata.propertyId || metadata.schoolName || "-"}</td>
         </tr>
         <tr>
-          <td class="meta-label">PROJETO / ATA:</td>
-          <td>${metadata.projectName || "-"}</td>
-          <td class="meta-label">DATA:</td>
+          <td class="label">MUNICÍPIO / UF:</td>
+          <td>${metadata.city || "-"} / ${metadata.uf || "PI"}</td>
+        </tr>
+        <tr>
+          <td class="label">FINALIDADE / OBJETO:</td>
+          <td>${metadata.purpose || metadata.objectDescription || "-"}</td>
+        </tr>
+        <tr>
+          <td class="label">DATA:</td>
           <td>${metadata.dateStr || new Date().toLocaleDateString("pt-BR")}</td>
-        </tr>
-        <tr>
-          <td class="meta-label">OBJETO:</td>
-          <td colspan="3">${metadata.objectDescription || "Manutenção Predial e Adequação Geral"}</td>
-        </tr>
-        <tr>
-          <td class="meta-label">RESP. TÉCNICO:</td>
-          <td colspan="3">${metadata.engineerName || "Engenheiro Civil"} — ${metadata.creaNumber || "CREA/CAU"}</td>
         </tr>
       </table>
 
-      <h3>1.0 CONSIDERAÇÕES PRELIMINARES</h3>
-      <p style="text-align: justify;">O presente Memorial Descritivo tem por finalidade fixar as condições técnicas e construtivas para a execução dos serviços de reforma, reparos e adequações na edificação escolar supracitada. Todas as intervenções deverão obedecer rigorosamente às normas técnicas da ABNT pertinentes, às recomendações dos fabricantes dos materiais empregados e às determinações da Fiscalização.</p>
-
       ${stages
         .map(
-          (stage) => `
-        <h2>${stage.stageCode} — ${stage.title}</h2>
-        ${stage.items
-          .map(
-            (it) => `
-          <div class="item-row">
-            <span class="item-num">${it.itemNumber}</span>
-            <span>${it.description}</span>
-          </div>
-        `
-          )
-          .join("")}
+          (stg) => `
+        <h2>${stg.title.toUpperCase()}</h2>
+        ${stg.items.map((it) => `<p class="service-line">${it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}</p>`).join("")}
       `
         )
         .join("")}
 
-      <table class="sign-table">
-        <tr>
-          <td>
-            <div class="sign-line"></div>
+      <br/><br/>
+      <table style="border: none; margin-top: 30px;">
+        <tr style="border: none;">
+          <td style="border: none; text-align: center; width: 50%;">
+            __________________________________________<br/>
             <strong>${metadata.engineerName || "Engenheiro Responsável Técnico"}</strong><br/>
-            <span>${metadata.creaNumber || "CREA/CAU"}</span>
+            ${metadata.creaNumber || "CREA/CAU"}
           </td>
-          <td>
-            <div class="sign-line"></div>
+          <td style="border: none; text-align: center; width: 50%;">
+            __________________________________________<br/>
             <strong>Fiscal de Obras</strong><br/>
-            <span>${metadata.organization}</span>
+            ${metadata.organization || "SEDUC / GPR"}
           </td>
         </tr>
       </table>
@@ -723,11 +800,13 @@ export function generateMemorialWordDoc(metadata: MemorialMetadata, stages: Desc
     </html>
   `;
 
-  const blob = new Blob(["\ufeff", content], { type: "application/msword" });
+  const blob = new Blob([content], { type: "application/msword;charset=utf-8" });
   const url = URL.createObjectURL(blob);
+  const safeFilename = `Memorial_Descritivo_${(metadata.propertyId || metadata.schoolName || metadata.projectName || "Obra").replace(/[\/\\:\*\?\"<>\|]/g, "_").trim()}.doc`;
+
   const a = document.createElement("a");
   a.href = url;
-  a.download = `Memorial_Descritivo_${(metadata.schoolName || metadata.projectName || "Obra").replace(/[\/\\:\*\?\"<>\|]/g, "_").trim()}.doc`;
+  a.download = safeFilename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
