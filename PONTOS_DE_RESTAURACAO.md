@@ -11,6 +11,47 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.035]
+- **Data/Hora:** 08/11/2026 17:55 (Horário Local)
+- **Tag Git:** `PR.035`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.035 (3ª Aba Configurações com Sub-Abas por Demanda, Dados do Memorial Simplificados e Motor Excel com Tags `= AQUI`):
+1. **Nova 3ª Aba Principal no Topo: "Configurações":**
+   - Cabeçalho com 3 abas principais em estilo 3D de luxo industrial: `Orçamento`, `Descritivos` e `Configurações` (`mainModule === "CONFIGURACOES"`).
+   - Na aba `Orçamento`: removida a barra secundária cinza intermediária, focando 100% no fluxo direto do Workspace dos 3 passos, com um banner elegante de identificação do contrato base ativo e botão de acesso rápido à gestão de contratos.
+   - Na aba `Configurações`: centralizada e organizada em duas sub-abas especializadas:
+     - **Sub-aba 1: Demandas de Orçamento:** Gestão completa dos Contratos Base Cadastrados (cadastro guiado por busca inteligente pelo nome das colunas, upload `.xlsx`/`.xlsm`, ajuste de intervalo de linhas das composições, remapeamento de abas, exclusão e restauração de exemplos).
+     - **Sub-aba 2: Demandas de Descritivos:** Gerenciamento da **Planilha Excel Base do Memorial Descritivo (.xlsx)**:
+       - Status em tempo real da planilha ativa (Padrão SEDUC / GPR vs Planilha Personalizada pelo Usuário, com nome do arquivo, tamanho formatado em KB e data);
+       - Dropzone interativo drag-and-drop para anexar e substituir a planilha base;
+       - Botão para **Baixar Modelo com Tags (.xlsx)** gerado pelo sistema;
+       - Botão para **Restaurar Padrão SEDUC / GPR**;
+       - **Guia Visual Explicativo das 6 tags com `= AQUI`** (`ESCOLA = AQUI`, `MUNICÍPIO = AQUI`, `BDI = AQUI`, `MÊS/ANO = AQUI`, `DATA EXTENSA = AQUI`, `MEMORIAL = AQUI`).
+2. **Card 2 (Dados do Memorial em DescritivoView) Simplificado Estritamente aos Dados Variáveis:**
+   - Mantidos exclusivamente os 3 dados variáveis solicitados pelo usuário:
+     - `Nome da Escola (Unidade Escolar)`
+     - `Município` (com seletor integrado de UF)
+     - `BDI da Obra (%)`
+   - Removidos os campos redundantes de GRE / Regional, Finalidade / Objeto e Responsável Técnico (Engenheiro e CREA).
+   - Painel das **Datas Automáticas Autossuficientes**:
+     - Mês e Ano Atual (calculado dinamicamente: ex: "Novembro de 2026", vinculado à tag `MÊS/ANO = AQUI`);
+     - Data Extensa com Dia da Semana (calculada dinamicamente: ex: "Domingo, 8 de novembro de 2026", vinculada à tag `DATA EXTENSA = AQUI`);
+     - Sistema 100% autossuficiente que sincroniza sozinho de acordo com o dia de elaboração do memorial, sem necessidade de digitação pelo usuário.
+3. **Motor Oficial de Injeção em Planilha Excel (`src/lib/memorialExcelEngine.ts`):**
+   - Varredura de células da planilha base procurando por marcações finalizadas com `= AQUI` ou contendo `= AQUI`.
+   - Substituição exata preservando 100% da formatação original da planilha base do usuário.
+   - Injeção das etapas em CAIXA ALTA e serviços técnicos em linhas independentes na tag `MEMORIAL = AQUI`.
+   - Novo botão **`📊 Baixar Memorial (.xlsx)`** na barra inferior de ações e no modal de tela cheia.
+
+---
+
 ### [PR.034]
 - **Data/Hora:** 08/11/2026 17:30 (Horário Local)
 - **Tag Git:** `PR.034`

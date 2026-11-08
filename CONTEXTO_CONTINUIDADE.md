@@ -1,22 +1,30 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.034
-O ciclo **`PR.034`** eliminou definitivamente os modelos fixos e serviços fantasmas, tornando o assistente e o visualizador em folha A4 **100% dinâmicos e estritamente sob demanda**:
-1. **Eliminação dos Modelos Mockados Fixos:**
-   - `stages` inicial começa como array estritamente vazio (`[]`).
-   - Chat inicia com mensagem de boas-vindas limpa, sem itens pré-cadastrados de forro, elétrica ou banheiros.
-2. **Folha A4 do Card 3 100% Dinâmica:**
-   - Remoção de todo o JSX estático da folha A4. Ela renderiza exclusivamente as etapas e itens de `stages`, com paginação dinâmica e quadro de espera quando vazio.
-3. **Instrução Rígida de Fidelidade (Zero Serviços Fantasmas):**
-   - OpenAI, Gemini e Motor Local instruídos a criar títulos e itens EXCLUSIVAMENTE para as demandas solicitadas na mensagem atual (ex: novas calçadas e goteiras geram apenas `PAVIMENTAÇÃO E CALÇADAS` e `COBERTURA`).
-4. **Botão "Novo Memorial" no Cabeçalho:**
-   - Botão de ação rápida no cabeçalho do Card 1 para resetar o memorial com um clique e iniciar novos escopos.
-5. **Ontologia Expandida:**
-   - Suporte nativo a `PISOS E PAVIMENTAÇÃO` e `CALÇADAS E ÁREAS EXTERNAS`.
-6. **Build e Produção:** Next.js 15 compilado com sucesso e publicado na Vercel (`https://orcabase-lab-gpr.vercel.app`).
+## 📍 Ponto Atual de Entrega — Ciclo PR.035
+O ciclo **`PR.035`** implementou a **3ª Aba Principal "Configurações"**, a **Simplificação Estrita do Card 2 (Dados do Memorial)** e o **Motor de Injeção em Planilha Excel com Tags `= AQUI`**:
+1. **Nova 3ª Aba Principal no Topo ("Configurações"):**
+   - Abas 3D no cabeçalho: `Orçamento`, `Descritivos` e `Configurações` (`mainModule === "CONFIGURACOES"`).
+   - Na aba `Orçamento`: removida a barra cinza secundária, deixando o fluxo direto no Workspace dos 3 passos, com um banner elegante de identificação do contrato ativo e atalho para gerenciamento.
+   - Na aba `Configurações`: centralizada e dividida em duas sub-abas por demanda:
+     - **Sub-aba 1: Demandas de Orçamento:** Gestão completa dos Contratos Base Cadastrados (novo contrato, upload `.xlsx`/`.xlsm`, identificação de colunas por nome, remapeamento de abas e intervalos de linhas).
+     - **Sub-aba 2: Demandas de Descritivos:** Gestão da **Planilha Excel Base do Memorial Descritivo (.xlsx)**:
+       - Status em tempo real (Padrão SEDUC vs Personalizada com tamanho e data de upload);
+       - Dropzone interativo para anexar e substituir a planilha base;
+       - Botão para **Baixar Modelo com Tags (.xlsx)** gerado pelo sistema;
+       - Botão para **Restaurar Padrão SEDUC / GPR**;
+       - **Guia Visual Explicativo das 6 tags com `= AQUI`** (`ESCOLA = AQUI`, `MUNICÍPIO = AQUI`, `BDI = AQUI`, `MÊS/ANO = AQUI`, `DATA EXTENSA = AQUI`, `MEMORIAL = AQUI`).
+2. **Card 2 (Dados do Memorial em DescritivoView) Simplificado:**
+   - Mantidos estritamente os 3 dados variáveis pedidos: `Nome da Escola`, `Município` (com UF) e `BDI da Obra (%)`.
+   - Removidos GRE, Finalidade e Responsável Técnico da interface de edição.
+   - Bloco de **Datas Automáticas Autossuficientes**: Mês/Ano atual e Data Extensa com Dia da Semana gerados dinamicamente com base no dia de elaboração do memorial, sem necessidade de digitação.
+3. **Motor de Injeção em Planilha Excel (`src/lib/memorialExcelEngine.ts`):**
+   - Substituição exata de células terminadas em `= AQUI` ou contendo `= AQUI` mantendo 100% da formatação e estilos originais.
+   - Injeção das etapas em CAIXA ALTA e serviços sem marcadores na tag `MEMORIAL = AQUI`.
+   - Novo botão **`📊 Baixar Memorial (.xlsx)`** na barra inferior de ações e no modal de tela cheia.
+4. **Build e Produção:** Next.js 15 compilado com 0 erros e pronto para sincronização contínua.
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.035)
+## 🎯 Próximo Passo do Agente (Ciclo PR.036)
 1. **Auditoria de Desvios de Quantitativos:** Indicador visual de variação percentual dos itens compatibilizados.
 2. **Histórico em Nuvem:** Compartilhamento multiusuário via Supabase/PostgreSQL.

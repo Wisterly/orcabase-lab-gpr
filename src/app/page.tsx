@@ -45,6 +45,13 @@ import {
   PendingResolutionItem,
 } from "../types";
 import {
+  saveCustomTemplateToStorage,
+  getStoredCustomTemplate,
+  removeCustomTemplateFromStorage,
+  generateBlankMemorialTemplateWithTags,
+  StoredTemplateMeta,
+} from "@/lib/memorialExcelEngine";
+import {
   studySpreadsheetFromBuffer,
   arrayBufferToBase64,
   saveContractBinary,
@@ -256,10 +263,18 @@ const INITIAL_CONTRACTS: ContractBaseCard[] = [
 ];
 
 export default function OrcaBaseDashboard() {
-  // Navegação Principal de Módulos (Orçamento vs Descritivos)
-  const [mainModule, setMainModule] = useState<"ORCAMENTO" | "DESCRITIVOS">("ORCAMENTO");
+  // Navegação Principal de Módulos (Orçamento vs Descritivos vs Configurações)
+  const [mainModule, setMainModule] = useState<"ORCAMENTO" | "DESCRITIVOS" | "CONFIGURACOES">("ORCAMENTO");
 
-  // Navegação de Abas do Módulo Orçamentos
+  // Navegação de Sub-Abas na Central de Configurações (Demandas de Orçamento vs Demandas de Descritivos)
+  const [configDemandTab, setConfigDemandTab] = useState<"ORCAMENTO" | "DESCRITIVO">("ORCAMENTO");
+
+  // Planilha Base do Memorial Descritivo (.xlsx) com suporte a tags "= AQUI"
+  const [memorialTemplateMeta, setMemorialTemplateMeta] = useState<StoredTemplateMeta | null>(null);
+  const [isDraggingMemorialTemplate, setIsDraggingMemorialTemplate] = useState(false);
+  const memorialTemplateInputRef = useRef<HTMLInputElement>(null);
+
+  // Navegação interna residual de Orçamentos
   const [activeTab, setActiveTab] = useState<"WORKSPACE" | "SETTINGS">("WORKSPACE");
 
   // Contratos Base cadastrados nas Configurações
@@ -456,6 +471,58 @@ export default function OrcaBaseDashboard() {
         );
       }
     }).catch(() => {});
+  };
+
+  // Carrega metadados da planilha base do memorial salva no localStorage
+  useEffect(() => {
+    const stored = getStoredCustomTemplate();
+    if (stored && stored.meta) {
+      setMemorialTemplateMeta(stored.meta);
+    }
+  }, []);
+
+  // Upload e vinculação de nova Planilha Base personalizada para o Memorial Descritivo
+  const handleUploadMemorialTemplate = async (file: File) => {
+    if (!file.name.match(/\.(xlsx|xlsm|xls)$/i)) {
+      showToast("Por favor, selecione um arquivo Excel válido (.xlsx ou .xlsm).");
+      return;
+    }
+    try {
+      const meta = await saveCustomTemplateToStorage(file);
+      setMemorialTemplateMeta(meta);
+      showToast(`Planilha base "${file.name}" vinculada com sucesso ao Memorial!`);
+    } catch (err: any) {
+      console.error("Erro ao salvar template do memorial:", err);
+      showToast("Erro ao processar planilha base do memorial.");
+    }
+  };
+
+  // Restauração do Modelo Padrão SEDUC / GPR para o Memorial
+  const handleRemoveMemorialTemplate = () => {
+    removeCustomTemplateFromStorage();
+    setMemorialTemplateMeta(null);
+    showToast("Planilha personalizada desvinculada. Modelo padrão SEDUC/GPR restaurado!");
+  };
+
+  // Download da Planilha Exemplo com as tags "= AQUI" esquematizadas
+  const handleDownloadBlankTemplate = () => {
+    try {
+      const bytes = generateBlankMemorialTemplateWithTags();
+      const blob = new Blob([bytes.buffer as ArrayBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Modelo_Base_Memorial_Tags_AQUI.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Download do modelo com tags (= AQUI) concluído!");
+    } catch (e) {
+      showToast("Erro ao gerar modelo de exemplo.");
+    }
   };
 
   // Salva automaticamente palavras-chave personalizadas no banco ao digitar
@@ -1487,6 +1554,14 @@ export default function OrcaBaseDashboard() {
               <BrainCircuit className="w-4 h-4 text-[#ffb457]" />
               <span>Descritivos</span>
             </button>
+            <button
+              type="button"
+              aria-pressed={mainModule === "CONFIGURACOES"}
+              onClick={() => setMainModule("CONFIGURACOES")}
+            >
+              <Settings className="w-4 h-4 text-[#ffb457]" />
+              <span>Configurações</span>
+            </button>
           </nav>
         </div>
       </header>
@@ -1500,48 +1575,42 @@ export default function OrcaBaseDashboard() {
             initialGre={selectedContract?.contractNumber || "12ª GRE"}
             showToast={showToast}
           />
-        ) : (
+        ) : mainModule === "ORCAMENTO" ? (
           <>
-            {/* Sub-navegação interna de Orçamento: Área de Compatibilização vs Contratos Base */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111622] p-2.5 rounded-xl border border-[#232a3b]">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("WORKSPACE")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === "WORKSPACE"
-                      ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-md"
-                      : "text-[#b8b5b1] hover:text-white bg-[#0e1015]"
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5" />
-                  Área de Compatibilização (2 Planilhas)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("SETTINGS")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    activeTab === "SETTINGS"
-                      ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-md"
-                      : "text-[#b8b5b1] hover:text-white bg-[#0e1015]"
-                  }`}
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  Contratos Base Cadastrados
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-black/30 text-white">
-                    {contracts.length}
+            {/* Banner Compacto de Identificação do Contrato Base Selecionado */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d1017] px-4 py-3 rounded-xl border border-[#232b3d]">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c]">
+                  <Calculator className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-mono text-[#9ca3af] uppercase tracking-wider block">
+                    Contrato Base Ativo para Compatibilização:
                   </span>
-                </button>
+                  <div className="flex items-center gap-2">
+                    <strong className="text-xs sm:text-sm text-white font-bold">
+                      {selectedContract?.contractNumber || "045/2026"} — {selectedContract?.contractName || "Reforma Escolar"}
+                    </strong>
+                    <span className="px-2 py-0.2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                      {selectedContract?.itemsCount || 0} composições
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-right text-xs text-[#b8b5b1] hidden md:block">
-                Contrato Selecionado:{" "}
-                <strong className="text-[#ffb457]">{selectedContract?.contractNumber || "045/2026"}</strong>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMainModule("CONFIGURACOES");
+                  setConfigDemandTab("ORCAMENTO");
+                }}
+                className="px-3 py-1.5 rounded-lg border border-[#2c374d] bg-[#141926] hover:bg-[#1c2436] hover:border-[#ffaa2c]/50 text-xs text-gray-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto"
+                title="Trocar ou cadastrar outro Contrato Base na aba Configurações"
+              >
+                <Settings className="w-3.5 h-3.5 text-[#ffaa2c]" />
+                <span>Gerenciar Contratos</span>
+              </button>
             </div>
-
-            {activeTab === "WORKSPACE" ? (
-          <>
             {/* =====================================================================
                 STEPPER SUPERIOR — LINHA DE PASSOS (1 - 2 - 3)
                ===================================================================== */}
@@ -2371,9 +2440,70 @@ export default function OrcaBaseDashboard() {
           </>
         ) : (
           /* =====================================================================
-             ABA DE CONFIGURAÇÕES: GESTÃO DE CONTRATOS BASE COM BUSCA PELO NOME DAS COLUNAS
+             ABA DE CONFIGURAÇÕES: GESTÃO DE CONTRATOS (ORÇAMENTO) E PLANILHA BASE (DESCRITIVOS)
              ===================================================================== */
           <section className="space-y-6">
+            {/* Header da Central de Configurações */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0d1017] p-5 sm:p-6 rounded-2xl border border-[#232b3d] shadow-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/50 flex items-center justify-center text-[#ffaa2c] shadow-[0_0_20px_rgba(255,170,44,0.25)] shrink-0">
+                  <Settings className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                      Central de Configurações e Modelos Base
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 text-[#ffaa2c] text-[10px] font-bold uppercase tracking-wider">
+                      SEDUC / GPR
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#9ca3af] mt-1">
+                    Gerencie contratos base para compatibilização de orçamentos e anexe a planilha base em Excel (.xlsx) com tags automáticas para o assistente de memoriais.
+                  </p>
+                </div>
+              </div>
+
+              {/* Seletor de Sub-Abas por Demanda */}
+              <div className="flex items-center gap-2 bg-[#141926] p-1.5 rounded-xl border border-[#252f44] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setConfigDemandTab("ORCAMENTO")}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    configDemandTab === "ORCAMENTO"
+                      ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-lg"
+                      : "text-gray-300 hover:text-white hover:bg-[#1a2233]"
+                  }`}
+                >
+                  <Calculator className="w-4 h-4" />
+                  <span>Demandas de Orçamento</span>
+                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-black/30 text-white">
+                    {contracts.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConfigDemandTab("DESCRITIVO")}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    configDemandTab === "DESCRITIVO"
+                      ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-lg"
+                      : "text-gray-300 hover:text-white hover:bg-[#1a2233]"
+                  }`}
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Demandas de Descritivos</span>
+                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
+                    memorialTemplateMeta ? "bg-emerald-500/20 text-emerald-400 font-bold" : "bg-black/30 text-gray-300"
+                  }`}>
+                    {memorialTemplateMeta ? "Personalizada" : "Padrão SEDUC"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {configDemandTab === "ORCAMENTO" ? (
+              <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2436] pb-6">
               <div>
                 <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] block mb-1">
@@ -3160,11 +3290,247 @@ export default function OrcaBaseDashboard() {
                 );
               })}
             </div>
-          </section>
+          </div>
+        ) : (
+          /* =====================================================================
+             SUB-ABA 2: DEMANDAS DE DESCRITIVOS (PLANILHA EXCEL BASE .XLSX COM TAGS)
+             ===================================================================== */
+          <div className="space-y-6">
+            {/* Header e Descrição da Demanda de Descritivos */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2436] pb-6">
+              <div>
+                <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] block mb-1">
+                  Mecanismo de Injeção em Células com Marcação &ldquo;= AQUI&rdquo;
+                </span>
+                <h2 className="text-xl font-bold text-white">
+                  Planilha Excel Base do Memorial Descritivo (.XLSX)
+                </h2>
+                <p className="text-xs text-[#9CA3AF] mt-1 max-w-4xl">
+                  Anexe a planilha base oficial em Excel que servirá de molde. O assistente inteligente substituirá automaticamente os dados da escola, município, BDI, datas autossuficientes e injetará os serviços técnicos descritivos nas posições marcadas com <strong className="text-white font-mono">= AQUI</strong>, preservando 100% da formatação original do arquivo.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 self-start">
+                <button
+                  type="button"
+                  onClick={handleDownloadBlankTemplate}
+                  className="px-4 py-2.5 rounded-xl border border-[#26304A] bg-[#111622] hover:bg-[#1A2234] text-xs font-bold text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+                  title="Baixar planilha de exemplo com as marcações = AQUI prontas para uso"
+                >
+                  <Download className="w-4 h-4 text-[#ffaa2c]" />
+                  Baixar Modelo com Tags (.xlsx)
+                </button>
+                {memorialTemplateMeta && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveMemorialTemplate}
+                    className="px-4 py-2.5 rounded-xl border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-red-300 flex items-center gap-2 cursor-pointer transition-colors"
+                    title="Remover modelo personalizado e retornar ao padrão SEDUC/GPR"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-red-400" />
+                    Restaurar Padrão SEDUC
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Card de Status da Planilha Ativa */}
+            <div className={`p-5 rounded-2xl border transition-all ${
+              memorialTemplateMeta
+                ? "border-emerald-500/40 bg-gradient-to-r from-[#0d1f1a] to-[#0a1412]"
+                : "border-[#ffaa2c]/30 bg-gradient-to-r from-[#141822] to-[#0d1017]"
+            }`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                    memorialTemplateMeta
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                      : "bg-[#ffaa2c]/10 text-[#ffaa2c] border border-[#ffaa2c]/40"
+                  }`}>
+                    <FileSpreadsheet className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs uppercase font-mono tracking-wider text-gray-400 font-semibold">
+                        Status do Modelo Base:
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        memorialTemplateMeta
+                          ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
+                          : "bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 text-[#ffaa2c]"
+                      }`}>
+                        {memorialTemplateMeta ? "Personalizada pelo Usuário" : "Padrão SEDUC / GPR Integrado"}
+                      </span>
+                    </div>
+                    <h3 className="text-base font-bold text-white mt-1">
+                      {memorialTemplateMeta ? memorialTemplateMeta.fileName : "Modelo Institucional SEDUC / GPR (Padronizado)"}
+                    </h3>
+                    <p className="text-xs text-[#9ca3af] mt-0.5">
+                      {memorialTemplateMeta
+                        ? `Tamanho: ${(memorialTemplateMeta.fileSize / 1024).toFixed(1)} KB • Atualizado em: ${new Date(memorialTemplateMeta.updatedAt).toLocaleDateString("pt-BR")}`
+                        : "Utiliza a formatação oficial com cabeçalho de engenharia da SEDUC e posições esquematizadas para injeção."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => memorialTemplateInputRef.current?.click()}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                  >
+                    <UploadCloud className="w-4 h-4 text-black" />
+                    <span>{memorialTemplateMeta ? "Substituir Planilha" : "Anexar Planilha Base (.xlsx)"}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Dropzone de Upload da Planilha Base */}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingMemorialTemplate(true);
+              }}
+              onDragLeave={() => setIsDraggingMemorialTemplate(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingMemorialTemplate(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) handleUploadMemorialTemplate(file);
+              }}
+              onClick={() => memorialTemplateInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                isDraggingMemorialTemplate
+                  ? "border-[#ffaa2c] bg-[#ffaa2c]/10"
+                  : "border-[#26304A] hover:border-[#ffaa2c]/60 bg-[#0d1017]/80"
+              }`}
+            >
+              <input
+                ref={memorialTemplateInputRef}
+                type="file"
+                accept=".xlsx,.xlsm,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadMemorialTemplate(file);
+                  e.target.value = "";
+                }}
+              />
+              <div className="w-16 h-16 rounded-2xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c] mb-3 shadow-[0_0_20px_rgba(255,170,44,0.2)]">
+                <UploadCloud className="w-8 h-8 text-[#ffaa2c]" />
+              </div>
+              <h4 className="text-sm font-bold text-white">
+                Arraste sua Planilha Excel Base (.xlsx) ou clique para selecionar
+              </h4>
+              <p className="text-xs text-gray-400 mt-1 max-w-md">
+                O sistema usará esta planilha como molde para o download no botão <strong className="text-white">Baixar Memorial (.xlsx)</strong> e para a pré-visualização.
+              </p>
+            </div>
+
+            {/* Guia Visual das Tags com "= AQUI" */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-[#ffaa2c]" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Guia de Tags de Substituição — Formato Obrigatório (&ldquo;= AQUI&rdquo;)
+                </h3>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Em sua planilha base, basta colocar as seguintes expressões em qualquer célula onde você deseja que o assistente preencha os dados:
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+                {/* Tag 1: Escola */}
+                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-2 py-0.5 rounded border border-[#ffaa2c]/30">
+                      ESCOLA = AQUI
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-semibold">Variável</span>
+                  </div>
+                  <p className="text-xs text-white font-medium">Nome da Unidade Escolar</p>
+                  <p className="text-[10px] text-gray-400">
+                    Substituído pelo nome da escola digitado no Card 2 de Descritivos.
+                  </p>
+                </div>
+
+                {/* Tag 2: Município */}
+                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-2 py-0.5 rounded border border-[#ffaa2c]/30">
+                      MUNICÍPIO = AQUI
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-semibold">Variável</span>
+                  </div>
+                  <p className="text-xs text-white font-medium">Município e UF</p>
+                  <p className="text-[10px] text-gray-400">
+                    Substituído pela cidade e sigla do estado (ex: &ldquo;São João do Piauí - PI&rdquo;).
+                  </p>
+                </div>
+
+                {/* Tag 3: BDI */}
+                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-2 py-0.5 rounded border border-[#ffaa2c]/30">
+                      BDI = AQUI
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-semibold">Variável</span>
+                  </div>
+                  <p className="text-xs text-white font-medium">Percentual de BDI da Obra</p>
+                  <p className="text-[10px] text-gray-400">
+                    Substituído pela taxa informada (ex: &ldquo;24,50%&rdquo;).
+                  </p>
+                </div>
+
+                {/* Tag 4: Mês e Ano */}
+                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                      MÊS/ANO = AQUI
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-bold">Automático</span>
+                  </div>
+                  <p className="text-xs text-white font-medium">Mês Atual e Ano Atual</p>
+                  <p className="text-[10px] text-gray-400">
+                    Calculado automaticamente pelo sistema de acordo com a data de elaboração (ex: &ldquo;Novembro de 2026&rdquo;).
+                  </p>
+                </div>
+
+                {/* Tag 5: Data Extensa */}
+                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                      DATA EXTENSA = AQUI
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-bold">Automático</span>
+                  </div>
+                  <p className="text-xs text-white font-medium">Dia da Semana, Dia, Mês e Ano</p>
+                  <p className="text-[10px] text-gray-400">
+                    Calculado automaticamente pelo sistema (ex: &ldquo;Domingo, 8 de novembro de 2026&rdquo;).
+                  </p>
+                </div>
+
+                {/* Tag 6: Memorial */}
+                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-blue-500/30 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30">
+                      MEMORIAL = AQUI
+                    </span>
+                    <span className="text-[10px] text-blue-400 font-bold">Injeção Contínua</span>
+                  </div>
+                  <p className="text-xs text-white font-medium">Ponto de Início dos Serviços</p>
+                  <p className="text-[10px] text-gray-400">
+                    Injeta títulos em CAIXA ALTA e serviços sem marcadores, linha por linha, respeitando a célula da coluna.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
-        </>
-      )}
-      </main>
+      </section>
+    )}
+  </main>
 
       {/* =====================================================================
           MODAL DE VÍNCULO MANUAL DE ITEM DA PLANILHA 1 PARA A COMPOSIÇÃO DO CONTRATO

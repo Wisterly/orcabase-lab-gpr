@@ -35,6 +35,7 @@ import {
   Clock,
   Percent,
   RotateCw,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   DescritivoStage,
@@ -52,6 +53,11 @@ import {
   getAutomaticDates,
   AutomaticDates,
 } from "@/lib/descritivoAI";
+import {
+  injectMemorialIntoExcelTemplate,
+  generateDefaultMemorialTemplate,
+  getStoredCustomTemplate,
+} from "@/lib/memorialExcelEngine";
 
 interface DescritivoViewProps {
   initialSchoolName?: string;
@@ -403,6 +409,57 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
       showToast("Descritivo copiado! Pronto para colar diretamente nas células do Excel.");
     } catch (e) {
       showToast("Falha ao copiar para a área de transferência.");
+    }
+  };
+
+  // Ação de Baixar Memorial Descritivo em Planilha Excel (.xlsx) com substituição de tags "= AQUI"
+  const handleBaixarExcelMemorial = () => {
+    try {
+      if (stages.length === 0) {
+        showToast("Gere ou adicione itens ao memorial antes de baixar a planilha.");
+        return;
+      }
+
+      showToast("Gerando planilha Excel oficial com injeção de dados...");
+
+      // Tenta carregar planilha base personalizada enviada pelo usuário nas Configurações
+      const stored = getStoredCustomTemplate();
+      let excelBytes: Uint8Array;
+
+      const injectionParams = {
+        schoolName: formData.schoolName,
+        municipio: formData.municipio,
+        uf: formData.uf,
+        bdiPercent: formData.bdiPercent,
+        mesAnoRef: formData.mesAnoRef,
+        dataExtensa: formData.dataExtensa,
+        stages: stages,
+      };
+
+      if (stored && stored.buffer) {
+        excelBytes = injectMemorialIntoExcelTemplate(stored.buffer, injectionParams);
+      } else {
+        excelBytes = generateDefaultMemorialTemplate(injectionParams);
+      }
+
+      // Criação do arquivo para download no navegador
+      const blob = new Blob([excelBytes.buffer as ArrayBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safeSchool = formData.schoolName.replace(/[^a-zA-Z0-9_\-]/g, "_").slice(0, 35);
+      a.href = url;
+      a.download = `Memorial_Descritivo_${safeSchool || "Escolar"}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast("Planilha Excel (.xlsx) baixada com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao gerar Excel do memorial:", err);
+      showToast(`Erro ao gerar planilha Excel: ${err?.message || "falha na injeção"}`);
     }
   };
 
@@ -777,7 +834,7 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   Dados do Memorial
                 </h3>
                 <p className="text-xs text-[#9ca3af]">
-                  Identificação da unidade escolar, BDI e datas
+                  Dados variáveis injetados na Planilha Base (.xlsx)
                 </p>
               </div>
             </div>
@@ -785,9 +842,9 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
 
           {/* Conteúdo com rolagem suave */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs pr-2">
-            {/* Linha 1: Nome da Escola */}
-            <div>
-              <label className="block text-[11px] text-gray-300 font-semibold mb-1 flex items-center gap-1.5">
+            {/* Campo 1: Nome da Escola */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] text-gray-200 font-semibold flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-[#ffaa2c]" />
                 Nome da Escola (Unidade Escolar) <span className="text-[#ffaa2c]">*</span>
               </label>
@@ -796,14 +853,17 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                 value={formData.schoolName}
                 onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
                 placeholder="Ex: CETI Deputado Francisco Antônio Paes Landim Neto"
-                className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c] transition-colors"
+                className="w-full h-10 bg-[#0b0e14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl px-3.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors shadow-inner"
               />
+              <p className="text-[10px] text-gray-400">
+                Substitui a tag <code className="text-[#ffaa2c] font-mono">ESCOLA = AQUI</code> no Excel.
+              </p>
             </div>
 
             {/* Linha 2: Município, UF e BDI (%) */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-              <div className="sm:col-span-6">
-                <label className="block text-[11px] text-gray-300 font-medium mb-1">
+              <div className="sm:col-span-5 space-y-1.5">
+                <label className="block text-[11px] text-gray-200 font-medium">
                   Município <span className="text-[#ffaa2c]">*</span>
                 </label>
                 <input
@@ -811,17 +871,17 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   value={formData.municipio}
                   onChange={(e) => setFormData({ ...formData, municipio: e.target.value })}
                   placeholder="Ex: São João do Piauí"
-                  className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c] transition-colors"
+                  className="w-full h-10 bg-[#0b0e14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl px-3 text-xs text-white focus:outline-none transition-colors"
                 />
               </div>
-              <div className="sm:col-span-3">
-                <label className="block text-[11px] text-gray-300 font-medium mb-1">
+              <div className="sm:col-span-3 space-y-1.5">
+                <label className="block text-[11px] text-gray-200 font-medium">
                   UF <span className="text-[#ffaa2c]">*</span>
                 </label>
                 <select
                   value={formData.uf}
                   onChange={(e) => setFormData({ ...formData, uf: e.target.value })}
-                  className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-2 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
+                  className="w-full h-10 bg-[#0b0e14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl px-2.5 text-xs text-white focus:outline-none"
                 >
                   {["PI", "MA", "CE", "BA", "PE", "RN", "PB", "SP", "RJ", "MG", "PR", "SC", "RS", "GO", "DF"].map(
                     (uf) => (
@@ -832,8 +892,8 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   )}
                 </select>
               </div>
-              <div className="sm:col-span-3">
-                <label className="block text-[11px] text-gray-300 font-semibold mb-1 truncate text-[#ffaa2c]">
+              <div className="sm:col-span-4 space-y-1.5">
+                <label className="block text-[11px] text-gray-200 font-semibold truncate text-[#ffaa2c]">
                   BDI da Obra (%) <span className="text-[#ffaa2c]">*</span>
                 </label>
                 <input
@@ -841,56 +901,24 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   value={formData.bdiPercent}
                   onChange={(e) => setFormData({ ...formData, bdiPercent: e.target.value })}
                   placeholder="Ex: 24,50%"
-                  className="w-full h-9 bg-[#0b0e14] border border-[#ffaa2c]/50 rounded-lg px-2.5 text-xs text-[#ffaa2c] font-bold focus:outline-none focus:border-[#ffaa2c]"
+                  className="w-full h-10 bg-[#0b0e14] border border-[#ffaa2c]/50 focus:border-[#ffaa2c] rounded-xl px-3 text-xs text-[#ffaa2c] font-bold focus:outline-none"
                 />
               </div>
             </div>
 
-            {/* Linha 3: GRE / Regional e Finalidade / Objeto */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] text-gray-300 font-medium mb-1">
-                  GRE / Regional <span className="text-[#ffaa2c]">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.gre}
-                  onChange={(e) => setFormData({ ...formData, gre: e.target.value })}
-                  placeholder="Ex: 12ª GRE"
-                  className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] text-gray-300 font-medium mb-1">
-                  Finalidade / Objeto <span className="text-[#ffaa2c]">*</span>
-                </label>
-                <select
-                  value={formData.finalidade}
-                  onChange={(e) => setFormData({ ...formData, finalidade: e.target.value })}
-                  className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
-                >
-                  <option value="Reforma e Manutenção da Unidade Escolar" className="bg-[#111622]">Reforma e Manutenção da Unidade Escolar</option>
-                  <option value="Adequação e Modernização de Infraestrutura" className="bg-[#111622]">Adequação e Modernização de Infraestrutura</option>
-                  <option value="Manutenção Preventiva e Corretiva" className="bg-[#111622]">Manutenção Preventiva e Corretiva</option>
-                  <option value="Reforma da Cobertura e Instalações" className="bg-[#111622]">Reforma da Cobertura e Instalações</option>
-                  <option value="Ampliação e Adequação de Acessibilidade" className="bg-[#111622]">Ampliação e Adequação de Acessibilidade</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Linha 4: Painel de Datas Atualizadas Automaticamente */}
-            <div className="p-3.5 rounded-xl border border-[#ffaa2c]/30 bg-gradient-to-br from-[#121722] to-[#0c0f16] space-y-2.5 shadow-md">
-              <div className="flex items-center justify-between gap-2 border-b border-[#232d40] pb-2">
+            {/* Linha 3: Bloco de Datas Automáticas Autossuficientes */}
+            <div className="p-4 rounded-xl border border-[#ffaa2c]/30 bg-gradient-to-br from-[#121722] to-[#0c0f16] space-y-3 shadow-lg">
+              <div className="flex items-center justify-between gap-2 border-b border-[#232d40] pb-2.5">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-md bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c]">
-                    <Clock className="w-3.5 h-3.5" />
+                  <div className="w-7 h-7 rounded-lg bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c]">
+                    <Clock className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[11px] font-bold text-white tracking-tight flex items-center gap-1.5">
-                      Datas do Memorial & Planilha
-                      <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
-                        Automático
-                      </span>
+                    <span className="text-xs font-bold text-white tracking-tight flex items-center gap-1.5">
+                      Datas Automáticas Autossuficientes
+                    </span>
+                    <span className="text-[10px] text-emerald-400 font-medium">
+                      Calculado dinamicamente no dia de geração
                     </span>
                   </div>
                 </div>
@@ -898,89 +926,62 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                 <button
                   type="button"
                   onClick={handleRefreshDates}
-                  className="px-2 py-1 rounded-md border border-[#2b3850] bg-[#161c28] hover:bg-[#1f283a] hover:border-[#ffaa2c]/50 text-[10px] text-gray-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer"
-                  title="Sincronizar datas com o momento atual"
+                  className="px-2.5 py-1.5 rounded-lg border border-[#2b3850] bg-[#161c28] hover:bg-[#1f283a] hover:border-[#ffaa2c]/60 text-[10px] text-gray-200 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Recalcular com base na data e hora exata do momento"
                 >
                   <RotateCw className="w-3 h-3 text-[#ffaa2c]" />
-                  <span>Atualizar</span>
+                  <span>Sincronizar</span>
                 </button>
               </div>
 
-              <div className="space-y-2">
-                {/* Data 1: Mês Atual e Ano Atual */}
-                <div className="p-2.5 rounded-lg bg-[#0a0d13] border border-[#1f2637]">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                      Mês e Ano Atual (Planilha Base)
-                    </label>
+              {/* Data 1: Mês Atual e Ano Atual */}
+              <div className="p-3 rounded-lg bg-[#0a0d13] border border-[#1f2637] space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                     <Calendar className="w-3 h-3 text-[#ffaa2c]" />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.mesAnoRef}
-                    onChange={(e) => setFormData({ ...formData, mesAnoRef: e.target.value })}
-                    className="w-full bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none focus:border-b focus:border-[#ffaa2c]"
-                    title="Mês e ano atualizados automaticamente pelo sistema"
-                  />
-                  <p className="text-[9px] text-[#9ca3af] mt-0.5">
-                    Exibido na planilha orçamentária e no cabeçalho
-                  </p>
+                    Mês e Ano Atual (Tag = AQUI)
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-bold">
+                    Automático
+                  </span>
                 </div>
-
-                {/* Data 2: Data Extensa com Dia da Semana */}
-                <div className="p-2.5 rounded-lg bg-[#0a0d13] border border-[#1f2637]">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                      Data Extensa com Dia da Semana
-                    </label>
-                    <Clock className="w-3 h-3 text-[#ffaa2c]" />
-                  </div>
-                  <input
-                    type="text"
-                    value={formData.dataExtensa}
-                    onChange={(e) => setFormData({ ...formData, dataExtensa: e.target.value })}
-                    className="w-full bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none focus:border-b focus:border-[#ffaa2c]"
-                    title="Dia da semana, dia, mês e ano atualizados automaticamente pelo sistema"
-                  />
-                  <p className="text-[9px] text-[#9ca3af] mt-0.5">
-                    Exibido no fechamento oficial e assinaturas
-                  </p>
+                <div className="text-sm font-bold text-white font-mono">
+                  {formData.mesAnoRef}
                 </div>
+                <p className="text-[9px] text-[#9ca3af]">
+                  Injetado automaticamente na tag <code className="text-[#ffaa2c] font-mono">MÊS/ANO = AQUI</code> do Excel.
+                </p>
               </div>
-            </div>
 
-            {/* Linha 5: Responsável Técnico */}
-            <div className="p-3 rounded-xl bg-[#0a0d14] border border-[#1f2637] space-y-2">
-              <span className="text-[10px] font-mono uppercase text-[#ffaa2c] font-bold block">
-                Responsável Técnico
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] text-gray-400 block mb-0.5">Engenheiro:</label>
-                  <input
-                    type="text"
-                    value={formData.engineerName}
-                    onChange={(e) => setFormData({ ...formData, engineerName: e.target.value })}
-                    className="w-full bg-[#111622] border border-[#263146] rounded px-2 py-1 text-xs text-white"
-                  />
+              {/* Data 2: Data Extensa com Dia da Semana */}
+              <div className="p-3 rounded-lg bg-[#0a0d13] border border-[#1f2637] space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3 h-3 text-[#ffaa2c]" />
+                    Data Extensa com Dia da Semana
+                  </span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 text-[9px] font-bold">
+                    Automático
+                  </span>
                 </div>
-                <div>
-                  <label className="text-[10px] text-gray-400 block mb-0.5">CREA / CAU:</label>
-                  <input
-                    type="text"
-                    value={formData.creaNumber}
-                    onChange={(e) => setFormData({ ...formData, creaNumber: e.target.value })}
-                    className="w-full bg-[#111622] border border-[#263146] rounded px-2 py-1 text-xs text-white"
-                  />
+                <div className="text-xs sm:text-[13px] font-bold text-white font-mono">
+                  {formData.dataExtensa}
                 </div>
+                <p className="text-[9px] text-[#9ca3af]">
+                  Injetado automaticamente na tag <code className="text-[#ffaa2c] font-mono">DATA EXTENSA = AQUI</code> no fechamento.
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-[#141a26]/60 border border-[#232d40] text-[10px] text-gray-300 leading-relaxed">
+                💡 <strong className="text-white">Autossuficiente:</strong> Você só precisa informar a Escola, o Município e o BDI. Todas as datas são sincronizadas sozinhas pelo sistema.
               </div>
             </div>
           </div>
 
           {/* Rodapé do Card 2 */}
           <div className="p-3 bg-[#0a0d13] border-t border-[#1e2535] flex items-center justify-between text-[11px] text-gray-400 shrink-0">
-            <span>SEDUC / GPR</span>
-            <span className="text-emerald-400 font-mono font-semibold">Dados Sincronizados</span>
+            <span>SEDUC / GPR • Planilha Base</span>
+            <span className="text-emerald-400 font-mono font-semibold">Tags = AQUI Prontas</span>
           </div>
         </section>
 
@@ -1195,6 +1196,17 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
 
         {/* Grupo de Botões Alinhados */}
         <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto justify-end">
+          {/* Botão Baixar Memorial (.xlsx) */}
+          <button
+            type="button"
+            onClick={handleBaixarExcelMemorial}
+            className="px-4 py-2.5 rounded-xl border border-emerald-500/50 bg-[#101b17] hover:bg-[#152721] hover:border-emerald-400 text-xs font-bold text-emerald-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+            title="Baixar Memorial Descritivo formatado em Planilha Excel (.xlsx) com substituição das tags = AQUI"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+            <span>Baixar Memorial (.xlsx)</span>
+          </button>
+
           {/* Botão Copiar para Excel */}
           <button
             type="button"
@@ -1266,6 +1278,14 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleBaixarExcelMemorial}
+                  className="px-3 py-1.5 rounded-lg border border-emerald-500/50 bg-[#101b17] hover:bg-[#152721] text-xs font-semibold text-emerald-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Baixar Memorial Descritivo em Planilha Excel (.xlsx)"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" /> Excel (.xlsx)
+                </button>
                 <button
                   type="button"
                   onClick={handleCopyForExcel}
