@@ -11,6 +11,48 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.030]
+- **Data/Hora:** 08/11/2026 15:55 (Horário Local)
+- **Tag Git:** `PR.030`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.030 (Nova Página Inicial de Orçamento: Stepper Superior e Grid Oficial dos 3 Cards Verticais):
+1. **Stepper Superior Horizontal com Linha de Passos Conectada (1 - 2 - 3):**
+   - Etapa 1: Círculo laranja com "1" preenchido em destaque, rótulo "Importar planilha".
+   - Linha de conexão horizontal fina em tom grafite/âmbar.
+   - Etapa 2: Círculo numerado "2", rótulo "Selecionar contrato base".
+   - Etapa 3: Círculo numerado "3", rótulo "Definir regra e compatibilizar".
+2. **Grid Oficial de 3 Cards Verticais (Fidelidade Estrita ao Design de Referência):**
+   - **Card 1 (Importar planilha):**
+     - Cabeçalho com badge circular "1", título e subtítulo institucional.
+     - Dropzone centralizada com borda pontilhada/tracejada, círculo escuro com ícone de nuvem e seta laranja vibrante (`UploadCloud`), textos de orientação e botão `📁 Selecionar arquivo`.
+     - Rodapé com card de arquivo carregado contendo checkmarks circulares verdes (`CheckCircle2`), nome do arquivo e contagem de itens em tempo real.
+   - **Card 2 (Selecionar contrato base):**
+     - Cabeçalho com badge circular "2".
+     - Select estilizado com cantos arredondados contendo os contratos do sistema (`[049/2024 - CERRADOS] ...`, `[045/2026 - MEIO NORTE] ...`, etc.).
+     - Bloco *Mapeamento principal* com ícone de camadas dourado (`Layers`) e as 3 tags estilizadas em caixas com borda dourada: `DISCRIMINAÇÃO`, `QUANT.` e `UND`.
+     - Rodapé com o nome do arquivo modelo e total de composições do contrato.
+   - **Card 3 (Definir regra e compatibilizar):**
+     - Cabeçalho com badge circular "3".
+     - Seção *Como ajustar os quantitativos?* com 2 Radio Cards estilizados:
+       - Opção 1: *Manter o valor final do orçamento* (com ícone de moedas `Coins` em dourado).
+       - Opção 2: *Manter o quantitativo exato da Planilha 1* (com ícone de balança `Scale` em dourado).
+     - Campo *Valor final alvo (R$)* com prefixo dourado e ajuste proporcional automático.
+     - Botão largo de ação em gradiente vibrante de laranja e dourado: `▷ Compatibilizar e Exportar`.
+3. **Fluxo Unificado `handleCompatibilizarEExportar`:**
+   - Ao clicar no botão principal, o sistema executa a compatibilização dos quantitativos na matriz e dispara imediatamente o download da planilha clonada 100% fiel com fórmulas e abas preservadas.
+   - Exibição da barra de resumo financeiro pós-compatibilização (Total Planilha 1, Novo Total Base, Taxa de Compatibilização %) e tabela detalhada de conferência logo abaixo.
+4. **Validação de Compilação:**
+   - Compilação do Next.js 15 (`npm run build`) concluída com 100% de sucesso e 0 erros.
+
+---
+
 ### [PR.029]
 - **Data/Hora:** 08/11/2026 15:15 (Horário Local)
 - **Tag Git:** `PR.029`
