@@ -20,6 +20,50 @@ export interface DescritivoStage {
   items: DescritivoItem[];
 }
 
+export interface AutomaticDates {
+  mesAnoRef: string; // Ex: "Novembro de 2026"
+  dataExtensa: string; // Ex: "Domingo, 8 de novembro de 2026"
+  diaSemana: string; // Ex: "Domingo"
+  dia: string; // Ex: "8" ou "1º"
+  mesNome: string; // Ex: "Novembro"
+  ano: number; // Ex: 2026
+  dataNumerica: string; // Ex: "08/11/2026"
+}
+
+// ----------------------------------------------------------------------------
+// Geração Automática Inteligente de Datas (Mês/Ano e Data Extensa com Dia da Semana)
+// ----------------------------------------------------------------------------
+export function getAutomaticDates(customDate: Date = new Date()): AutomaticDates {
+  const meses = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+  ];
+  const diasSemana = [
+    "Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira",
+    "Quinta-feira", "Sexta-feira", "Sábado"
+  ];
+  const ano = customDate.getFullYear();
+  const mesIndex = customDate.getMonth();
+  const mesNome = meses[mesIndex];
+  const diaSemana = diasSemana[customDate.getDay()];
+  const diaNum = customDate.getDate();
+  const diaFormatado = diaNum === 1 ? "1º" : `${diaNum}`;
+
+  const mesAnoRef = `${mesNome} de ${ano}`;
+  const dataExtensa = `${diaSemana}, ${diaFormatado} de ${mesNome.toLowerCase()} de ${ano}`;
+  const dataNumerica = customDate.toLocaleDateString("pt-BR");
+
+  return {
+    mesAnoRef,
+    dataExtensa,
+    diaSemana,
+    dia: diaFormatado,
+    mesNome,
+    ano,
+    dataNumerica,
+  };
+}
+
 export interface MemorialMetadata {
   projectName: string;
   schoolName: string;
@@ -30,6 +74,9 @@ export interface MemorialMetadata {
   engineerName: string;
   creaNumber: string;
   dateStr: string;
+  bdiPercent?: string; // BDI da Obra (%) Ex: "24,50%"
+  mesAnoRef?: string; // Mês e ano de referência atualizado automaticamente Ex: "Novembro de 2026"
+  dataExtensa?: string; // Data completa com dia da semana atualizada automaticamente Ex: "Domingo, 8 de novembro de 2026"
   propertyId?: string;
   uf?: string;
   areaM2?: string;
@@ -567,7 +614,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(226, 232, 240);
   doc.setLineWidth(0.4);
-  const quadroHeight = (metadata.areaM2 || metadata.datumSystem) ? 35 : 28;
+  const quadroHeight = 32;
   doc.roundedRect(margin, currentY, printableWidth, quadroHeight, 1, 1, "FD");
 
   doc.setFontSize(8.5);
@@ -578,44 +625,42 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   let qY = currentY + 5;
 
   doc.setFont("helvetica", "bold");
-  doc.text("UNIDADE ESCOLAR / IMÓVEL:", col1X, qY);
+  doc.text("UNIDADE ESCOLAR:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.propertyId || metadata.schoolName || "-", col1X + 46, qY);
+  doc.text(metadata.schoolName || metadata.propertyId || "-", col1X + 38, qY);
 
   doc.setFont("helvetica", "bold");
   doc.text("MUNICÍPIO / UF:", col2X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(`${metadata.city || "-"}${metadata.uf ? ` - ${metadata.uf}` : ""}`, col2X + 26, qY);
+  doc.text(`${metadata.city || "-"}${metadata.uf ? ` - ${metadata.uf}` : ""}`, col2X + 28, qY);
+
+  qY += 5.5;
+  doc.setFont("helvetica", "bold");
+  doc.text("BDI APLICADO (%):", col1X, qY);
+  doc.setFont("helvetica", "normal");
+  doc.text(metadata.bdiPercent || "24,50%", col1X + 38, qY);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("MÊS / ANO REF.:", col2X, qY);
+  doc.setFont("helvetica", "normal");
+  doc.text(metadata.mesAnoRef || "Novembro de 2026", col2X + 28, qY);
 
   qY += 5.5;
   doc.setFont("helvetica", "bold");
   doc.text("FINALIDADE / OBJETO:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.purpose || metadata.objectDescription || "-", col1X + 46, qY);
+  doc.text(metadata.purpose || metadata.objectDescription || "Reforma e Manutenção Predial", col1X + 38, qY);
 
   doc.setFont("helvetica", "bold");
-  doc.text("DATA DE EMISSÃO:", col2X, qY);
+  doc.text("GRE / REGIONAL:", col2X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(metadata.dateStr || new Date().toLocaleDateString("pt-BR"), col2X + 26, qY);
-
-  if (metadata.areaM2 || metadata.perimeterM || metadata.datumSystem) {
-    qY += 5.5;
-    doc.setFont("helvetica", "bold");
-    doc.text("ÁREA TOTAL / PERÍMETRO:", col1X, qY);
-    doc.setFont("helvetica", "normal");
-    doc.text(`${metadata.areaM2 ? `${metadata.areaM2} m²` : "-"}  |  Perímetro: ${metadata.perimeterM ? `${metadata.perimeterM} m` : "-"}`, col1X + 46, qY);
-
-    doc.setFont("helvetica", "bold");
-    doc.text("SISTEMA REF. / DATUM:", col2X, qY);
-    doc.setFont("helvetica", "normal");
-    doc.text(metadata.datumSystem || "SIRGAS2000", col2X + 38, qY);
-  }
+  doc.text(metadata.gre || "SEDUC / GPR", col2X + 28, qY);
 
   qY += 5.5;
   doc.setFont("helvetica", "bold");
   doc.text("RESPONSÁVEL TÉCNICO:", col1X, qY);
   doc.setFont("helvetica", "normal");
-  doc.text(`${metadata.engineerName || "Engenheiro Civil"} (${metadata.creaNumber || "CREA/CAU"})`, col1X + 46, qY);
+  doc.text(`${metadata.engineerName || "Engenheiro Civil"} (${metadata.creaNumber || "CREA/CAU"})`, col1X + 38, qY);
 
   currentY += quadroHeight + 6;
 
@@ -670,7 +715,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   });
 
   // 5. RECEBIMENTO E CONCLUSÃO
-  checkPageBreak(40);
+  checkPageBreak(45);
   currentY += 4;
 
   doc.setFont("helvetica", "bold");
@@ -686,7 +731,16 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
     "Os serviços serão recebidos mediante vistoria da equipe de engenharia fiscal, mediante constatação da completa conformidade com as presentes especificações técnicas, testes funcionais e limpeza final de todas as áreas afetadas.";
   const splitFinish = doc.splitTextToSize(finishText, printableWidth);
   doc.text(splitFinish, margin, currentY);
-  currentY += splitFinish.length * 3.8 + 15;
+  currentY += splitFinish.length * 3.8 + 10;
+
+  // Local e Data por extenso com Dia da Semana (Atualizado Automaticamente)
+  checkPageBreak(35);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8.5);
+  doc.setTextColor(70, 70, 70);
+  const localDataStr = `${metadata.city || "Teresina"} - ${metadata.uf || "PI"}, ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}.`;
+  doc.text(localDataStr, pageWidth / 2, currentY, { align: "center" });
+  currentY += 14;
 
   // Linhas para Assinatura
   checkPageBreak(25);
@@ -755,20 +809,32 @@ export function generateMemorialWordDoc(metadata: MemorialMetadata, stages: Desc
       <h1>MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS</h1>
       <table>
         <tr>
-          <td class="label">UNIDADE / IMÓVEL:</td>
-          <td>${metadata.propertyId || metadata.schoolName || "-"}</td>
+          <td class="label">UNIDADE ESCOLAR:</td>
+          <td>${metadata.schoolName || metadata.propertyId || "-"}</td>
         </tr>
         <tr>
           <td class="label">MUNICÍPIO / UF:</td>
           <td>${metadata.city || "-"} / ${metadata.uf || "PI"}</td>
         </tr>
         <tr>
-          <td class="label">FINALIDADE / OBJETO:</td>
-          <td>${metadata.purpose || metadata.objectDescription || "-"}</td>
+          <td class="label">BDI DA OBRA (%):</td>
+          <td>${metadata.bdiPercent || "24,50%"}</td>
         </tr>
         <tr>
-          <td class="label">DATA:</td>
-          <td>${metadata.dateStr || new Date().toLocaleDateString("pt-BR")}</td>
+          <td class="label">MÊS / ANO REF.:</td>
+          <td>${metadata.mesAnoRef || "Novembro de 2026"}</td>
+        </tr>
+        <tr>
+          <td class="label">GRE / REGIONAL:</td>
+          <td>${metadata.gre || "12ª GRE"}</td>
+        </tr>
+        <tr>
+          <td class="label">FINALIDADE / OBJETO:</td>
+          <td>${metadata.purpose || metadata.objectDescription || "Reforma e Manutenção Predial"}</td>
+        </tr>
+        <tr>
+          <td class="label">DATA DE EMISSÃO:</td>
+          <td>${metadata.dataExtensa || metadata.dateStr || new Date().toLocaleDateString("pt-BR")}</td>
         </tr>
       </table>
 
@@ -782,7 +848,11 @@ export function generateMemorialWordDoc(metadata: MemorialMetadata, stages: Desc
         .join("")}
 
       <br/><br/>
-      <table style="border: none; margin-top: 30px;">
+      <p style="text-align: center; font-style: italic; margin-top: 25px; font-size: 10.5pt; color: #475569;">
+        ${metadata.city || "Teresina"} - ${metadata.uf || "PI"}, ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}.
+      </p>
+      <br/>
+      <table style="border: none; margin-top: 20px;">
         <tr style="border: none;">
           <td style="border: none; text-align: center; width: 50%;">
             __________________________________________<br/>

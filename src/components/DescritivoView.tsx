@@ -30,6 +30,11 @@ import {
   FileCode,
   Copy,
   CheckCircle2,
+  Building2,
+  Calendar,
+  Clock,
+  Percent,
+  RotateCw,
 } from "lucide-react";
 import {
   DescritivoStage,
@@ -42,6 +47,8 @@ import {
   generateMemorialWordDoc,
   getMemorialPDFBlobUrl,
   formatStagesToSpreadsheetText,
+  getAutomaticDates,
+  AutomaticDates,
 } from "@/lib/descritivoAI";
 
 interface DescritivoViewProps {
@@ -60,38 +67,57 @@ export default function DescritivoView({
   showToast,
 }: DescritivoViewProps) {
   // --------------------------------------------------------------------------
-  // 1. ESTADO DOS DADOS DO MEMORIAL (Conforme Referência Visual)
+  // 1. GERAÇÃO AUTOMÁTICA DE DATAS (Mês/Ano Atual e Data Extensa com Dia da Semana)
+  // --------------------------------------------------------------------------
+  const autoDates = useMemo(() => getAutomaticDates(), []);
+
+  // --------------------------------------------------------------------------
+  // 2. ESTADO DOS DADOS DO MEMORIAL (Escola, Município, BDI, GRE e Datas)
   // --------------------------------------------------------------------------
   const [formData, setFormData] = useState({
-    propertyId: initialSchoolName || "Lote 05 – Quadra B",
-    municipio: initialCity ? initialCity.split(" - ")[0] : "Florianópolis",
-    uf: initialCity && initialCity.includes("-") ? initialCity.split("-")[1].trim() : "SC",
-    areaM2: "525,00",
-    perimeterM: "96,40",
-    datumSystem: "SIRGAS2000",
-    finalidade: "Desmembramento",
+    schoolName: initialSchoolName || "CETI Dep. Francisco Antônio Paes Landim Neto",
+    municipio: initialCity ? initialCity.split(" - ")[0] : "São João do Piauí",
+    uf: initialCity && initialCity.includes("-") ? initialCity.split("-")[1].trim() : "PI",
+    bdiPercent: "24,50%",
+    gre: initialGre || "12ª GRE",
+    finalidade: "Reforma e Manutenção da Unidade Escolar",
+    mesAnoRef: autoDates.mesAnoRef, // Ex: "Novembro de 2026"
+    dataExtensa: autoDates.dataExtensa, // Ex: "Domingo, 8 de novembro de 2026"
+    engineerName: "Engenheiro Responsável Técnico",
+    creaNumber: "CREA-PI nº 12345/D",
   });
 
-  // Metadados sincronizados para o gerador de PDF
+  // Função para recalcular e atualizar datas automaticamente a qualquer momento
+  const handleRefreshDates = () => {
+    const fresh = getAutomaticDates();
+    setFormData((prev) => ({
+      ...prev,
+      mesAnoRef: fresh.mesAnoRef,
+      dataExtensa: fresh.dataExtensa,
+    }));
+    showToast(`Datas atualizadas automaticamente: ${fresh.dataExtensa}`);
+  };
+
+  // Metadados sincronizados para o gerador de PDF e Word
   const metadata: MemorialMetadata = useMemo(
     () => ({
-      projectName: initialProjectName || `${formData.finalidade} — ${formData.propertyId}`,
-      schoolName: formData.propertyId,
+      projectName: initialProjectName || `${formData.finalidade} — ${formData.schoolName}`,
+      schoolName: formData.schoolName,
       city: formData.municipio,
-      gre: initialGre || "SEDUC / GPR",
-      organization: "Governo do Estado — Secretaria da Educação / GPR",
+      gre: formData.gre,
+      organization: "Governo do Estado do Piauí — Secretaria da Educação / GPR",
       objectDescription: `Elaboração de Memorial Descritivo para ${formData.finalidade}`,
-      engineerName: "Engenheiro Responsável Técnico",
-      creaNumber: "CREA nº 12345/D",
-      dateStr: new Date().toLocaleDateString("pt-BR"),
-      propertyId: formData.propertyId,
+      engineerName: formData.engineerName,
+      creaNumber: formData.creaNumber,
+      dateStr: autoDates.dataNumerica,
+      bdiPercent: formData.bdiPercent,
+      mesAnoRef: formData.mesAnoRef,
+      dataExtensa: formData.dataExtensa,
+      propertyId: formData.schoolName,
       uf: formData.uf,
-      areaM2: formData.areaM2,
-      perimeterM: formData.perimeterM,
-      datumSystem: formData.datumSystem,
       purpose: formData.finalidade,
     }),
-    [formData, initialProjectName, initialGre]
+    [formData, initialProjectName, autoDates.dataNumerica]
   );
 
   // --------------------------------------------------------------------------
@@ -392,7 +418,7 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
 
     setTimeout(() => {
       const generated = generateLocalSeniorDescription(
-        `Imóvel: ${formData.propertyId}, Município: ${formData.municipio}/${formData.uf}, Área: ${formData.areaM2} m², Perímetro: ${formData.perimeterM} m, Finalidade: ${formData.finalidade}`,
+        `Escola: ${formData.schoolName}, Município: ${formData.municipio}/${formData.uf}, BDI: ${formData.bdiPercent}, GRE: ${formData.gre}, Finalidade: ${formData.finalidade}, Referência: ${formData.mesAnoRef}, Data: ${formData.dataExtensa}`,
         stages
       );
       setStages(generated);
@@ -761,22 +787,25 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
             </header>
 
             {isDadosOpen && (
-              <div className="p-4 sm:p-5 space-y-3.5 text-xs">
-                {/* Linha 1: Identificação e Município */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-medium mb-1">
-                      Identificação do imóvel <span className="text-[#ffaa2c]">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.propertyId}
-                      onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
-                      placeholder="Ex: Lote 05 – Quadra B"
-                      className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c] transition-colors"
-                    />
-                  </div>
-                  <div>
+              <div className="p-4 sm:p-5 space-y-4 text-xs">
+                {/* Linha 1: Nome da Escola */}
+                <div>
+                  <label className="block text-[11px] text-gray-300 font-semibold mb-1 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-[#ffaa2c]" />
+                    Nome da Escola (Unidade Escolar) <span className="text-[#ffaa2c]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.schoolName}
+                    onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
+                    placeholder="Ex: CETI Deputado Francisco Antônio Paes Landim Neto"
+                    className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c] transition-colors"
+                  />
+                </div>
+
+                {/* Linha 2: Município, UF e BDI (%) */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+                  <div className="sm:col-span-6">
                     <label className="block text-[11px] text-gray-300 font-medium mb-1">
                       Município <span className="text-[#ffaa2c]">*</span>
                     </label>
@@ -784,15 +813,11 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                       type="text"
                       value={formData.municipio}
                       onChange={(e) => setFormData({ ...formData, municipio: e.target.value })}
-                      placeholder="Ex: Florianópolis"
+                      placeholder="Ex: São João do Piauí"
                       className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c] transition-colors"
                     />
                   </div>
-                </div>
-
-                {/* Linha 2: UF, Área e Perímetro */}
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div>
+                  <div className="sm:col-span-3">
                     <label className="block text-[11px] text-gray-300 font-medium mb-1">
                       UF <span className="text-[#ffaa2c]">*</span>
                     </label>
@@ -801,7 +826,7 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                       onChange={(e) => setFormData({ ...formData, uf: e.target.value })}
                       className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-2 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
                     >
-                      {["SC", "PI", "MA", "CE", "BA", "PE", "SP", "RJ", "MG", "PR", "RS", "GO", "DF"].map(
+                      {["PI", "MA", "CE", "BA", "PE", "RN", "PB", "SP", "RJ", "MG", "PR", "SC", "RS", "GO", "DF"].map(
                         (uf) => (
                           <option key={uf} value={uf} className="bg-[#111622] text-white">
                             {uf}
@@ -810,62 +835,120 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                       )}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-medium mb-1 truncate">
-                      Área (m²) <span className="text-[#ffaa2c]">*</span>
+                  <div className="sm:col-span-3">
+                    <label className="block text-[11px] text-gray-300 font-semibold mb-1 truncate text-[#ffaa2c]">
+                      BDI da Obra (%) <span className="text-[#ffaa2c]">*</span>
                     </label>
                     <input
                       type="text"
-                      value={formData.areaM2}
-                      onChange={(e) => setFormData({ ...formData, areaM2: e.target.value })}
-                      className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-2.5 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-gray-300 font-medium mb-1 truncate">
-                      Perímetro (m) <span className="text-[#ffaa2c]">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.perimeterM}
-                      onChange={(e) => setFormData({ ...formData, perimeterM: e.target.value })}
-                      className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-2.5 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
+                      value={formData.bdiPercent}
+                      onChange={(e) => setFormData({ ...formData, bdiPercent: e.target.value })}
+                      placeholder="Ex: 24,50%"
+                      className="w-full h-9 bg-[#0b0e14] border border-[#ffaa2c]/50 rounded-lg px-2.5 text-xs text-[#ffaa2c] font-bold focus:outline-none focus:border-[#ffaa2c]"
                     />
                   </div>
                 </div>
 
-                {/* Linha 3: Sistema de Referência e Finalidade */}
+                {/* Linha 3: GRE / Regional e Finalidade / Objeto */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] text-gray-300 font-medium mb-1">
-                      Sistema de referência / Datum <span className="text-[#ffaa2c]">*</span>
+                      GRE / Regional <span className="text-[#ffaa2c]">*</span>
                     </label>
-                    <select
-                      value={formData.datumSystem}
-                      onChange={(e) => setFormData({ ...formData, datumSystem: e.target.value })}
+                    <input
+                      type="text"
+                      value={formData.gre}
+                      onChange={(e) => setFormData({ ...formData, gre: e.target.value })}
+                      placeholder="Ex: 12ª GRE"
                       className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
-                    >
-                      <option value="SIRGAS2000" className="bg-[#111622]">SIRGAS2000</option>
-                      <option value="SAD69" className="bg-[#111622]">SAD69</option>
-                      <option value="WGS84" className="bg-[#111622]">WGS84</option>
-                      <option value="Córrego Alegre" className="bg-[#111622]">Córrego Alegre</option>
-                    </select>
+                    />
                   </div>
                   <div>
                     <label className="block text-[11px] text-gray-300 font-medium mb-1">
-                      Finalidade
+                      Finalidade / Objeto <span className="text-[#ffaa2c]">*</span>
                     </label>
                     <select
                       value={formData.finalidade}
                       onChange={(e) => setFormData({ ...formData, finalidade: e.target.value })}
                       className="w-full h-9 bg-[#0b0e14] border border-[#263146] rounded-lg px-3 text-xs text-white focus:outline-none focus:border-[#ffaa2c]"
                     >
-                      <option value="Desmembramento" className="bg-[#111622]">Desmembramento</option>
-                      <option value="Reforma e Manutenção Predial" className="bg-[#111622]">Reforma e Manutenção Predial</option>
-                      <option value="Regularização Fundiária" className="bg-[#111622]">Regularização Fundiária</option>
-                      <option value="Usucapião" className="bg-[#111622]">Usucapião</option>
-                      <option value="Adequação e Ampliação" className="bg-[#111622]">Adequação e Ampliação</option>
+                      <option value="Reforma e Manutenção da Unidade Escolar" className="bg-[#111622]">Reforma e Manutenção da Unidade Escolar</option>
+                      <option value="Adequação e Modernização de Infraestrutura" className="bg-[#111622]">Adequação e Modernização de Infraestrutura</option>
+                      <option value="Manutenção Preventiva e Corretiva" className="bg-[#111622]">Manutenção Preventiva e Corretiva</option>
+                      <option value="Reforma da Cobertura e Instalações" className="bg-[#111622]">Reforma da Cobertura e Instalações</option>
+                      <option value="Ampliação e Adequação de Acessibilidade" className="bg-[#111622]">Ampliação e Adequação de Acessibilidade</option>
                     </select>
+                  </div>
+                </div>
+
+                {/* Linha 4: Painel de Datas Atualizadas Automaticamente */}
+                <div className="p-3.5 rounded-xl border border-[#ffaa2c]/30 bg-gradient-to-br from-[#121722] to-[#0c0f16] space-y-2.5 shadow-md">
+                  <div className="flex items-center justify-between gap-2 border-b border-[#232d40] pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c]">
+                        <Clock className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-white tracking-tight flex items-center gap-1.5">
+                          Datas do Memorial & Planilha
+                          <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[9px] font-bold uppercase tracking-wider">
+                            Automático
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleRefreshDates}
+                      className="px-2 py-1 rounded-md border border-[#2b3850] bg-[#161c28] hover:bg-[#1f283a] hover:border-[#ffaa2c]/50 text-[10px] text-gray-300 hover:text-white flex items-center gap-1 transition-all cursor-pointer"
+                      title="Sincronizar datas com o momento atual"
+                    >
+                      <RotateCw className="w-3 h-3 text-[#ffaa2c]" />
+                      <span>Atualizar</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Data 1: Mês Atual e Ano Atual */}
+                    <div className="p-2.5 rounded-lg bg-[#0a0d13] border border-[#1f2637]">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                          Mês e Ano Atual (Planilha Base)
+                        </label>
+                        <Calendar className="w-3 h-3 text-[#ffaa2c]" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.mesAnoRef}
+                        onChange={(e) => setFormData({ ...formData, mesAnoRef: e.target.value })}
+                        className="w-full bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none focus:border-b focus:border-[#ffaa2c]"
+                        title="Mês e ano atualizados automaticamente pelo sistema"
+                      />
+                      <p className="text-[9px] text-[#9ca3af] mt-0.5">
+                        Exibido na planilha orçamentária e no cabeçalho
+                      </p>
+                    </div>
+
+                    {/* Data 2: Data Extensa com Dia da Semana */}
+                    <div className="p-2.5 rounded-lg bg-[#0a0d13] border border-[#1f2637]">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                          Data Extensa com Dia da Semana
+                        </label>
+                        <Clock className="w-3 h-3 text-[#ffaa2c]" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.dataExtensa}
+                        onChange={(e) => setFormData({ ...formData, dataExtensa: e.target.value })}
+                        className="w-full bg-transparent text-xs sm:text-[13px] font-bold text-white focus:outline-none focus:border-b focus:border-[#ffaa2c]"
+                        title="Dia da semana, dia, mês e ano atualizados automaticamente pelo sistema"
+                      />
+                      <p className="text-[9px] text-[#9ca3af] mt-0.5">
+                        Exibido no fechamento oficial e assinaturas
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -973,13 +1056,18 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                     {/* Simulação/Conteúdo de Linhas de Texto no Padrão do Super Prompt */}
                     {currentPage === 1 && (
                       <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
-                        <div className="bg-slate-100 p-1 rounded border border-slate-200 space-y-0.5 mb-2">
-                          <p className="font-bold text-slate-800">
-                            Imóvel: {formData.propertyId}
+                        <div className="bg-slate-100 p-1.5 rounded border border-slate-200 space-y-0.5 mb-2 text-[6.5px]">
+                          <p className="font-bold text-slate-800 truncate">
+                            Unidade: {formData.schoolName}
                           </p>
-                          <p>Local: {formData.municipio} / {formData.uf}</p>
-                          <p>Área: {formData.areaM2} m² | Perímetro: {formData.perimeterM} m</p>
-                          <p>Datum: {formData.datumSystem}</p>
+                          <div className="flex justify-between text-slate-700">
+                            <span>Local: {formData.municipio} - {formData.uf}</span>
+                            <span className="font-bold text-[#e65c00]">BDI: {formData.bdiPercent}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-600">
+                            <span>Ref: {formData.mesAnoRef}</span>
+                            <span>GRE: {formData.gre}</span>
+                          </div>
                         </div>
                         <p className="font-bold text-slate-800 uppercase">FORROS</p>
                         <p className="line-clamp-2">
@@ -1009,19 +1097,24 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                     )}
 
                     {currentPage >= 3 && (
-                      <div className="space-y-2 text-[7px] text-slate-600 leading-tight">
+                      <div className="space-y-1.5 text-[7px] text-slate-600 leading-tight">
                         <p className="font-bold text-slate-800 uppercase">RECEBIMENTO E CONCLUSÃO</p>
                         <p className="line-clamp-2">
-                          Vistoria conclusiva da equipe técnica para ateste final de conformidade da intervenção predial e escolar.
+                          Vistoria conclusiva da equipe de engenharia fiscal para ateste final de conformidade da intervenção predial e escolar.
                         </p>
-                        <div className="pt-4 flex justify-between gap-2 border-t border-slate-200 mt-4 text-[6px] text-center">
+                        <p className="text-center italic text-[6px] text-slate-500 pt-1">
+                          {formData.municipio} - {formData.uf}, {formData.dataExtensa}.
+                        </p>
+                        <div className="pt-2 flex justify-between gap-2 border-t border-slate-200 mt-2 text-[6px] text-center">
                           <div className="flex-1">
                             <div className="border-b border-slate-400 mb-0.5" />
                             <p className="font-bold">Engenheiro Responsável</p>
+                            <p className="text-slate-400">{formData.creaNumber}</p>
                           </div>
                           <div className="flex-1">
                             <div className="border-b border-slate-400 mb-0.5" />
                             <p className="font-bold">Fiscal Contratante</p>
+                            <p className="text-slate-400">SEDUC / GPR</p>
                           </div>
                         </div>
                       </div>
@@ -1137,10 +1230,10 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                 <FileText className="w-5 h-5 text-[#ffaa2c]" />
                 <div>
                   <h3 className="text-sm font-bold text-white">
-                    Memorial Descritivo Oficial — {formData.propertyId}
+                    Memorial Descritivo Oficial — {formData.schoolName}
                   </h3>
                   <p className="text-xs text-gray-400">
-                    {formData.municipio} / {formData.uf} • {formData.finalidade}
+                    {formData.municipio} - {formData.uf} • BDI: {formData.bdiPercent} • Ref: {formData.mesAnoRef}
                   </p>
                 </div>
               </div>
@@ -1187,24 +1280,28 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                 </div>
 
                 {/* Quadro de Identificação */}
-                <div className="p-3 bg-slate-100 rounded border border-slate-200 grid grid-cols-2 gap-2 text-[10px]">
+                <div className="p-3.5 bg-slate-100 rounded border border-slate-200 grid grid-cols-2 gap-2 text-[10px]">
                   <div>
-                    <span className="font-bold text-slate-700">UNIDADE ESCOLAR / IMÓVEL: </span>
-                    <span className="text-slate-900">{formData.propertyId}</span>
+                    <span className="font-bold text-slate-700">UNIDADE ESCOLAR: </span>
+                    <span className="text-slate-900 font-semibold">{formData.schoolName}</span>
                   </div>
                   <div>
                     <span className="font-bold text-slate-700">MUNICÍPIO / UF: </span>
-                    <span className="text-slate-900">{formData.municipio} / {formData.uf}</span>
+                    <span className="text-slate-900">{formData.municipio} - {formData.uf}</span>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-700">ÁREA / PERÍMETRO: </span>
-                    <span className="text-slate-900">{formData.areaM2} m² / {formData.perimeterM} m</span>
+                    <span className="font-bold text-slate-700">BDI APLICADO (%): </span>
+                    <span className="text-[#e65c00] font-bold">{formData.bdiPercent}</span>
                   </div>
                   <div>
-                    <span className="font-bold text-slate-700">DATUM / SISTEMA: </span>
-                    <span className="text-slate-900">{formData.datumSystem}</span>
+                    <span className="font-bold text-slate-700">MÊS / ANO REF.: </span>
+                    <span className="text-slate-900 font-medium">{formData.mesAnoRef}</span>
                   </div>
-                  <div className="col-span-2">
+                  <div>
+                    <span className="font-bold text-slate-700">GRE / REGIONAL: </span>
+                    <span className="text-slate-900">{formData.gre}</span>
+                  </div>
+                  <div>
                     <span className="font-bold text-slate-700">FINALIDADE: </span>
                     <span className="text-slate-900">{formData.finalidade}</span>
                   </div>
@@ -1228,17 +1325,22 @@ Executar substituição das torneiras danificadas, com adequação dos pontos hi
                   ))}
                 </div>
 
-                {/* Assinaturas */}
-                <div className="pt-8 grid grid-cols-2 gap-6 text-center text-[10px]">
-                  <div>
-                    <div className="border-b border-slate-400 mb-1" />
-                    <p className="font-bold text-slate-900">Engenheiro Responsável Técnico</p>
-                    <p className="text-slate-500">CREA nº 12345/D</p>
-                  </div>
-                  <div>
-                    <div className="border-b border-slate-400 mb-1" />
-                    <p className="font-bold text-slate-900">Fiscal de Obras / Órgão Contratante</p>
-                    <p className="text-slate-500">SEDUC / GPR</p>
+                {/* Data e Local por extenso com Dia da Semana e Assinaturas */}
+                <div className="pt-6 text-center">
+                  <p className="italic text-slate-600 text-[11px] mb-6">
+                    {formData.municipio} - {formData.uf}, {formData.dataExtensa}.
+                  </p>
+                  <div className="grid grid-cols-2 gap-8 text-[10px]">
+                    <div>
+                      <div className="border-b border-slate-400 mb-1" />
+                      <p className="font-bold text-slate-900">{formData.engineerName}</p>
+                      <p className="text-slate-500">{formData.creaNumber}</p>
+                    </div>
+                    <div>
+                      <div className="border-b border-slate-400 mb-1" />
+                      <p className="font-bold text-slate-900">Fiscal de Obras / Órgão Contratante</p>
+                      <p className="text-slate-500">SEDUC / GPR</p>
+                    </div>
                   </div>
                 </div>
               </div>

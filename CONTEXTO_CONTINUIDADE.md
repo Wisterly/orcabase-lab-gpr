@@ -1,15 +1,17 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.028
-O ciclo **`PR.028`** incorporou integralmente o **SUPER PROMPT** de infraestrutura escolar ao assistente inteligente de Memoriais Descritivos:
-1. **Regra de Ouro dos Títulos:** Todos os títulos dos grupos em CAIXA ALTA e sem qualquer numeração (`FORROS`, `PINTURA GERAL`, `BANHEIROS`, `COZINHA`, `ELÉTRICA`, `COBERTURA`, etc.).
-2. **Regra Especial e Prioritária de ELÉTRICA:** Título único obrigatório `ELÉTRICA`, unificando todos os serviços elétricos, iluminação, luminárias slim, tomadas, interruptores, quadros e chuveiros.
-3. **Padrão de Linha Única para Excel:** Cada serviço em uma linha independente, iniciando com "Executar..." ou "Fornecer e instalar...", sem marcadores, bolinhas ou traços, com botão de cópia direta para o Excel.
-4. **Preservação Integral de Contexto:** A cada nova instrução de adicionar, remover ou transferir, todo o descritivo é reapresentado completo e atualizado.
-5. **PDF & Word:** Sincronizados com a nova padronização oficial.
+## 📍 Ponto Atual de Entrega — Ciclo PR.029
+O ciclo **`PR.029`** incorporou os campos oficiais e a automação inteligente de datas no módulo de Memoriais Descritivos:
+1. **Dados Oficiais de Infraestrutura Escolar:** Substituição dos campos genéricos de loteamento por Nome da Escola (Unidade Escolar), Município, UF (Padrão PI), BDI da Obra (%), GRE / Regional e Finalidade / Objeto da intervenção.
+2. **Geração Automática de Datas (`getAutomaticDates`):**
+   - **Mês e Ano Atual (Planilha Base):** Detectado e preenchido automaticamente (ex: `Novembro de 2026`).
+   - **Data Extensa Completa com Dia da Semana:** Gerado automaticamente com dia da semana, dia numérico/ordinal, mês e ano (ex: `Domingo, 8 de novembro de 2026`).
+   - **Botão de Sincronização:** Recalibração instantânea com um clique.
+3. **Reflexo Universal:** Folha A4 realista no Card 2, PDF executivo oficial (jsPDF), documento Microsoft Word (.DOC) e modal de tela cheia totalmente sincronizados.
+4. **Build e Produção:** Next.js 15 compilado com sucesso e publicado na Vercel (`https://orcabase-lab-gpr.vercel.app`).
 
 ---
 
-## 🎯 Próximo Passo do Agente (Ciclo PR.029)
+## 🎯 Próximo Passo do Agente (Ciclo PR.030)
 1. **Auditoria de Desvios de Quantitativos:** Indicador visual de variação percentual dos itens compatibilizados.
 2. **Histórico em Nuvem:** Compartilhamento multiusuário via Supabase/PostgreSQL.

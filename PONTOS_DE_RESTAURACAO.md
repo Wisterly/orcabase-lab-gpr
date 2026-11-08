@@ -11,6 +11,37 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.029]
+- **Data/Hora:** 08/11/2026 15:15 (Horário Local)
+- **Tag Git:** `PR.029`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🖥️ Implementações Estruturais do PR.029 (Campos Oficiais de Escola, BDI e Automação Inteligente de Datas com Dia da Semana):
+1. **Substituição dos Campos do Card "Dados do Memorial" pelos Padrões Oficiais de Infraestrutura Escolar:**
+   - **Nome da Escola (Unidade Escolar):** Campo dedicado para unidade escolar (ex: *CETI Dep. Francisco Antônio Paes Landim Neto* ou herança automática da planilha aberta).
+   - **Município e UF:** Configuração de cidade e estado com padrão Piauí (`PI`) e suporte universal a todas as UFs.
+   - **BDI da Obra (%):** Campo em destaque estilizado em âmbar (`#ffaa2c`) para inserção do percentual de BDI da planilha orçamentária (ex: `24,50%` ou `26,85%`).
+   - **GRE / Regional e Objeto:** Identificação da Gerência Regional de Educação (ex: `12ª GRE`) e objeto da intervenção predial (*Reforma e Manutenção da Unidade Escolar*).
+2. **Sistema Autônomo de Geração e Atualização de Datas (`getAutomaticDates`):**
+   - **Mês e Ano Atual (Planilha Base):** Detecta o mês corrente e o ano atual vigentes no sistema e preenche automaticamente (ex: `Novembro de 2026`).
+   - **Data Extensa Completa com Dia da Semana:** Gera dinamicamente o dia da semana (`domingo`, `segunda-feira`, etc.), dia numérico/ordinal (`1º`, `2`, `3`...), mês e ano (ex: `Domingo, 8 de novembro de 2026`).
+   - **Botão de Sincronização Imediata:** Permite que o usuário recalibre as datas instantaneamente com um clique caso haja virada de data/mês durante o uso.
+3. **Reflexo Completo na Pré-visualização da Folha A4, PDF Oficial e Microsoft Word:**
+   - **Folha A4 Realista (Card 2):** Quadro resumo com Escola, Local, BDI (%) em destaque laranja, Mês/Ano Ref. e GRE; encerramento com a data completa por extenso.
+   - **PDF Executivo Oficial (jsPDF):** Cabeçalho e quadro de identificação com todos os metadados organizados em grid e linha de encerramento com `Município - UF, Data Extensa com Dia da Semana`.
+   - **Microsoft Word (.DOC):** Tabela de identificação completa e fechamento com assinaturas do Engenheiro e Fiscal.
+   - **Modal de Visualização em Alta Definição:** Exibição sincronizada em tela cheia com todos os novos campos.
+4. **Validação de Compilação:**
+   - Compilação do Next.js 15 (`npm run build`) concluída com 100% de êxito e 0 erros.
+
+---
+
 ### [PR.028]
 - **Data/Hora:** 08/11/2026 04:20 (Horário Local)
 - **Tag Git:** `PR.028`
