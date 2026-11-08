@@ -1178,26 +1178,11 @@ export default function OrcaBaseDashboard() {
         return;
       }
 
-      // Caso o contrato atual seja fictício de demonstração inicial e não possua arquivo .xlsx bruto:
+      // Se o contrato não tiver o arquivo .xlsx/.xlsm original anexado:
       showToast(
-        "Dica: Para preservar o layout exato da sua empresa, anexe o arquivo .xlsx original deste contrato no botão abaixo!"
+        "Atenção: A Planilha Base original (.xlsx/.xlsm) deste contrato precisa estar anexada para gerar o arquivo com 100% da formatação, abas e fórmulas originais! Anexe a planilha base no botão indicado abaixo."
       );
-
-      injectQuantitiesClientFallback(
-        contractBase64,
-        {
-          contractName: selectedContract.contractName,
-          contractNumber: selectedContract.contractNumber,
-          organization: selectedContract.organization,
-          referenceBase: selectedContract.referenceBase,
-          bdiPercent: selectedContract.bdiPercent,
-          budgetSheetName: selectedContract.budgetSheetName,
-          detectedColumns: selectedContract.detectedColumns,
-        },
-        compositionMatches,
-        outputCompatFilename
-      );
-      showToast(`Download concluído! "${outputCompatFilename}" baixada com sucesso.`);
+      selectedContractQuickUploadRef.current?.click();
     } catch (error) {
       console.error("Erro na geração da planilha compatibilizada:", error);
       showToast("Não foi possível gerar a planilha com a formatação original. Verifique o console.");
