@@ -52,6 +52,13 @@ import {
   StoredTemplateMeta,
 } from "@/lib/memorialExcelEngine";
 import {
+  COMPAT_ENGINE_LOCK_VERSION,
+  generateLockedCompatibleWorkbook,
+  getLockedCompatOutputFilename,
+  runLockedCompatibilityMatrix,
+  runLockedStrategyAdjustment,
+} from "@/lib/compatEngineLock";
+import {
   studySpreadsheetFromBuffer,
   arrayBufferToBase64,
   saveContractBinary,
@@ -1047,11 +1054,6 @@ export default function OrcaBaseDashboard() {
   };
 
   const handleApplyCustomTargetTotal = (specificTarget?: number) => {
-    if (compositionMatches.length === 0) {
-      showToast("Execute a compatibilização antes de ajustar o valor alvo.");
-      return;
-    }
-
     let targetToApply: number;
     if (specificTarget !== undefined && specificTarget > 0) {
       targetToApply = specificTarget;
@@ -1075,7 +1077,18 @@ export default function OrcaBaseDashboard() {
       }
     }
 
-    const updated = applyCalculationStrategyToMatches(
+    if (compositionMatches.length === 0) {
+      if (sheet1Study && sheet1Study.items.length > 0 && selectedContract) {
+        setCalcStrategy("KEEP_TOTAL_VALUE");
+        saveAppSettingToDB("calcStrategy", "KEEP_TOTAL_VALUE").catch(() => {});
+        runCompatibilityEngine("KEEP_TOTAL_VALUE", targetToApply);
+        return;
+      }
+      showToast("Valor alvo definido! Importe a Planilha 1 e clique em Compatibilizar.");
+      return;
+    }
+
+    const updated = runLockedStrategyAdjustment(
       compositionMatches,
       "KEEP_TOTAL_VALUE",
       targetToApply
@@ -1233,7 +1246,7 @@ export default function OrcaBaseDashboard() {
   // [Nome da Planilha 1 sem extensão] ([Nome do Contrato Escolhido]).[xlsx|xlsm]
   const outputCompatFilename = useMemo(() => {
     const isXlsm = Boolean(selectedContract?.fileName && /\.xlsm$/i.test(selectedContract.fileName));
-    return buildCompatOutputFileName(
+    return getLockedCompatOutputFilename(
       initialFileName,
       selectedContract?.contractName || "",
       selectedContract?.contractNumber,
@@ -1242,11 +1255,21 @@ export default function OrcaBaseDashboard() {
   }, [initialFileName, selectedContract]);
 
   // ============================================================================
-  // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX / .XLSM)
+  // 4. DOWNLOAD INFALÍVEL DA PLANILHA FINAL COMPATIBILIZADA (.XLSX / .XLSM) — BLINDADO PELO CADEADO
   // Preserva 100% rigorosamente do layout, fontes, larguras de colunas, alturas, fórmulas e macros da Planilha Base original!
   // ============================================================================
   const handleDownloadFinalSpreadsheet = async () => {
-    if (compositionMatches.length === 0 || !selectedContract) {
+    if (!selectedContract) {
+      showToast("Selecione um Contrato Base válido.");
+      return;
+    }
+
+    // Se o usuário clicar em Baixar antes de clicar em Compatibilizar, mas já tiver a Planilha 1 carregada, compatibiliza e baixa:
+    if (compositionMatches.length === 0) {
+      if (sheet1Study && sheet1Study.items.length > 0) {
+        await handleCompatibilizarEExportar();
+        return;
+      }
       showToast("Execute a compatibilização antes de baixar a Planilha Final.");
       return;
     }
@@ -1259,34 +1282,13 @@ export default function OrcaBaseDashboard() {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
 
-      // 1. CLONAGEM CIRÚRGICA 100% FIEL NO ARQUIVO ORIGINAL (JSZip OpenXML)
-      // Modifica EXCLUSIVAMENTE o número da célula de quantitativo mantendo 100% de layout, estilos, larguras, fórmulas e macros intactos
+      // 1. CLONAGEM CIRÚRGICA 100% FIEL NO ARQUIVO ORIGINAL (BLINDADA POR CADEADO EM compatEngineLock.ts)
       if (contractBase64 && contractBase64.length > 50) {
-        const colQtyLetter =
-          selectedContract.detectedColumns?.colQtyLetter ||
-          (selectedContract.detectedColumns?.colQty
-            ? colIndexToLetter(selectedContract.detectedColumns.colQty)
-            : "I");
-        const colQtyOneBased = letterToColIndex(colQtyLetter);
-
-        const { blob: outBlob, extension } = await injectQuantitiesPreservingOriginalWorkbook(contractBase64, {
-          budgetSheetName: selectedContract.budgetSheetName,
-          contractFileName: selectedContract.fileName,
-          colQtyOneBased,
-          colQtyLetter,
-          compositionMatches: compositionMatches
-            .filter((cm) => cm.contract_item.row_index && cm.contract_item.row_index > 0)
-            .map((cm) => ({
-              contract_row_index: cm.contract_item.row_index,
-              final_injected_quantity: cm.final_injected_quantity,
-            })),
-        });
-
-        const finalFilename = buildCompatOutputFileName(
-          initialFileName,
-          selectedContract?.contractName || "",
-          selectedContract?.contractNumber,
-          extension
+        const { blob: outBlob, finalFilename } = await generateLockedCompatibleWorkbook(
+          contractBase64,
+          selectedContract,
+          compositionMatches,
+          initialFileName
         );
 
         triggerBlobDownload(outBlob, finalFilename);
@@ -1310,7 +1312,7 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  // Ação unificada do Botão "▷ Compatibilizar e Exportar" do Card 3 (fiel ao motor PR.023)
+  // Ação unificada de Compatibilizar + Exportar usando o Motor Blindado
   const handleCompatibilizarEExportar = async () => {
     if (!sheet1Study || sheet1Study.items.length === 0) {
       showToast("Anexe primeiro a Planilha 1 com os quantitativos.");
@@ -1332,7 +1334,7 @@ export default function OrcaBaseDashboard() {
           ? parsedCustom
           : effectiveTargetTotal;
 
-      const matrix = buildCompatibilityMatrix(
+      const matrix = runLockedCompatibilityMatrix(
         sheet1Study.items,
         selectedContract.items,
         calcStrategy,
@@ -1344,42 +1346,21 @@ export default function OrcaBaseDashboard() {
       const matchedCount = matrix.filter((m) => m.final_injected_quantity > 0).length;
       const finalSum = matrix.reduce((s, m) => s + m.calculated_total_value, 0);
 
-      // Baixa imediatamente o arquivo clonado preservando 100% do binário original (.xlsx ou .xlsm)
       let contractBase64 = await getContractBinary(selectedContract.id);
       if (!contractBase64 && selectedContract.rawWorkbookBase64) {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
 
       if (contractBase64 && contractBase64.length > 50) {
-        const colQtyLetter =
-          selectedContract.detectedColumns?.colQtyLetter ||
-          (selectedContract.detectedColumns?.colQty
-            ? colIndexToLetter(selectedContract.detectedColumns.colQty)
-            : "I");
-        const colQtyOneBased = letterToColIndex(colQtyLetter);
-
-        const { blob: outBlob, extension } = await injectQuantitiesPreservingOriginalWorkbook(contractBase64, {
-          budgetSheetName: selectedContract.budgetSheetName,
-          contractFileName: selectedContract.fileName,
-          colQtyOneBased,
-          colQtyLetter,
-          compositionMatches: matrix
-            .filter((cm) => cm.contract_item.row_index && cm.contract_item.row_index > 0)
-            .map((cm) => ({
-              contract_row_index: cm.contract_item.row_index,
-              final_injected_quantity: cm.final_injected_quantity,
-            })),
-        });
-
-        const outName = buildCompatOutputFileName(
-          initialFileName,
-          selectedContract?.contractName || "",
-          selectedContract?.contractNumber,
-          extension
+        const { blob: outBlob, finalFilename } = await generateLockedCompatibleWorkbook(
+          contractBase64,
+          selectedContract,
+          matrix,
+          initialFileName
         );
-        triggerBlobDownload(outBlob, outName);
+        triggerBlobDownload(outBlob, finalFilename);
         showToast(
-          `Compatibilização e Exportação concluídas! "${outName}" gerada (${matchedCount} composições | Total: R$ ${finalSum.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`
+          `Compatibilização e Exportação concluídas! "${finalFilename}" gerada (${matchedCount} composições | Total: R$ ${finalSum.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`
         );
       } else {
         showToast(
@@ -1585,16 +1566,25 @@ export default function OrcaBaseDashboard() {
           />
         ) : mainModule === "ORCAMENTO" ? (
           <>
-            {/* Banner Compacto de Identificação do Contrato Base Selecionado */}
+            {/* Banner Compacto de Identificação do Contrato Base Selecionado + Indicador do Cadeado de Engenharia */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-[#0d1017] px-5 py-3.5 rounded-xl border border-[#232b3d] shadow-md">
               <div className="flex items-center gap-3.5">
                 <div className="w-10 h-10 rounded-xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/50 flex items-center justify-center text-[#ffaa2c] shrink-0 shadow-[0_0_12px_rgba(255,170,44,0.2)]">
                   <Calculator className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-xs font-mono text-[#9ca3af] uppercase tracking-wider block mb-0.5 font-semibold">
-                    Contrato Base Ativo para Compatibilização:
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                    <span className="text-xs font-mono text-[#9ca3af] uppercase tracking-wider font-semibold">
+                      Contrato Base Ativo para Compatibilização:
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/40 text-[#ffaa2c] text-[10px] font-mono font-bold flex items-center gap-1"
+                      title={`Motor de Compatibilização Blindado (${COMPAT_ENGINE_LOCK_VERSION})`}
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      🔒 Cadeado de Compatibilização Ativo
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2.5">
                     <strong className="text-sm sm:text-base text-white font-bold">
                       {selectedContract?.contractNumber || "045/2026"} — {selectedContract?.contractName || "Reforma Escolar"}
@@ -2165,31 +2155,31 @@ export default function OrcaBaseDashboard() {
                       </div>
                     </div>
 
-                    {/* Campo Valor final alvo (R$) com botões Aplicar e Copiar Total Planilha 1 */}
+                    {/* Campo Valor final alvo (R$) com botões Aplicar e Copiar Total Planilha 1 SEMPRE VISÍVEIS */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-xs sm:text-sm font-bold text-gray-200">
                           Valor final alvo (R$)
                         </label>
-                        {totalSheet1Value > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (totalSheet1Value > 0) {
                               setCustomTargetTotal(
                                 totalSheet1Value.toLocaleString("pt-BR", {
                                   minimumFractionDigits: 2,
                                   maximumFractionDigits: 2,
                                 })
                               );
-                              if (compositionMatches.length > 0) {
-                                handleApplyCustomTargetTotal(totalSheet1Value);
-                              }
-                            }}
-                            className="text-xs text-[#ffaa2c] hover:underline font-semibold cursor-pointer"
-                          >
-                            Copiar Total Planilha 1
-                          </button>
-                        )}
+                              handleApplyCustomTargetTotal(totalSheet1Value);
+                            } else {
+                              showToast("Importe primeiro a Planilha 1 para copiar seu valor total.");
+                            }
+                          }}
+                          className="text-xs text-[#ffaa2c] hover:underline font-semibold cursor-pointer"
+                        >
+                          Copiar Total Planilha 1
+                        </button>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="relative flex-1">
@@ -2215,49 +2205,51 @@ export default function OrcaBaseDashboard() {
                             className="w-full h-12 bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl pl-12 pr-4 text-base font-mono font-bold text-white focus:outline-none transition-colors shadow-inner"
                           />
                         </div>
-                        {compositionMatches.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => handleApplyCustomTargetTotal()}
-                            className="h-12 px-4 rounded-xl bg-[#ffaa2c]/20 hover:bg-[#ffaa2c]/30 border border-[#ffaa2c]/50 text-[#ffaa2c] text-xs sm:text-sm font-bold cursor-pointer transition-all shrink-0"
-                          >
-                            Aplicar
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleApplyCustomTargetTotal()}
+                          className="h-12 px-4 rounded-xl bg-[#ffaa2c]/20 hover:bg-[#ffaa2c]/30 border border-[#ffaa2c]/50 text-[#ffaa2c] text-xs sm:text-sm font-bold cursor-pointer transition-all shrink-0"
+                        >
+                          Aplicar
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Botões de Ação: Compatibilizar e Exportar + Compatibilizar na Tela */}
+                {/* Botões Separados como no PR.023: 1) Compatibilizar (Conferir e Ajustar) e 2) Baixar Planilha Final */}
                 <div className="mt-5 space-y-2.5">
                   <button
                     type="button"
-                    onClick={handleCompatibilizarEExportar}
+                    onClick={() => runCompatibilityEngine()}
                     disabled={isProcessing}
-                    className="w-full h-14 rounded-xl bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_22px_rgba(255,170,44,0.4)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full h-13 py-3.5 rounded-xl bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_22px_rgba(255,170,44,0.4)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isProcessing ? (
                       <>
                         <RefreshCw className="w-5 h-5 animate-spin text-black" />
-                        <span>Compatibilizando e Exportando...</span>
+                        <span>Compatibilizando Planilha...</span>
                       </>
                     ) : (
                       <>
-                        <Play className="w-5 h-5 fill-black text-black" />
-                        <span>Compatibilizar e Exportar</span>
+                        <Sparkles className="w-5 h-5 text-black" />
+                        <span>Compatibilizar Planilha 1 com Contrato Base</span>
                       </>
                     )}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => runCompatibilityEngine()}
-                    disabled={!sheet1Study || isProcessing}
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#111622] hover:bg-[#192133] border border-[#263146] hover:border-[#ffaa2c]/50 text-xs sm:text-sm font-bold text-gray-200 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={handleDownloadFinalSpreadsheet}
+                    disabled={isDownloading || isProcessing}
+                    className="w-full h-13 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <Sparkles className="w-4 h-4 text-[#ffaa2c]" />
-                    <span>Apenas Compatibilizar na Tela (Conferir Antes de Baixar)</span>
+                    <Download className="w-5 h-5 text-black" />
+                    <span>
+                      {isDownloading
+                        ? "Gerando Planilha Final..."
+                        : "Baixar Planilha Final (.XLSX / .XLSM)"}
+                    </span>
                   </button>
                 </div>
               </div>

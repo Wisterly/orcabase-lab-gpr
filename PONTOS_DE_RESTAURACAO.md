@@ -11,6 +11,31 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.038]
+- **Data/Hora:** 09/11/2026 01:38 (Horário Local)
+- **Tag Git:** `PR.038`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🔒 Implementações Estruturais do PR.038 (Cadeado Criptográfico SHA-256 na Programação de Compatibilização de Orçamentos + Separação e Visibilidade Permanente dos Controles do Card 3):
+1. **Cadeado Criptográfico SHA-256 e Blindagem do Motor de Compatibilização (`src/lib/compatEngineLock.ts`, `scripts/verify-compat-lock.mjs` e `.compat-lock.json`):**
+   - Criado o módulo blindado `src/lib/compatEngineLock.ts` (`LOCK-PR023-PR038-BLINDADO`) que encapsula e trava toda a programação de compatibilização e clonagem fiel de planilhas Excel (`runLockedSpreadsheetStudy`, `runLockedCompatibilityMatrix`, `runLockedStrategyAdjustment`, `getLockedCompatOutputFilename` e `generateLockedCompatibleWorkbook`).
+   - Criado o verificador automático de integridade `scripts/verify-compat-lock.mjs` acoplado ao `prebuild` do `package.json`, que valida o hash criptográfico SHA-256 de `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` contra o manifesto `.compat-lock.json` antes de qualquer build local ou na Vercel. Se qualquer alteração acidental ocorrer nesses arquivos sem autorização explícita do usuário, o build é imediatamente bloqueado.
+   - Gravada a **Regra #5 (Cadeado Absoluto da Programação de Compatibilização de Orçamentos)** em `AGENTS.md`, determinando que nenhuma demanda visual, de layout ou de outras abas pode tocar ou alterar a programação interna de compatibilização de orçamentos.
+   - Adicionado selo visual de confirmação no topo da aba Orçamento: **`🔒 Cadeado de Compatibilização Ativo`**.
+2. **Aperfeiçoamento do Card 3 (`src/app/page.tsx`) conforme o Fluxo do `PR.023`:**
+   - Os botões **"Copiar Total Planilha 1"** e **"Aplicar"** ao lado do campo `Valor final alvo (R$)` agora ficam **permanentemente visíveis** no Card 3 (mesmo antes de compatibilizar ou quando a opção "Manter o quantitativo exato da Planilha 1" estiver marcada, permitindo escolher e aplicar o valor final a qualquer momento).
+   - Os botões de ação principais do Card 3 foram separados em **2 botões independentes** exatamente como no `PR.023`:
+     1. **Botão 1 (Laranja/Dourado):** `Compatibilizar Planilha 1 com Contrato Base` (executa a compatibilização e abre na tela a Barra Completa Pós-Compatibilização e a Mesa de Alocação para conferência e ajuste de valores).
+     2. **Botão 2 (Verde Esmeralda):** `Baixar Planilha Final (.XLSX / .XLSM)` (baixa a cópia fiel da planilha do contrato com os quantitativos injetados).
+
+---
+
 ### [PR.037]
 - **Data/Hora:** 09/11/2026 01:10 (Horário Local)
 - **Tag Git:** `PR.037`
