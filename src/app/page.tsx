@@ -1310,7 +1310,7 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  // Ação unificada do Botão "▷ Compatibilizar e Exportar" do novo Card 3
+  // Ação unificada do Botão "▷ Compatibilizar e Exportar" do Card 3 (fiel ao motor PR.023)
   const handleCompatibilizarEExportar = async () => {
     if (!sheet1Study || sheet1Study.items.length === 0) {
       showToast("Anexe primeiro a Planilha 1 com os quantitativos.");
@@ -1344,7 +1344,7 @@ export default function OrcaBaseDashboard() {
       const matchedCount = matrix.filter((m) => m.final_injected_quantity > 0).length;
       const finalSum = matrix.reduce((s, m) => s + m.calculated_total_value, 0);
 
-      // Baixa imediatamente o arquivo clonado
+      // Baixa imediatamente o arquivo clonado preservando 100% do binário original (.xlsx ou .xlsm)
       let contractBase64 = await getContractBinary(selectedContract.id);
       if (!contractBase64 && selectedContract.rawWorkbookBase64) {
         contractBase64 = selectedContract.rawWorkbookBase64;
@@ -1371,13 +1371,21 @@ export default function OrcaBaseDashboard() {
             })),
         });
 
-        const outName = buildCompatOutputFileName(selectedContract.contractName, initialFileName || "Planilha 1", extension);
+        const outName = buildCompatOutputFileName(
+          initialFileName,
+          selectedContract?.contractName || "",
+          selectedContract?.contractNumber,
+          extension
+        );
         triggerBlobDownload(outBlob, outName);
         showToast(
-          `Compatibilização e Exportação concluídas! ${matchedCount} composições alocadas | Total: R$ ${finalSum.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+          `Compatibilização e Exportação concluídas! "${outName}" gerada (${matchedCount} composições | Total: R$ ${finalSum.toLocaleString("pt-BR", { minimumFractionDigits: 2 })})`
         );
       } else {
-        await handleDownloadFinalSpreadsheet();
+        showToast(
+          "Atenção: A Planilha Base original (.xlsx/.xlsm) deste contrato precisa estar anexada para gerar o arquivo com 100% da formatação original! Anexe a planilha base a seguir."
+        );
+        selectedContractQuickUploadRef.current?.click();
       }
     } catch (error) {
       console.error("Erro na compatibilização e exportação:", error);
@@ -1721,19 +1729,21 @@ export default function OrcaBaseDashboard() {
                   {/* Dropzone Central */}
                   <div
                     onClick={() => initialFileInputRef.current?.click()}
-                    className={`rounded-2xl border-2 border-dashed py-10 px-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                    className={`rounded-2xl border-2 border-dashed ${
+                      sheet1Study ? "py-5 px-4" : "py-10 px-6"
+                    } flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                       isDraggingInitial
                         ? "border-[#ffaa2c] bg-[#ffaa2c]/10"
                         : "border-[#232d40] hover:border-[#ffaa2c]/60 bg-[#080a10]"
                     }`}
                   >
-                    <div className="w-16 h-16 rounded-full bg-[#121724] border border-[#232d40] flex items-center justify-center mb-3.5 shadow-inner">
-                      <UploadCloud className="w-8 h-8 text-[#ffaa2c]" />
+                    <div className={`${sheet1Study ? "w-12 h-12 mb-2" : "w-16 h-16 mb-3.5"} rounded-full bg-[#121724] border border-[#232d40] flex items-center justify-center shadow-inner`}>
+                      <UploadCloud className={`${sheet1Study ? "w-6 h-6" : "w-8 h-8"} text-[#ffaa2c]`} />
                     </div>
-                    <p className="text-base font-bold text-white mb-1">
-                      Arraste e solte o arquivo aqui
+                    <p className="text-sm sm:text-base font-bold text-white mb-1">
+                      {sheet1Study ? "Trocar Planilha 1 carregada" : "Arraste e solte o arquivo aqui"}
                     </p>
-                    <p className="text-xs sm:text-sm text-gray-400 mb-4">
+                    <p className="text-xs text-gray-400 mb-3">
                       ou clique para selecionar do computador
                     </p>
                     <button
@@ -1742,12 +1752,142 @@ export default function OrcaBaseDashboard() {
                         e.stopPropagation();
                         initialFileInputRef.current?.click();
                       }}
-                      className="px-5 py-2.5 rounded-xl border border-[#ffaa2c]/80 hover:bg-[#ffaa2c]/15 text-xs sm:text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                      className="px-4 py-2 rounded-xl border border-[#ffaa2c]/80 hover:bg-[#ffaa2c]/15 text-xs sm:text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-sm"
                     >
                       <Folder className="w-4 h-4 text-[#ffaa2c]" />
                       <span>Selecionar arquivo</span>
                     </button>
                   </div>
+
+                  {/* Controles do PR.023 quando a Planilha 1 está carregada (Seleção de Aba, Colunas por Nome e Métricas) */}
+                  {sheet1Study && (
+                    <div className="mt-4 space-y-3">
+                      {sheet1Study.sheetNames.length > 1 && (
+                        <div className="flex items-center justify-between gap-2 bg-[#090d15] border border-[#1f283a] rounded-xl px-3 py-2">
+                          <span className="text-xs text-gray-400 font-semibold">Aba da Planilha 1:</span>
+                          <select
+                            value={sheet1Study.selectedSheetName}
+                            onChange={(e) => handleChangeSheet1TabOrColumns(e.target.value)}
+                            className="bg-[#111622] border border-[#26304A] rounded-lg px-2.5 py-1 text-xs text-white font-semibold focus:border-[#ffaa2c] focus:outline-none"
+                            title="Escolher aba da Planilha 1"
+                          >
+                            {sheet1Study.sheetNames.map((sn) => (
+                              <option key={sn} value={sn}>
+                                Aba: {sn}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Nomes das Colunas Encontradas na Planilha 1 (Permite trocar pelo nome se necessário) */}
+                      <div className="bg-[#090d15] border border-[#1f283a] rounded-xl p-3 space-y-2">
+                        <span className="text-[11px] font-mono uppercase text-[#ffaa2c] block font-bold">
+                          Colunas Localizadas por Nome na Planilha 1:
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <label className="text-[11px] text-gray-400 block mb-1">
+                              Composição / Descrição:
+                            </label>
+                            <select
+                              value={sheet1Study.detectedColumns.colDesc}
+                              onChange={(e) =>
+                                handleChangeSheet1TabOrColumns(undefined, {
+                                  colDesc: Number(e.target.value),
+                                  colUnit: sheet1Study.detectedColumns.colUnit,
+                                  colQty: sheet1Study.detectedColumns.colQty,
+                                })
+                              }
+                              className="w-full bg-[#111622] border border-[#26304A] rounded-lg px-2 py-1.5 text-xs text-white font-semibold"
+                            >
+                              {(sheet1Study.detectedColumns.allNamedColumns || []).map((col) => (
+                                <option key={col.colIndex} value={col.colIndex}>
+                                  {col.headerTitle}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-gray-400 block mb-1">
+                              Unidade:
+                            </label>
+                            <select
+                              value={sheet1Study.detectedColumns.colUnit}
+                              onChange={(e) =>
+                                handleChangeSheet1TabOrColumns(undefined, {
+                                  colDesc: sheet1Study.detectedColumns.colDesc,
+                                  colUnit: Number(e.target.value),
+                                  colQty: sheet1Study.detectedColumns.colQty,
+                                })
+                              }
+                              className="w-full bg-[#111622] border border-[#26304A] rounded-lg px-2 py-1.5 text-xs text-white font-semibold"
+                            >
+                              {(sheet1Study.detectedColumns.allNamedColumns || []).map((col) => (
+                                <option key={col.colIndex} value={col.colIndex}>
+                                  {col.headerTitle}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-emerald-400 block mb-1 font-semibold">
+                              Quantitativo:
+                            </label>
+                            <select
+                              value={sheet1Study.detectedColumns.colQty}
+                              onChange={(e) =>
+                                handleChangeSheet1TabOrColumns(undefined, {
+                                  colDesc: sheet1Study.detectedColumns.colDesc,
+                                  colUnit: sheet1Study.detectedColumns.colUnit,
+                                  colQty: Number(e.target.value),
+                                })
+                              }
+                              className="w-full bg-[#111622] border border-emerald-500/40 rounded-lg px-2 py-1.5 text-xs text-emerald-400 font-bold"
+                            >
+                              {(sheet1Study.detectedColumns.allNamedColumns || []).map((col) => (
+                                <option key={col.colIndex} value={col.colIndex}>
+                                  {col.headerTitle}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Métricas do Estudo da Planilha 1 */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-[#090d15] border border-[#1f283a] rounded-xl p-2.5">
+                          <span className="text-[10px] text-gray-400 uppercase block">
+                            Serviços Lidos
+                          </span>
+                          <span className="text-sm font-bold text-white font-mono">
+                            {sheet1Study.items.length} itens
+                          </span>
+                        </div>
+                        <div className="bg-[#090d15] border border-[#1f283a] rounded-xl p-2.5">
+                          <span className="text-[10px] text-gray-400 uppercase block">
+                            Etapas / Grupos
+                          </span>
+                          <span className="text-sm font-bold text-[#F97316] font-mono">
+                            {sheet1Study.stages.length} etapas
+                          </span>
+                        </div>
+                        <div className="bg-[#090d15] border border-[#ffaa2c]/40 rounded-xl p-2.5">
+                          <span className="text-[10px] text-[#ffaa2c] uppercase block font-semibold">
+                            Total Planilha 1
+                          </span>
+                          <span className="text-xs sm:text-sm font-bold text-[#ffaa2c] font-mono">
+                            R${" "}
+                            {sheet1Study.totalGeralValue.toLocaleString("pt-BR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Rodapé do Card 1 (Status do Arquivo Carregado) */}
@@ -1815,41 +1955,121 @@ export default function OrcaBaseDashboard() {
                       >
                         {contracts.map((c) => (
                           <option key={c.id} value={c.id} className="bg-[#111622] text-white py-1">
-                            [{c.contractNumber}] {c.contractName}
+                            [{c.contractNumber}] {c.contractName} — ({c.itemsCount} composições)
                           </option>
                         ))}
                       </select>
                     </div>
 
                     {/* Bloco Mapeamento Principal */}
-                    <div className="p-4 sm:p-5 rounded-xl bg-[#090b11] border border-[#1e2535] space-y-3">
+                    <div className="p-4 rounded-xl bg-[#090b11] border border-[#1e2535] space-y-2.5">
                       <div className="flex items-center gap-2">
                         <Layers className="w-4 h-4 text-[#ffaa2c]" />
                         <span className="text-xs sm:text-sm font-bold text-[#ffaa2c]">
                           Mapeamento principal
                         </span>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-400">
+                      <p className="text-xs text-gray-400">
                         Colunas da Planilha 1 que serão compatibilizadas:
                       </p>
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <span className="px-3.5 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
+                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                        <span className="px-3 py-1 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
                           {sheet1Study?.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}
                         </span>
-                        <span className="px-3.5 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
+                        <span className="px-3 py-1 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
                           {sheet1Study?.detectedColumns?.qtyHeaderName || "QUANT."}
                         </span>
-                        <span className="px-3.5 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
+                        <span className="px-3 py-1 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
                           {sheet1Study?.detectedColumns?.unitHeaderName || "UND"}
                         </span>
                       </div>
                     </div>
+
+                    {/* Informações Detalhadas e Upload Rápido do Contrato Base (PR.023) */}
+                    {selectedContract && (
+                      <div className="space-y-2.5">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-[#090b11] border border-[#1e2535] rounded-xl p-2.5">
+                            <span className="text-[10px] text-gray-400 uppercase block">
+                              Col. Composição
+                            </span>
+                            <span className="text-xs font-bold text-white font-mono truncate block">
+                              &ldquo;{selectedContract.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}&rdquo;
+                            </span>
+                          </div>
+                          <div className="bg-[#090b11] border border-emerald-500/30 rounded-xl p-2.5">
+                            <span className="text-[10px] text-emerald-400 uppercase block font-semibold">
+                              Col. Quantitativo
+                            </span>
+                            <span className="text-xs font-bold text-emerald-400 font-mono truncate block">
+                              &ldquo;{selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"}&rdquo;
+                            </span>
+                          </div>
+                          <div className="bg-[#090b11] border border-[#1e2535] rounded-xl p-2.5">
+                            <span className="text-[10px] text-gray-400 uppercase block">
+                              Total Contrato
+                            </span>
+                            <span className="text-xs font-bold text-[#ffaa2c] font-mono truncate block">
+                              R${" "}
+                              {(selectedContract.totalGeralValue || 0).toLocaleString("pt-BR", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="bg-[#090b11] border border-[#1e2535] rounded-xl px-3 py-2 flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Sliders className="w-3.5 h-3.5 text-[#ffaa2c]" />
+                            <span className="text-gray-400">Intervalo Ativo:</span>
+                            <strong className="text-white font-mono">
+                              Linhas {selectedContract.detectedColumns?.startRow || selectedContract.startRow || 1} até {selectedContract.detectedColumns?.endRow || selectedContract.endRow || selectedContract.itemsCount}
+                            </strong>
+                          </div>
+                          <span className="text-emerald-400 font-mono font-bold text-[11px]">
+                            Clone .XLSX/.XLSM
+                          </span>
+                        </div>
+
+                        <div>
+                          <input
+                            type="file"
+                            accept=".xlsx,.xlsm,.xls"
+                            ref={selectedContractQuickUploadRef}
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file && selectedContract) {
+                                await handleUpdateExistingContractCardFile(selectedContract.id, file);
+                              }
+                              e.target.value = "";
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => selectedContractQuickUploadRef.current?.click()}
+                            disabled={updatingCardId === selectedContract.id}
+                            className="w-full py-2 px-3 rounded-xl bg-[#090b11] hover:bg-[#141926] border border-[#232b3d] hover:border-[#ffaa2c] text-xs text-[#ffaa2c] font-semibold flex items-center justify-center gap-2 cursor-pointer transition-all"
+                          >
+                            <UploadCloud className="w-4 h-4 text-[#ffaa2c] shrink-0" />
+                            <span className="truncate">
+                              {updatingCardId === selectedContract.id
+                                ? "Gravando Planilha Base..."
+                                : selectedContract.fileName
+                                ? `Substituir Planilha Base (.xlsx/.xlsm): ${selectedContract.fileName}`
+                                : "Anexar Planilha Base (.xlsx/.xlsm) deste Contrato"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Rodapé do Card 2 */}
                 <div className="mt-5 pt-3.5 border-t border-[#1e2535] flex items-center justify-between text-xs sm:text-sm text-gray-400">
-                  <span className="truncate max-w-[210px] font-medium">
+                  <span className="truncate max-w-[230px] font-medium" title={selectedContract?.fileName}>
                     {selectedContract?.fileName || "Planilha Base Ativa"}
                   </span>
                   <span className="text-emerald-400 font-mono font-semibold">
@@ -1945,36 +2165,72 @@ export default function OrcaBaseDashboard() {
                       </div>
                     </div>
 
-                    {/* Campo Valor final alvo (R$) */}
+                    {/* Campo Valor final alvo (R$) com botões Aplicar e Copiar Total Planilha 1 */}
                     <div>
-                      <label className="block text-xs sm:text-sm font-bold text-gray-200 mb-1.5">
-                        Valor final alvo (R$)
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-mono font-bold text-[#ffaa2c] pointer-events-none">
-                          R$
-                        </span>
-                        <input
-                          type="text"
-                          value={customTargetTotal}
-                          onChange={(e) => setCustomTargetTotal(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleApplyCustomTargetTotal();
-                            }
-                          }}
-                          onBlur={() => handleApplyCustomTargetTotal()}
-                          placeholder="300.000,00"
-                          className="w-full h-12 bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl pl-12 pr-4 text-base font-mono font-bold text-white focus:outline-none transition-colors shadow-inner"
-                        />
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs sm:text-sm font-bold text-gray-200">
+                          Valor final alvo (R$)
+                        </label>
+                        {totalSheet1Value > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomTargetTotal(
+                                totalSheet1Value.toLocaleString("pt-BR", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })
+                              );
+                              if (compositionMatches.length > 0) {
+                                handleApplyCustomTargetTotal(totalSheet1Value);
+                              }
+                            }}
+                            className="text-xs text-[#ffaa2c] hover:underline font-semibold cursor-pointer"
+                          >
+                            Copiar Total Planilha 1
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-mono font-bold text-[#ffaa2c] pointer-events-none">
+                            R$
+                          </span>
+                          <input
+                            type="text"
+                            value={customTargetTotal}
+                            onChange={(e) => setCustomTargetTotal(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleApplyCustomTargetTotal();
+                              }
+                            }}
+                            onBlur={() => {
+                              if (compositionMatches.length > 0) {
+                                handleApplyCustomTargetTotal();
+                              }
+                            }}
+                            placeholder="300.000,00"
+                            className="w-full h-12 bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl pl-12 pr-4 text-base font-mono font-bold text-white focus:outline-none transition-colors shadow-inner"
+                          />
+                        </div>
+                        {compositionMatches.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleApplyCustomTargetTotal()}
+                            className="h-12 px-4 rounded-xl bg-[#ffaa2c]/20 hover:bg-[#ffaa2c]/30 border border-[#ffaa2c]/50 text-[#ffaa2c] text-xs sm:text-sm font-bold cursor-pointer transition-all shrink-0"
+                          >
+                            Aplicar
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Botão de Ação: Compatibilizar e Exportar */}
-                <div className="mt-5">
+                {/* Botões de Ação: Compatibilizar e Exportar + Compatibilizar na Tela */}
+                <div className="mt-5 space-y-2.5">
                   <button
                     type="button"
                     onClick={handleCompatibilizarEExportar}
@@ -1993,68 +2249,201 @@ export default function OrcaBaseDashboard() {
                       </>
                     )}
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => runCompatibilityEngine()}
+                    disabled={!sheet1Study || isProcessing}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#111622] hover:bg-[#192133] border border-[#263146] hover:border-[#ffaa2c]/50 text-xs sm:text-sm font-bold text-gray-200 hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#ffaa2c]" />
+                    <span>Apenas Compatibilizar na Tela (Conferir Antes de Baixar)</span>
+                  </button>
                 </div>
               </div>
             </section>
 
-            {/* BARRA SUPERIOR DE RESUMO FINANCEIRO E DOWNLOAD RÁPIDO PÓS-COMPATIBILIZAÇÃO */}
+            {/* BARRA COMPLETA DO PR.023: RESUMO FINANCEIRO, LACUNA DE VALOR ALVO, TAXA DE COMPATIBILIZAÇÃO E DOWNLOAD */}
             {compositionMatches.length > 0 && (
-              <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] p-5 sm:p-6 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-5">
-                <div className="flex flex-wrap items-center gap-6 sm:gap-8">
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#9ca3af] block font-semibold mb-0.5">
-                      Composições Ativadas
-                    </span>
-                    <span className="text-base sm:text-lg font-bold text-white font-mono">
-                      {activeCompositionsCount} de {compositionMatches.length} linhas
-                    </span>
+              <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] p-5 sm:p-6 shadow-xl space-y-5">
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-5">
+                  <div className="flex flex-wrap items-center gap-6 bg-[#111622] px-5 py-3.5 rounded-xl border border-[#1E2436]">
+                    <div>
+                      <span className="text-xs font-mono uppercase text-[#9CA3AF] block">
+                        Composições Ativadas
+                      </span>
+                      <span className="text-base font-bold text-white font-mono">
+                        {activeCompositionsCount} de {compositionMatches.length} linhas
+                      </span>
+                    </div>
+                    <div className="h-7 w-[1px] bg-[#1E2436] hidden sm:block" />
+                    <div>
+                      <span className="text-xs font-mono uppercase text-[#9CA3AF] block">
+                        Total Planilha 1
+                      </span>
+                      <span className="text-base font-bold text-gray-300 font-mono">
+                        R${" "}
+                        {totalSheet1Value.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                    <div className="h-7 w-[1px] bg-[#1E2436] hidden sm:block" />
+                    <div>
+                      <span className="text-xs font-mono uppercase text-[#D4AF37] block font-semibold">
+                        Novo Total na Planilha Base
+                      </span>
+                      <span className="text-lg font-bold text-[#D4AF37] font-mono">
+                        R${" "}
+                        {totalCompatibleValue.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+
+                    {/* LACUNA SOLICITADA PELO USUÁRIO NO PR.023: Ajustar para Valor Alvo Específico */}
+                    <div className="h-7 w-[1px] bg-[#1E2436] hidden sm:block" />
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 bg-[#0B0F19] p-2.5 px-4 rounded-xl border border-[#D4AF37]/60 shadow-[0_0_20px_rgba(212,175,55,0.12)]">
+                      <div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-mono uppercase text-[#D4AF37] font-bold flex items-center gap-1.5">
+                            <Calculator className="w-4 h-4 text-[#F97316]" />
+                            Definir Valor que Deseja que a Planilha Bata:
+                          </span>
+                          {totalSheet1Value > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleApplyCustomTargetTotal(totalSheet1Value)}
+                              title="Usar exatamente o mesmo valor total da Planilha 1"
+                              className="text-xs text-gray-400 hover:text-[#D4AF37] underline cursor-pointer"
+                            >
+                              Copiar Total Planilha 1
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="relative flex items-center">
+                            <span className="absolute left-3 text-xs font-bold text-[#D4AF37] font-mono pointer-events-none">
+                              R$
+                            </span>
+                            <input
+                              type="text"
+                              value={customTargetTotal}
+                              onChange={(e) => setCustomTargetTotal(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleApplyCustomTargetTotal();
+                                }
+                              }}
+                              placeholder={
+                                totalCompatibleValue > 0
+                                  ? totalCompatibleValue.toLocaleString("pt-BR", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })
+                                  : "Ex: 447.912,66"
+                              }
+                              className="w-44 bg-[#141A28] border border-[#26304A] focus:border-[#F97316] rounded-lg pl-9 pr-3 py-1.5 text-sm font-mono font-bold text-white focus:outline-none"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleApplyCustomTargetTotal()}
+                            title="Recalcula e ajusta os quantitativos das composições para que o total da planilha base atinja exatamente este valor"
+                            className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-[#D4AF37] via-[#F97316] to-[#D4AF37] hover:brightness-110 text-black text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                          >
+                            <Sparkles className="w-4 h-4" />
+                            Ajustar Quantitativos
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="h-8 w-[1px] bg-[#1e2535] hidden sm:block" />
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#9ca3af] block font-semibold mb-0.5">
-                      Total Planilha 1
-                    </span>
-                    <span className="text-base sm:text-lg font-bold text-gray-300 font-mono">
-                      R${" "}
-                      {totalSheet1Value.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[#1e2535] hidden sm:block" />
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#ffaa2c] block font-bold mb-0.5">
-                      Novo Total na Planilha Base
-                    </span>
-                    <span className="text-lg sm:text-xl font-black text-[#ffaa2c] font-mono">
-                      R${" "}
-                      {totalCompatibleValue.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[#1e2535] hidden sm:block" />
-                  <div>
-                    <span className="text-xs font-mono uppercase text-[#9ca3af] block font-semibold mb-0.5">
-                      Taxa de Compatibilização
-                    </span>
-                    <span className="text-base sm:text-lg font-bold text-emerald-400 font-mono">
-                      {sourceAllocationStatus.percentage}% Concluído
-                    </span>
-                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleDownloadFinalSpreadsheet}
+                    disabled={isDownloading}
+                    className="px-7 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-3 transition-all shadow-[0_0_30px_rgba(16,185,129,0.35)] hover:scale-[1.01] cursor-pointer shrink-0"
+                  >
+                    <Download className="w-5 h-5" />
+                    {isDownloading
+                      ? "Gerando Cópia do Contrato..."
+                      : "Baixar Planilha Final (.XLSX / .XLSM)"}
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleDownloadFinalSpreadsheet}
-                  disabled={isDownloading}
-                  className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm flex items-center gap-2.5 transition-all shadow-md cursor-pointer shrink-0"
-                >
-                  <Download className="w-5 h-5" />
-                  {isDownloading ? "Gerando..." : "Baixar Novamente (.XLSX)"}
-                </button>
+                {/* BARRA DE TAXA DE COMPATIBILIZAÇÃO E NOMENCLATURA OFICIAL DA CÓPIA (PR.023) */}
+                <div className="pt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 border-t border-[#1E2436]/80">
+                  {/* Taxa de Compatibilização (%) com Barra Visual */}
+                  <div className="lg:col-span-5 bg-[#111622] border border-[#1E2436] rounded-xl p-4 flex flex-col justify-between space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono uppercase tracking-wider text-[#9CA3AF] flex items-center gap-1.5 font-semibold">
+                        <Sparkles className="w-4 h-4 text-[#D4AF37]" /> Taxa de Compatibilização:
+                      </span>
+                      <span
+                        className={`text-xs font-bold font-mono px-2.5 py-0.5 rounded-lg border ${
+                          sourceAllocationStatus.percentage >= 85
+                            ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                            : sourceAllocationStatus.percentage >= 60
+                            ? "bg-[#D4AF37]/15 text-[#D4AF37] border-[#D4AF37]/30"
+                            : "bg-[#F97316]/15 text-[#F97316] border-[#F97316]/30"
+                        }`}
+                      >
+                        {sourceAllocationStatus.percentage}% Concluído
+                      </span>
+                    </div>
+
+                    <div className="w-full h-2.5 rounded-full bg-[#07090E] overflow-hidden border border-[#1E2436]">
+                      <div
+                        className="h-full bg-gradient-to-r from-[#D4AF37] via-[#F97316] to-emerald-400 transition-all duration-500 rounded-full"
+                        style={{ width: `${sourceAllocationStatus.percentage}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+                      <span>
+                        <strong className="text-white">{sourceAllocationStatus.matchedCount}</strong> de{" "}
+                        <strong className="text-white">{sourceAllocationStatus.totalCount}</strong> serviços alocados
+                      </span>
+                      {sourceAllocationStatus.pendingItems.length > 0 ? (
+                        <button
+                          onClick={() => setActiveResultTab("DIFFICULTY_VIEW")}
+                          className="text-[#F97316] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          ⚠️ {sourceAllocationStatus.pendingItems.length} sem similaridade direta
+                        </button>
+                      ) : (
+                        <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-4 h-4" /> 100% dos serviços alocados
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Nomenclatura Oficial do Arquivo Final (Salvar Como) */}
+                  <div className="lg:col-span-7 bg-[#111622] border border-[#1E2436] rounded-xl p-4 flex flex-col justify-between space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono uppercase tracking-wider text-[#D4AF37] flex items-center gap-1.5 font-semibold">
+                        <FileSpreadsheet className="w-4 h-4 text-[#D4AF37]" /> Cópia Salvar Como • Nome do Arquivo Final:
+                      </span>
+                      <span className="text-xs font-mono px-2.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        Layout 100% Idêntico ao Contrato
+                      </span>
+                    </div>
+                    <div className="bg-[#07090E] border border-[#26304A] rounded-lg px-3.5 py-2 flex items-center justify-between gap-3">
+                      <span className="text-xs sm:text-sm font-mono font-bold text-white truncate" title={outputCompatFilename}>
+                        {outputCompatFilename}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#9CA3AF]">
+                      Copia a planilha do contrato <strong className="text-white">{selectedContract?.contractName}</strong>, renomeia com o nome da Planilha 1 + <strong className="text-[#D4AF37]">({selectedContract?.contractName})</strong> e ajusta unicamente os quantitativos.
+                    </p>
+                  </div>
+                </div>
               </section>
             )}
 
@@ -3272,6 +3661,7 @@ export default function OrcaBaseDashboard() {
                     <button
                       onClick={() => {
                         handleSelectContract(c.id);
+                        setMainModule("ORCAMENTO");
                         setActiveTab("WORKSPACE");
                         showToast(`Contrato "${c.contractNumber}" selecionado para compatibilização!`);
                       }}

@@ -11,6 +11,31 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.037]
+- **Data/Hora:** 09/11/2026 01:10 (Horário Local)
+- **Tag Git:** `PR.037`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.037 (Restauração 100% Fiel do Motor e Funções de Compatibilização do PR.023 + Correção de Extensão `.XLSM`/`.XLSX` no Download):
+1. **Diagnóstico e Correção da Corrupção de Planilha no Excel (`handleCompatibilizarEExportar` em `src/app/page.tsx`):**
+   - **Causa Raiz:** No botão unificado `"Compatibilizar e Exportar"` do Card 3, a função `buildCompatOutputFileName` estava sendo chamada com apenas 3 argumentos e na ordem invertida: `buildCompatOutputFileName(selectedContract.contractName, initialFileName || "Planilha 1", extension)`.
+   - Como a assinatura em `src/lib/excelEngine.ts` é `buildCompatOutputFileName(initialFileName, contractName, contractNumber, extension = "xlsx")`, o argumento `extension` (`"xlsm"` para contratos com macro como R.Melo) caía no 3º parâmetro (`contractNumber`) e o 4º parâmetro assumia o valor padrão `"xlsx"`. Isso salvava binários `.xlsm` com extensão `.xlsx`, fazendo o Microsoft Excel recusar a abertura com erro de arquivo corrompido.
+   - **Correção Aplicada:** Restaurada a chamada exata do `PR.023` com os 4 parâmetros corretos: `buildCompatOutputFileName(initialFileName, selectedContract?.contractName || "", selectedContract?.contractNumber, extension)`.
+2. **Restauração Integral das Funções de Compatibilização do `PR.023` nos 3 Cards da Aba Orçamento (`src/app/page.tsx`):**
+   - **Card 1 (`Importar planilha`):** Restaurados o seletor de Aba da Planilha 1 (quando há múltiplas abas), os 3 seletores interativos de colunas localizadas por nome (`Composição / Descrição`, `Unidade`, `Quantitativo` via `handleChangeSheet1TabOrColumns`) e o painel de métricas (`Serviços Lidos`, `Etapas / Grupos`, `Total Planilha 1`).
+   - **Card 2 (`Selecionar contrato base`):** Restaurados os indicadores das colunas lidas no Contrato Base (`Col. Composição`, `Col. Quantitativo`, `Total Contrato`), o indicador de `Intervalo Ativo: Linhas X até Y` e o botão rápido `"Substituir / Anexar Planilha Base (.xlsx/.xlsm)"` (`selectedContractQuickUploadRef`).
+   - **Card 3 (`Definir regra e compatibilizar`):** Restaurados os botões `"Copiar Total Planilha 1"` e `"Aplicar"` junto ao campo `Valor final alvo (R$)`, além do botão `"Apenas Compatibilizar na Tela (Conferir Antes de Baixar)"` (`runCompatibilityEngine()`) abaixo de `"Compatibilizar e Exportar"`.
+   - **Barra Completa Pós-Compatibilização (`PR.023`):** Restaurada a lacuna interativa `"Definir Valor que Deseja que a Planilha Bata"` (input `R$` + botão `"Ajustar Quantitativos"` + `"Copiar Total Planilha 1"`), a barra visual de `Taxa de Compatibilização (%)`, o quadro `Cópia Salvar Como • Nome do Arquivo Final` (`outputCompatFilename`) e o botão `"Baixar Planilha Final (.XLSX / .XLSM)"`.
+   - **Aba Configurações:** Ajustado o botão `"Usar este Contrato na Compatibilização"` para redirecionar imediatamente para a aba `ORCAMENTO` (`setMainModule("ORCAMENTO")`).
+
+---
+
 ### [PR.036]
 - **Data/Hora:** 09/11/2026 00:45 (Horário Local)
 - **Tag Git:** `PR.036`
