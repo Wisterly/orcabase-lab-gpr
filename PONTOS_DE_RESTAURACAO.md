@@ -11,6 +11,36 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.036]
+- **Data/Hora:** 09/11/2026 00:45 (Horário Local)
+- **Tag Git:** `PR.036`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.036 (Ampliação Proporcional de Tipografia, Abas, Campos e Botões para Ergonomia Visual Widescreen):
+1. **Nova Escala Tipográfica e Espaçamento Global (`src/app/globals.css`):**
+   - Elevação do baseline tipográfico de 14px para 16px/1.55 (`font-size: 16px`).
+   - Abas da barra de navegação superior (`.app-navigation button`) ampliadas de 46px para 52px de altura, padding horizontal de 28px, fonte de 15.5px e ícones confortáveis (`w-5 h-5`).
+2. **Ampliação e Ergonomia no Visualizador e Chat de Descritivos (`src/components/DescritivoView.tsx`):**
+   - Altura unificada de todos os 3 cards verticais para `h-[800px] lg:h-[840px]`.
+   - Card 1 (Chat): Balões de mensagem com tipografia confortável (`text-sm sm:text-base`), títulos de etapas em `text-sm sm:text-base font-black`, barra de envio com campo `h-12 text-sm sm:text-base px-4`, botões de anexo, áudio e envio ampliados para `w-12 h-12` (ícones `w-5 h-5`).
+   - Card 2 (Dados do Memorial): Labels `text-xs sm:text-sm font-bold`, campos de input com `h-12 text-sm sm:text-base px-4 font-semibold rounded-xl`, painel de Datas Automáticas com Mês/Ano e Data Extensa em destaque tipográfico `text-base sm:text-lg font-mono font-black`.
+   - Card 3 (Visualizador da Folha A4): Controles de zoom e tela cheia `w-9 h-9`, setas de paginação `w-10 h-10`, folha A4 com largura máxima expandida (`max-w-[340px] sm:max-w-[370px]`) e tipografia dos serviços mais legível e nítida.
+   - Barra Inferior de Ações do PDF: Altura aumentada, botões mais largos e altos (`px-5 py-3 text-sm font-bold` e botão principal `px-6 py-3.5 text-sm sm:text-base font-black`) com ícones `w-5 h-5`.
+3. **Ajuste Proporcional do Módulo de Orçamento e Configurações (`src/app/page.tsx`):**
+   - Banner do Contrato Base Ativo: Ícone `w-10 h-10` com `w-5 h-5`, textos ampliados e botão "Gerenciar Contratos" ergonômico.
+   - Stepper Superior: Círculos numéricos aumentados para `w-11 h-11 text-base font-black` e legendas dos passos `text-sm sm:text-base font-bold`.
+   - Cards 1, 2 e 3 do Orçamento: Numeração `w-11 h-11`, títulos `text-lg sm:text-xl font-bold`, dropzones com `py-10 px-6`, inputs `h-12` e botões de ação `h-14` com tipografia encorpada.
+   - Barra de Resumo Financeiro e Tabela de Compatibilização: Cabeçalhos `text-xs font-mono uppercase font-bold`, valores em destaque `text-base sm:text-lg font-mono font-bold`.
+   - Central de Configurações: Título principal `text-2xl sm:text-3xl font-black`, sub-abas de demandas em `px-5 py-3 text-xs sm:text-sm font-bold`, e Guia das 6 Tags `= AQUI` com cards espaçosos e tags em `text-sm font-mono font-bold`.
+
+---
+
 ### [PR.035]
 - **Data/Hora:** 08/11/2026 17:55 (Horário Local)
 - **Tag Git:** `PR.035`

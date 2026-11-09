@@ -1543,7 +1543,7 @@ export default function OrcaBaseDashboard() {
               aria-pressed={mainModule === "ORCAMENTO"}
               onClick={() => setMainModule("ORCAMENTO")}
             >
-              <Calculator className="w-4 h-4 text-[#ffb457]" />
+              <Calculator className="w-5 h-5 text-[#ffb457]" />
               <span>Orçamento</span>
             </button>
             <button
@@ -1551,7 +1551,7 @@ export default function OrcaBaseDashboard() {
               aria-pressed={mainModule === "DESCRITIVOS"}
               onClick={() => setMainModule("DESCRITIVOS")}
             >
-              <BrainCircuit className="w-4 h-4 text-[#ffb457]" />
+              <BrainCircuit className="w-5 h-5 text-[#ffb457]" />
               <span>Descritivos</span>
             </button>
             <button
@@ -1559,7 +1559,7 @@ export default function OrcaBaseDashboard() {
               aria-pressed={mainModule === "CONFIGURACOES"}
               onClick={() => setMainModule("CONFIGURACOES")}
             >
-              <Settings className="w-4 h-4 text-[#ffb457]" />
+              <Settings className="w-5 h-5 text-[#ffb457]" />
               <span>Configurações</span>
             </button>
           </nav>
@@ -1578,20 +1578,20 @@ export default function OrcaBaseDashboard() {
         ) : mainModule === "ORCAMENTO" ? (
           <>
             {/* Banner Compacto de Identificação do Contrato Base Selecionado */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d1017] px-4 py-3 rounded-xl border border-[#232b3d]">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c]">
-                  <Calculator className="w-4 h-4" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-[#0d1017] px-5 py-3.5 rounded-xl border border-[#232b3d] shadow-md">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/50 flex items-center justify-center text-[#ffaa2c] shrink-0 shadow-[0_0_12px_rgba(255,170,44,0.2)]">
+                  <Calculator className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono text-[#9ca3af] uppercase tracking-wider block">
+                  <span className="text-xs font-mono text-[#9ca3af] uppercase tracking-wider block mb-0.5 font-semibold">
                     Contrato Base Ativo para Compatibilização:
                   </span>
-                  <div className="flex items-center gap-2">
-                    <strong className="text-xs sm:text-sm text-white font-bold">
+                  <div className="flex items-center gap-2.5">
+                    <strong className="text-sm sm:text-base text-white font-bold">
                       {selectedContract?.contractNumber || "045/2026"} — {selectedContract?.contractName || "Reforma Escolar"}
                     </strong>
-                    <span className="px-2 py-0.2 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold">
                       {selectedContract?.itemsCount || 0} composições
                     </span>
                   </div>
@@ -1604,61 +1604,61 @@ export default function OrcaBaseDashboard() {
                   setMainModule("CONFIGURACOES");
                   setConfigDemandTab("ORCAMENTO");
                 }}
-                className="px-3 py-1.5 rounded-lg border border-[#2c374d] bg-[#141926] hover:bg-[#1c2436] hover:border-[#ffaa2c]/50 text-xs text-gray-300 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer self-start sm:self-auto"
+                className="px-4 py-2 rounded-xl border border-[#2c374d] bg-[#141926] hover:bg-[#1c2436] hover:border-[#ffaa2c]/60 text-xs sm:text-sm font-semibold text-gray-200 hover:text-white flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto shadow-sm"
                 title="Trocar ou cadastrar outro Contrato Base na aba Configurações"
               >
-                <Settings className="w-3.5 h-3.5 text-[#ffaa2c]" />
+                <Settings className="w-4 h-4 text-[#ffaa2c]" />
                 <span>Gerenciar Contratos</span>
               </button>
             </div>
             {/* =====================================================================
                 STEPPER SUPERIOR — LINHA DE PASSOS (1 - 2 - 3)
                ===================================================================== */}
-            <div className="w-full flex items-center justify-center py-2 sm:py-4">
+            <div className="w-full flex items-center justify-center py-3 sm:py-5">
               <div className="w-full max-w-3xl flex items-center justify-between relative px-6">
                 {/* Linha conectora de fundo */}
-                <div className="absolute top-4 left-16 right-16 h-[2px] bg-[#232b3d] z-0" />
+                <div className="absolute top-5 left-16 right-16 h-[2px] bg-[#232b3d] z-0" />
 
                 {/* Passo 1 */}
-                <div className="flex flex-col items-center gap-1.5 relative z-10">
+                <div className="flex flex-col items-center gap-2 relative z-10">
                   <div
-                    className="w-9 h-9 rounded-full font-black text-sm flex items-center justify-center shadow-lg transition-all bg-[#ffaa2c] text-black shadow-[0_0_15px_rgba(255,170,44,0.35)]"
+                    className="w-11 h-11 rounded-full font-black text-base flex items-center justify-center shadow-lg transition-all bg-[#ffaa2c] text-black shadow-[0_0_18px_rgba(255,170,44,0.4)]"
                   >
                     1
                   </div>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-200 tracking-tight text-center">
+                  <span className="text-sm sm:text-base font-bold text-gray-100 tracking-tight text-center">
                     Importar planilha
                   </span>
                 </div>
 
                 {/* Passo 2 */}
-                <div className="flex flex-col items-center gap-1.5 relative z-10">
+                <div className="flex flex-col items-center gap-2 relative z-10">
                   <div
-                    className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center transition-all ${
+                    className={`w-11 h-11 rounded-full font-black text-base flex items-center justify-center transition-all ${
                       selectedContract
-                        ? "border-2 border-[#ffaa2c] text-[#ffaa2c] bg-[#10141f]"
+                        ? "border-2 border-[#ffaa2c] text-[#ffaa2c] bg-[#10141f] shadow-[0_0_15px_rgba(255,170,44,0.25)]"
                         : "border-2 border-[#374151] text-gray-400 bg-[#0c0f17]"
                     }`}
                   >
                     2
                   </div>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-300 tracking-tight text-center">
+                  <span className="text-sm sm:text-base font-bold text-gray-200 tracking-tight text-center">
                     Selecionar contrato base
                   </span>
                 </div>
 
                 {/* Passo 3 */}
-                <div className="flex flex-col items-center gap-1.5 relative z-10">
+                <div className="flex flex-col items-center gap-2 relative z-10">
                   <div
-                    className={`w-9 h-9 rounded-full font-black text-sm flex items-center justify-center transition-all ${
+                    className={`w-11 h-11 rounded-full font-black text-base flex items-center justify-center transition-all ${
                       compositionMatches.length > 0
-                        ? "border-2 border-[#ffaa2c] text-[#ffaa2c] bg-[#10141f]"
+                        ? "border-2 border-[#ffaa2c] text-[#ffaa2c] bg-[#10141f] shadow-[0_0_15px_rgba(255,170,44,0.25)]"
                         : "border-2 border-[#374151] text-gray-400 bg-[#0c0f17]"
                     }`}
                   >
                     3
                   </div>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-300 tracking-tight text-center">
+                  <span className="text-sm sm:text-base font-bold text-gray-200 tracking-tight text-center">
                     Definir regra e compatibilizar
                   </span>
                 </div>
@@ -1704,15 +1704,15 @@ export default function OrcaBaseDashboard() {
 
                 <div>
                   {/* Cabeçalho do Card 1 */}
-                  <div className="flex items-start gap-3.5 mb-5">
-                    <div className="w-9 h-9 rounded-full bg-[#ffaa2c] text-black font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="w-11 h-11 rounded-full bg-[#ffaa2c] text-black font-extrabold text-base flex items-center justify-center shrink-0 shadow-lg">
                       1
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-tight">
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                         Importar planilha
                       </h3>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-400">
                         Envie a Planilha 1 com os quantitativos.
                       </p>
                     </div>
@@ -1721,20 +1721,20 @@ export default function OrcaBaseDashboard() {
                   {/* Dropzone Central */}
                   <div
                     onClick={() => initialFileInputRef.current?.click()}
-                    className={`rounded-2xl border-2 border-dashed py-8 px-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                    className={`rounded-2xl border-2 border-dashed py-10 px-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                       isDraggingInitial
                         ? "border-[#ffaa2c] bg-[#ffaa2c]/10"
                         : "border-[#232d40] hover:border-[#ffaa2c]/60 bg-[#080a10]"
                     }`}
                   >
-                    <div className="w-14 h-14 rounded-full bg-[#121724] border border-[#232d40] flex items-center justify-center mb-3 shadow-inner">
-                      <UploadCloud className="w-7 h-7 text-[#ffaa2c]" />
+                    <div className="w-16 h-16 rounded-full bg-[#121724] border border-[#232d40] flex items-center justify-center mb-3.5 shadow-inner">
+                      <UploadCloud className="w-8 h-8 text-[#ffaa2c]" />
                     </div>
-                    <p className="text-sm font-bold text-white mb-0.5">
+                    <p className="text-base font-bold text-white mb-1">
                       Arraste e solte o arquivo aqui
                     </p>
-                    <p className="text-xs text-gray-400 mb-4">
-                      ou clique para selecionar
+                    <p className="text-xs sm:text-sm text-gray-400 mb-4">
+                      ou clique para selecionar do computador
                     </p>
                     <button
                       type="button"
@@ -1742,7 +1742,7 @@ export default function OrcaBaseDashboard() {
                         e.stopPropagation();
                         initialFileInputRef.current?.click();
                       }}
-                      className="px-4 py-2 rounded-xl border border-[#ffaa2c]/80 hover:bg-[#ffaa2c]/15 text-xs font-semibold text-white flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+                      className="px-5 py-2.5 rounded-xl border border-[#ffaa2c]/80 hover:bg-[#ffaa2c]/15 text-xs sm:text-sm font-bold text-white flex items-center gap-2 transition-all cursor-pointer shadow-sm"
                     >
                       <Folder className="w-4 h-4 text-[#ffaa2c]" />
                       <span>Selecionar arquivo</span>
@@ -1751,16 +1751,16 @@ export default function OrcaBaseDashboard() {
                 </div>
 
                 {/* Rodapé do Card 1 (Status do Arquivo Carregado) */}
-                <div className="mt-4 pt-3 border-t border-[#1e2535]">
+                <div className="mt-5 pt-3.5 border-t border-[#1e2535]">
                   {sheet1Study ? (
-                    <div className="p-3 rounded-xl bg-[#090d15] border border-[#1f283a] flex items-center justify-between gap-3 shadow-sm">
-                      <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-3.5 rounded-xl bg-[#090d15] border border-[#1f283a] flex items-center justify-between gap-3 shadow-sm">
+                      <div className="flex items-center gap-3 min-w-0">
                         <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-white truncate" title={initialFileName || undefined}>
+                          <p className="text-xs sm:text-sm font-bold text-white truncate" title={initialFileName || undefined}>
                             {initialFileName || "Planilha 1 – Origem dos Quantitativos.xlsx"}
                           </p>
-                          <p className="text-[11px] text-gray-400">
+                          <p className="text-xs text-gray-400">
                             Carregada com sucesso{" "}
                             <span className="text-emerald-400 font-mono font-semibold">
                               ({sheet1Study.items.length} itens)
@@ -1768,15 +1768,15 @@ export default function OrcaBaseDashboard() {
                           </p>
                         </div>
                       </div>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                     </div>
                   ) : (
-                    <div className="p-3 rounded-xl bg-[#090d15]/50 border border-[#192130] flex items-center justify-between text-xs text-gray-500">
+                    <div className="p-3.5 rounded-xl bg-[#090d15]/50 border border-[#192130] flex items-center justify-between text-xs sm:text-sm text-gray-400">
                       <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-500/60" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500/60" />
                         <span>Nenhuma planilha importada</span>
                       </div>
-                      <span className="text-[11px] text-gray-600 font-mono">.xlsx/.xlsm</span>
+                      <span className="text-xs text-gray-500 font-mono">.xlsx/.xlsm</span>
                     </div>
                   )}
                 </div>
@@ -1788,15 +1788,15 @@ export default function OrcaBaseDashboard() {
               <div className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] p-5 sm:p-6 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-[#ffaa2c]/40">
                 <div>
                   {/* Cabeçalho do Card 2 */}
-                  <div className="flex items-start gap-3.5 mb-5">
-                    <div className="w-9 h-9 rounded-full bg-[#ffaa2c] text-black font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="w-11 h-11 rounded-full bg-[#ffaa2c] text-black font-extrabold text-base flex items-center justify-center shrink-0 shadow-lg">
                       2
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-tight">
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                         Selecionar contrato base
                       </h3>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-400">
                         Escolha o Contrato Base que receberá os quantitativos.
                       </p>
                     </div>
@@ -1811,10 +1811,10 @@ export default function OrcaBaseDashboard() {
                           handleSelectContract(e.target.value);
                           setCompositionMatches([]);
                         }}
-                        className="w-full bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl px-4 py-3 text-xs sm:text-sm text-white font-semibold focus:outline-none transition-colors cursor-pointer truncate"
+                        className="w-full bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl px-4 py-3.5 text-sm sm:text-base text-white font-semibold focus:outline-none transition-colors cursor-pointer truncate shadow-inner"
                       >
                         {contracts.map((c) => (
-                          <option key={c.id} value={c.id} className="bg-[#111622] text-white">
+                          <option key={c.id} value={c.id} className="bg-[#111622] text-white py-1">
                             [{c.contractNumber}] {c.contractName}
                           </option>
                         ))}
@@ -1822,24 +1822,24 @@ export default function OrcaBaseDashboard() {
                     </div>
 
                     {/* Bloco Mapeamento Principal */}
-                    <div className="p-4 rounded-xl bg-[#090b11] border border-[#1e2535] space-y-3">
+                    <div className="p-4 sm:p-5 rounded-xl bg-[#090b11] border border-[#1e2535] space-y-3">
                       <div className="flex items-center gap-2">
                         <Layers className="w-4 h-4 text-[#ffaa2c]" />
-                        <span className="text-xs font-bold text-[#ffaa2c]">
+                        <span className="text-xs sm:text-sm font-bold text-[#ffaa2c]">
                           Mapeamento principal
                         </span>
                       </div>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-400">
                         Colunas da Planilha 1 que serão compatibilizadas:
                       </p>
                       <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <span className="px-3 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-[11px] uppercase tracking-wider shadow-inner">
+                        <span className="px-3.5 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
                           {sheet1Study?.detectedColumns?.descHeaderName || "DISCRIMINAÇÃO"}
                         </span>
-                        <span className="px-3 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-[11px] uppercase tracking-wider shadow-inner">
+                        <span className="px-3.5 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
                           {sheet1Study?.detectedColumns?.qtyHeaderName || "QUANT."}
                         </span>
-                        <span className="px-3 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-[11px] uppercase tracking-wider shadow-inner">
+                        <span className="px-3.5 py-1.5 rounded-lg bg-[#0c0f17] border border-[#ffaa2c]/40 text-[#ffaa2c] font-bold text-xs uppercase tracking-wider shadow-inner">
                           {sheet1Study?.detectedColumns?.unitHeaderName || "UND"}
                         </span>
                       </div>
@@ -1848,8 +1848,8 @@ export default function OrcaBaseDashboard() {
                 </div>
 
                 {/* Rodapé do Card 2 */}
-                <div className="mt-4 pt-3 border-t border-[#1e2535] flex items-center justify-between text-[11px] text-gray-400">
-                  <span className="truncate max-w-[190px]">
+                <div className="mt-5 pt-3.5 border-t border-[#1e2535] flex items-center justify-between text-xs sm:text-sm text-gray-400">
+                  <span className="truncate max-w-[210px] font-medium">
                     {selectedContract?.fileName || "Planilha Base Ativa"}
                   </span>
                   <span className="text-emerald-400 font-mono font-semibold">
@@ -1864,15 +1864,15 @@ export default function OrcaBaseDashboard() {
               <div className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] p-5 sm:p-6 flex flex-col justify-between shadow-2xl transition-all duration-300 hover:border-[#ffaa2c]/40">
                 <div>
                   {/* Cabeçalho do Card 3 */}
-                  <div className="flex items-start gap-3.5 mb-5">
-                    <div className="w-9 h-9 rounded-full bg-[#ffaa2c] text-black font-extrabold text-sm flex items-center justify-center shrink-0 shadow-md">
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="w-11 h-11 rounded-full bg-[#ffaa2c] text-black font-extrabold text-base flex items-center justify-center shrink-0 shadow-lg">
                       3
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-tight">
+                      <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                         Definir regra e compatibilizar
                       </h3>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-400">
                         Configure o ajuste dos quantitativos e gere o resultado.
                       </p>
                     </div>
@@ -1881,7 +1881,7 @@ export default function OrcaBaseDashboard() {
                   {/* Seção Como ajustar os quantitativos */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-300 mb-2">
+                      <label className="block text-xs sm:text-sm font-bold text-gray-200 mb-2">
                         Como ajustar os quantitativos?
                       </label>
                       <div className="grid grid-cols-2 gap-3">
@@ -1889,27 +1889,27 @@ export default function OrcaBaseDashboard() {
                         <button
                           type="button"
                           onClick={() => handleSelectStrategyMode("KEEP_TOTAL_VALUE")}
-                          className={`p-3.5 rounded-xl border flex flex-col items-center text-center justify-center gap-2 transition-all cursor-pointer min-h-[105px] ${
+                          className={`p-4 rounded-xl border flex flex-col items-center text-center justify-center gap-2 transition-all cursor-pointer min-h-[110px] ${
                             calcStrategy === "KEEP_TOTAL_VALUE"
-                              ? "border-[#ffaa2c] bg-[#141926] shadow-[0_0_15px_rgba(255,170,44,0.18)]"
+                              ? "border-[#ffaa2c] bg-[#141926] shadow-[0_0_18px_rgba(255,170,44,0.22)]"
                               : "border-[#202737] bg-[#090b11] hover:border-[#2e394f]"
                           }`}
                         >
                           <div className="flex items-center justify-start w-full">
                             <div
-                              className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                                 calcStrategy === "KEEP_TOTAL_VALUE"
                                   ? "border-[#ffaa2c]"
                                   : "border-gray-500"
                               }`}
                             >
                               {calcStrategy === "KEEP_TOTAL_VALUE" && (
-                                <div className="w-2 h-2 rounded-full bg-[#ffaa2c]" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#ffaa2c]" />
                               )}
                             </div>
                           </div>
-                          <Coins className="w-6 h-6 text-[#ffaa2c]" />
-                          <span className="text-[11px] sm:text-xs font-bold text-white leading-tight">
+                          <Coins className="w-7 h-7 text-[#ffaa2c]" />
+                          <span className="text-xs sm:text-sm font-bold text-white leading-tight">
                             Manter o valor final do orçamento
                           </span>
                         </button>
@@ -1918,27 +1918,27 @@ export default function OrcaBaseDashboard() {
                         <button
                           type="button"
                           onClick={() => handleSelectStrategyMode("KEEP_QUANTITY")}
-                          className={`p-3.5 rounded-xl border flex flex-col items-center text-center justify-center gap-2 transition-all cursor-pointer min-h-[105px] ${
+                          className={`p-4 rounded-xl border flex flex-col items-center text-center justify-center gap-2 transition-all cursor-pointer min-h-[110px] ${
                             calcStrategy === "KEEP_QUANTITY"
-                              ? "border-[#ffaa2c] bg-[#141926] shadow-[0_0_15px_rgba(255,170,44,0.18)]"
+                              ? "border-[#ffaa2c] bg-[#141926] shadow-[0_0_18px_rgba(255,170,44,0.22)]"
                               : "border-[#202737] bg-[#090b11] hover:border-[#2e394f]"
                           }`}
                         >
                           <div className="flex items-center justify-start w-full">
                             <div
-                              className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                                 calcStrategy === "KEEP_QUANTITY"
                                   ? "border-[#ffaa2c]"
                                   : "border-gray-500"
                               }`}
                             >
                               {calcStrategy === "KEEP_QUANTITY" && (
-                                <div className="w-2 h-2 rounded-full bg-[#ffaa2c]" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#ffaa2c]" />
                               )}
                             </div>
                           </div>
-                          <Scale className="w-6 h-6 text-[#ffaa2c]" />
-                          <span className="text-[11px] sm:text-xs font-bold text-white leading-tight">
+                          <Scale className="w-7 h-7 text-[#ffaa2c]" />
+                          <span className="text-xs sm:text-sm font-bold text-white leading-tight">
                             Manter o quantitativo exato da Planilha 1
                           </span>
                         </button>
@@ -1947,11 +1947,11 @@ export default function OrcaBaseDashboard() {
 
                     {/* Campo Valor final alvo (R$) */}
                     <div>
-                      <label className="block text-xs font-semibold text-gray-300 mb-1.5">
+                      <label className="block text-xs sm:text-sm font-bold text-gray-200 mb-1.5">
                         Valor final alvo (R$)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-[#ffaa2c] pointer-events-none">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-mono font-bold text-[#ffaa2c] pointer-events-none">
                           R$
                         </span>
                         <input
@@ -1966,7 +1966,7 @@ export default function OrcaBaseDashboard() {
                           }}
                           onBlur={() => handleApplyCustomTargetTotal()}
                           placeholder="300.000,00"
-                          className="w-full bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl pl-10 pr-3.5 py-2.5 text-sm font-mono font-bold text-white focus:outline-none transition-colors"
+                          className="w-full h-12 bg-[#0a0d14] border border-[#263146] focus:border-[#ffaa2c] rounded-xl pl-12 pr-4 text-base font-mono font-bold text-white focus:outline-none transition-colors shadow-inner"
                         />
                       </div>
                     </div>
@@ -1979,16 +1979,16 @@ export default function OrcaBaseDashboard() {
                     type="button"
                     onClick={handleCompatibilizarEExportar}
                     disabled={isProcessing}
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-sm flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_20px_rgba(255,170,44,0.35)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full h-14 rounded-xl bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_22px_rgba(255,170,44,0.4)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isProcessing ? (
                       <>
-                        <RefreshCw className="w-4 h-4 animate-spin text-black" />
+                        <RefreshCw className="w-5 h-5 animate-spin text-black" />
                         <span>Compatibilizando e Exportando...</span>
                       </>
                     ) : (
                       <>
-                        <Play className="w-4 h-4 fill-black text-black" />
+                        <Play className="w-5 h-5 fill-black text-black" />
                         <span>Compatibilizar e Exportar</span>
                       </>
                     )}
@@ -1999,22 +1999,22 @@ export default function OrcaBaseDashboard() {
 
             {/* BARRA SUPERIOR DE RESUMO FINANCEIRO E DOWNLOAD RÁPIDO PÓS-COMPATIBILIZAÇÃO */}
             {compositionMatches.length > 0 && (
-              <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] p-5 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-5">
-                <div className="flex flex-wrap items-center gap-6">
+              <section className="rounded-2xl border border-[#232b3d] bg-[#0c0f17] p-5 sm:p-6 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-5">
+                <div className="flex flex-wrap items-center gap-6 sm:gap-8">
                   <div>
-                    <span className="text-[10px] font-mono uppercase text-[#9ca3af] block">
+                    <span className="text-xs font-mono uppercase text-[#9ca3af] block font-semibold mb-0.5">
                       Composições Ativadas
                     </span>
-                    <span className="text-sm font-bold text-white font-mono">
+                    <span className="text-base sm:text-lg font-bold text-white font-mono">
                       {activeCompositionsCount} de {compositionMatches.length} linhas
                     </span>
                   </div>
-                  <div className="h-7 w-[1px] bg-[#1e2535] hidden sm:block" />
+                  <div className="h-8 w-[1px] bg-[#1e2535] hidden sm:block" />
                   <div>
-                    <span className="text-[10px] font-mono uppercase text-[#9ca3af] block">
+                    <span className="text-xs font-mono uppercase text-[#9ca3af] block font-semibold mb-0.5">
                       Total Planilha 1
                     </span>
-                    <span className="text-sm font-bold text-gray-300 font-mono">
+                    <span className="text-base sm:text-lg font-bold text-gray-300 font-mono">
                       R${" "}
                       {totalSheet1Value.toLocaleString("pt-BR", {
                         minimumFractionDigits: 2,
@@ -2022,12 +2022,12 @@ export default function OrcaBaseDashboard() {
                       })}
                     </span>
                   </div>
-                  <div className="h-7 w-[1px] bg-[#1e2535] hidden sm:block" />
+                  <div className="h-8 w-[1px] bg-[#1e2535] hidden sm:block" />
                   <div>
-                    <span className="text-[10px] font-mono uppercase text-[#ffaa2c] block font-semibold">
+                    <span className="text-xs font-mono uppercase text-[#ffaa2c] block font-bold mb-0.5">
                       Novo Total na Planilha Base
                     </span>
-                    <span className="text-base font-bold text-[#ffaa2c] font-mono">
+                    <span className="text-lg sm:text-xl font-black text-[#ffaa2c] font-mono">
                       R${" "}
                       {totalCompatibleValue.toLocaleString("pt-BR", {
                         minimumFractionDigits: 2,
@@ -2035,12 +2035,12 @@ export default function OrcaBaseDashboard() {
                       })}
                     </span>
                   </div>
-                  <div className="h-7 w-[1px] bg-[#1e2535] hidden sm:block" />
+                  <div className="h-8 w-[1px] bg-[#1e2535] hidden sm:block" />
                   <div>
-                    <span className="text-[10px] font-mono uppercase text-[#9ca3af] block font-semibold">
+                    <span className="text-xs font-mono uppercase text-[#9ca3af] block font-semibold mb-0.5">
                       Taxa de Compatibilização
                     </span>
-                    <span className="text-sm font-bold text-emerald-400 font-mono">
+                    <span className="text-base sm:text-lg font-bold text-emerald-400 font-mono">
                       {sourceAllocationStatus.percentage}% Concluído
                     </span>
                   </div>
@@ -2050,9 +2050,9 @@ export default function OrcaBaseDashboard() {
                   type="button"
                   onClick={handleDownloadFinalSpreadsheet}
                   disabled={isDownloading}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer shrink-0"
+                  className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm flex items-center gap-2.5 transition-all shadow-md cursor-pointer shrink-0"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-5 h-5" />
                   {isDownloading ? "Gerando..." : "Baixar Novamente (.XLSX)"}
                 </button>
               </section>
@@ -2064,11 +2064,11 @@ export default function OrcaBaseDashboard() {
             {compositionMatches.length > 0 && (
               <section className="rounded-2xl border border-[#1E2436] bg-[#0B0F19] overflow-hidden shadow-2xl">
                 {/* Abas Superiores de Alternância entre Visão Geral e Itens com Dificuldade */}
-                <div className="p-6 border-b border-[#1E2436] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                <div className="p-5 sm:p-6 border-b border-[#1E2436] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => setActiveResultTab("CONTRACT_VIEW")}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                      className={`px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
                         activeResultTab === "CONTRACT_VIEW"
                           ? "bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black shadow-[0_0_15px_rgba(212,175,55,0.25)]"
                           : "bg-[#111622] text-[#9CA3AF] hover:text-white border border-[#1E2436]"
@@ -2080,7 +2080,7 @@ export default function OrcaBaseDashboard() {
 
                     <button
                       onClick={() => setActiveResultTab("DIFFICULTY_VIEW")}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                      className={`px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
                         activeResultTab === "DIFFICULTY_VIEW"
                           ? "bg-[#F97316] text-black shadow-[0_0_20px_rgba(249,115,22,0.35)]"
                           : "bg-[#111622] text-[#9CA3AF] hover:text-white border border-[#1E2436]"
@@ -2089,7 +2089,7 @@ export default function OrcaBaseDashboard() {
                       <ShieldCheck className="w-4 h-4" />
                       Composições sem Similaridade Direta / Atenção
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                        className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${
                           sourceAllocationStatus.pendingItems.length > 0
                             ? "bg-red-500/20 text-red-400 border border-red-500/30"
                             : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
@@ -2102,10 +2102,10 @@ export default function OrcaBaseDashboard() {
 
                   {/* Controles de Filtro (somente ativos na visão geral) */}
                   {activeResultTab === "CONTRACT_VIEW" && (
-                    <div className="flex flex-wrap items-center gap-2.5">
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
                         onClick={() => setShowOnlyMatched(!showOnlyMatched)}
-                        className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border transition-all cursor-pointer ${
                           showOnlyMatched
                             ? "bg-[#D4AF37]/20 border-[#D4AF37] text-[#D4AF37]"
                             : "bg-[#111622] border-[#26304A] text-[#9CA3AF] hover:text-white"
@@ -2119,7 +2119,7 @@ export default function OrcaBaseDashboard() {
                       <select
                         value={disciplineFilter}
                         onChange={(e) => setDisciplineFilter(e.target.value)}
-                        className="bg-[#111622] border border-[#26304A] rounded-xl px-3 py-2 text-xs text-white focus:border-[#D4AF37] focus:outline-none"
+                        className="bg-[#111622] border border-[#26304A] rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:border-[#D4AF37] focus:outline-none cursor-pointer"
                       >
                         <option value="ALL">Todos os Setores / Disciplinas</option>
                         {availableDisciplines.map((d) => (
@@ -2129,14 +2129,14 @@ export default function OrcaBaseDashboard() {
                         ))}
                       </select>
 
-                      <div className="relative w-64">
-                        <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <div className="relative w-64 sm:w-72">
+                        <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           value={searchFilter}
                           onChange={(e) => setSearchFilter(e.target.value)}
                           placeholder="Buscar composição ou etapa..."
-                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full bg-[#111622] border border-[#26304A] rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[#D4AF37]"
                         />
                       </div>
                     </div>
@@ -2147,20 +2147,20 @@ export default function OrcaBaseDashboard() {
                 {activeResultTab === "CONTRACT_VIEW" && (
                   <div className="overflow-x-auto max-h-[640px] overflow-y-auto">
                     <table className="w-full text-left border-collapse">
-                      <thead className="sticky top-0 z-10 bg-[#080B12] border-b border-[#1E2436] text-[10px] font-mono uppercase text-[#9CA3AF]">
+                      <thead className="sticky top-0 z-10 bg-[#080B12] border-b border-[#1E2436] text-xs font-mono uppercase text-gray-300">
                         <tr>
-                          <th className="py-3.5 px-4">Linha / Setor</th>
-                          <th className="py-3.5 px-4">
+                          <th className="py-4 px-4 font-bold">Linha / Setor</th>
+                          <th className="py-4 px-4 font-bold">
                             {selectedContract.detectedColumns?.descHeaderName || "Composição / Descrição"} (Base)
                           </th>
-                          <th className="py-3.5 px-4">Serviço Alocado da Planilha 1 (Origem)</th>
-                          <th className="py-3.5 px-4 text-right">Qtd. Planilha 1</th>
-                          <th className="py-3.5 px-4 text-right text-emerald-400">
+                          <th className="py-4 px-4 font-bold">Serviço Alocado da Planilha 1 (Origem)</th>
+                          <th className="py-4 px-4 text-right font-bold">Qtd. Planilha 1</th>
+                          <th className="py-4 px-4 text-right text-emerald-400 font-bold">
                             {selectedContract.detectedColumns?.qtyHeaderName || "QUANTITATIVO"} (Injetado)
                           </th>
-                          <th className="py-3.5 px-4 text-right">Preço Unit. Base</th>
-                          <th className="py-3.5 px-4 text-right text-[#D4AF37]">Novo Subtotal</th>
-                          <th className="py-3.5 px-4 text-center">Ação</th>
+                          <th className="py-4 px-4 text-right font-bold">Preço Unit. Base</th>
+                          <th className="py-4 px-4 text-right text-[#D4AF37] font-bold">Novo Subtotal</th>
+                          <th className="py-4 px-4 text-center font-bold">Ação</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#1E2436] text-xs">
@@ -2447,29 +2447,29 @@ export default function OrcaBaseDashboard() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0d1017] p-5 sm:p-6 rounded-2xl border border-[#232b3d] shadow-xl">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/50 flex items-center justify-center text-[#ffaa2c] shadow-[0_0_20px_rgba(255,170,44,0.25)] shrink-0">
-                  <Settings className="w-6 h-6" />
+                  <Settings className="w-7 h-7" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                       Central de Configurações e Modelos Base
                     </h2>
-                    <span className="px-2.5 py-0.5 rounded-full bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 text-[#ffaa2c] text-[10px] font-bold uppercase tracking-wider">
+                    <span className="px-3 py-0.5 rounded-full bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 text-[#ffaa2c] text-xs font-bold uppercase tracking-wider">
                       SEDUC / GPR
                     </span>
                   </div>
-                  <p className="text-xs text-[#9ca3af] mt-1">
+                  <p className="text-xs sm:text-sm text-[#9ca3af] mt-1 leading-relaxed">
                     Gerencie contratos base para compatibilização de orçamentos e anexe a planilha base em Excel (.xlsx) com tags automáticas para o assistente de memoriais.
                   </p>
                 </div>
               </div>
 
               {/* Seletor de Sub-Abas por Demanda */}
-              <div className="flex items-center gap-2 bg-[#141926] p-1.5 rounded-xl border border-[#252f44] shrink-0">
+              <div className="flex items-center gap-2 bg-[#141926] p-2 rounded-xl border border-[#252f44] shrink-0">
                 <button
                   type="button"
                   onClick={() => setConfigDemandTab("ORCAMENTO")}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                     configDemandTab === "ORCAMENTO"
                       ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-lg"
                       : "text-gray-300 hover:text-white hover:bg-[#1a2233]"
@@ -2477,7 +2477,7 @@ export default function OrcaBaseDashboard() {
                 >
                   <Calculator className="w-4 h-4" />
                   <span>Demandas de Orçamento</span>
-                  <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-black/30 text-white">
+                  <span className="px-2 py-0.5 rounded text-xs font-mono bg-black/30 text-white font-bold">
                     {contracts.length}
                   </span>
                 </button>
@@ -2485,7 +2485,7 @@ export default function OrcaBaseDashboard() {
                 <button
                   type="button"
                   onClick={() => setConfigDemandTab("DESCRITIVO")}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`flex items-center gap-2.5 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                     configDemandTab === "DESCRITIVO"
                       ? "bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] text-black shadow-lg"
                       : "text-gray-300 hover:text-white hover:bg-[#1a2233]"
@@ -2493,7 +2493,7 @@ export default function OrcaBaseDashboard() {
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Demandas de Descritivos</span>
-                  <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
+                  <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
                     memorialTemplateMeta ? "bg-emerald-500/20 text-emerald-400 font-bold" : "bg-black/30 text-gray-300"
                   }`}>
                     {memorialTemplateMeta ? "Personalizada" : "Padrão SEDUC"}
@@ -2506,28 +2506,28 @@ export default function OrcaBaseDashboard() {
               <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2436] pb-6">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] block mb-1">
+                <span className="text-xs font-mono uppercase tracking-widest text-[#F97316] block mb-1 font-bold">
                   Identificação Inteligente por Nome de Coluna (Quantitativo, Composição, Discriminação, Unidade)
                 </span>
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">
                   Configurações de Contratos Base (Planilhas Destino)
                 </h2>
-                <p className="text-xs text-[#9CA3AF] mt-1">
+                <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1.5 leading-relaxed">
                   O sistema procura automaticamente na planilha pelos nomes das colunas (<strong className="text-white">Quantitativo / Quant. / Qtd</strong>, <strong className="text-white">Descrição / Composição / Discriminação</strong>, <strong className="text-white">Unidade / Unid.</strong> e <strong className="text-white">Total Geral</strong>), independentemente da posição em que estejam. Você também pode confirmar ou escolher pelo nome exato abaixo.
                 </p>
               </div>
               <div className="flex items-center gap-3 self-start">
                 <button
                   onClick={handleResetToDefaultContracts}
-                  className="px-4 py-2.5 rounded-xl border border-[#26304A] bg-[#111622] hover:bg-[#1A2234] text-[#9CA3AF] hover:text-white font-medium text-xs flex items-center gap-2 cursor-pointer transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-[#26304A] bg-[#111622] hover:bg-[#1A2234] text-[#9CA3AF] hover:text-white font-semibold text-xs sm:text-sm flex items-center gap-2 cursor-pointer transition-colors"
                   title="Restaurar contratos padrão de exemplo do sistema"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-4 h-4" />
                   Restaurar Exemplos
                 </button>
                 <button
                   onClick={() => setIsAddingContract(true)}
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-bold text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.25)] hover:opacity-95 cursor-pointer"
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#F97316] text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(249,115,22,0.25)] hover:opacity-95 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   Novo Contrato Base
@@ -3299,13 +3299,13 @@ export default function OrcaBaseDashboard() {
             {/* Header e Descrição da Demanda de Descritivos */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1E2436] pb-6">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-widest text-[#F97316] block mb-1">
+                <span className="text-xs font-mono uppercase tracking-widest text-[#F97316] block mb-1 font-bold">
                   Mecanismo de Injeção em Células com Marcação &ldquo;= AQUI&rdquo;
                 </span>
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl sm:text-2xl font-bold text-white">
                   Planilha Excel Base do Memorial Descritivo (.XLSX)
                 </h2>
-                <p className="text-xs text-[#9CA3AF] mt-1 max-w-4xl">
+                <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1.5 max-w-4xl leading-relaxed">
                   Anexe a planilha base oficial em Excel que servirá de molde. O assistente inteligente substituirá automaticamente os dados da escola, município, BDI, datas autossuficientes e injetará os serviços técnicos descritivos nas posições marcadas com <strong className="text-white font-mono">= AQUI</strong>, preservando 100% da formatação original do arquivo.
                 </p>
               </div>
@@ -3314,47 +3314,47 @@ export default function OrcaBaseDashboard() {
                 <button
                   type="button"
                   onClick={handleDownloadBlankTemplate}
-                  className="px-4 py-2.5 rounded-xl border border-[#26304A] bg-[#111622] hover:bg-[#1A2234] text-xs font-bold text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+                  className="px-5 py-3 rounded-xl border border-[#26304A] bg-[#111622] hover:bg-[#1A2234] text-xs sm:text-sm font-bold text-gray-200 hover:text-white flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
                   title="Baixar planilha de exemplo com as marcações = AQUI prontas para uso"
                 >
                   <Download className="w-4 h-4 text-[#ffaa2c]" />
-                  Baixar Modelo com Tags (.xlsx)
+                  <span>Baixar Modelo com Tags (.xlsx)</span>
                 </button>
                 {memorialTemplateMeta && (
                   <button
                     type="button"
                     onClick={handleRemoveMemorialTemplate}
-                    className="px-4 py-2.5 rounded-xl border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-red-300 flex items-center gap-2 cursor-pointer transition-colors"
+                    className="px-5 py-3 rounded-xl border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-xs sm:text-sm font-bold text-red-300 flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
                     title="Remover modelo personalizado e retornar ao padrão SEDUC/GPR"
                   >
-                    <RotateCcw className="w-3.5 h-3.5 text-red-400" />
-                    Restaurar Padrão SEDUC
+                    <RotateCcw className="w-4 h-4 text-red-400" />
+                    <span>Restaurar Padrão SEDUC</span>
                   </button>
                 )}
               </div>
             </div>
 
             {/* Card de Status da Planilha Ativa */}
-            <div className={`p-5 rounded-2xl border transition-all ${
+            <div className={`p-5 sm:p-6 rounded-2xl border transition-all shadow-xl ${
               memorialTemplateMeta
                 ? "border-emerald-500/40 bg-gradient-to-r from-[#0d1f1a] to-[#0a1412]"
                 : "border-[#ffaa2c]/30 bg-gradient-to-r from-[#141822] to-[#0d1017]"
             }`}>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+                <div className="flex items-center gap-4">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ${
                     memorialTemplateMeta
                       ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
                       : "bg-[#ffaa2c]/10 text-[#ffaa2c] border border-[#ffaa2c]/40"
                   }`}>
-                    <FileSpreadsheet className="w-6 h-6" />
+                    <FileSpreadsheet className="w-7 h-7" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs uppercase font-mono tracking-wider text-gray-400 font-semibold">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xs uppercase font-mono tracking-wider text-gray-300 font-bold">
                         Status do Modelo Base:
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                         memorialTemplateMeta
                           ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
                           : "bg-[#ffaa2c]/15 border border-[#ffaa2c]/40 text-[#ffaa2c]"
@@ -3362,10 +3362,10 @@ export default function OrcaBaseDashboard() {
                         {memorialTemplateMeta ? "Personalizada pelo Usuário" : "Padrão SEDUC / GPR Integrado"}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-white mt-1">
+                    <h3 className="text-lg sm:text-xl font-bold text-white mt-1">
                       {memorialTemplateMeta ? memorialTemplateMeta.fileName : "Modelo Institucional SEDUC / GPR (Padronizado)"}
                     </h3>
-                    <p className="text-xs text-[#9ca3af] mt-0.5">
+                    <p className="text-xs sm:text-sm text-[#9ca3af] mt-1">
                       {memorialTemplateMeta
                         ? `Tamanho: ${(memorialTemplateMeta.fileSize / 1024).toFixed(1)} KB • Atualizado em: ${new Date(memorialTemplateMeta.updatedAt).toLocaleDateString("pt-BR")}`
                         : "Utiliza a formatação oficial com cabeçalho de engenharia da SEDUC e posições esquematizadas para injeção."}
@@ -3373,11 +3373,11 @@ export default function OrcaBaseDashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => memorialTemplateInputRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                    className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#ffaa2c] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 transition-all cursor-pointer shadow-md"
                   >
                     <UploadCloud className="w-4 h-4 text-black" />
                     <span>{memorialTemplateMeta ? "Substituir Planilha" : "Anexar Planilha Base (.xlsx)"}</span>
@@ -3400,7 +3400,7 @@ export default function OrcaBaseDashboard() {
                 if (file) handleUploadMemorialTemplate(file);
               }}
               onClick={() => memorialTemplateInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+              className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                 isDraggingMemorialTemplate
                   ? "border-[#ffaa2c] bg-[#ffaa2c]/10"
                   : "border-[#26304A] hover:border-[#ffaa2c]/60 bg-[#0d1017]/80"
@@ -3417,110 +3417,110 @@ export default function OrcaBaseDashboard() {
                   e.target.value = "";
                 }}
               />
-              <div className="w-16 h-16 rounded-2xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c] mb-3 shadow-[0_0_20px_rgba(255,170,44,0.2)]">
-                <UploadCloud className="w-8 h-8 text-[#ffaa2c]" />
+              <div className="w-18 h-18 rounded-2xl bg-[#ffaa2c]/10 border border-[#ffaa2c]/40 flex items-center justify-center text-[#ffaa2c] mb-3.5 shadow-[0_0_25px_rgba(255,170,44,0.25)]">
+                <UploadCloud className="w-9 h-9 text-[#ffaa2c]" />
               </div>
-              <h4 className="text-sm font-bold text-white">
+              <h4 className="text-base sm:text-lg font-bold text-white">
                 Arraste sua Planilha Excel Base (.xlsx) ou clique para selecionar
               </h4>
-              <p className="text-xs text-gray-400 mt-1 max-w-md">
+              <p className="text-xs sm:text-sm text-gray-300 mt-1 max-w-lg leading-relaxed">
                 O sistema usará esta planilha como molde para o download no botão <strong className="text-white">Baixar Memorial (.xlsx)</strong> e para a pré-visualização.
               </p>
             </div>
 
             {/* Guia Visual das Tags com "= AQUI" */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-[#ffaa2c]" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5">
+                <Tag className="w-5 h-5 text-[#ffaa2c]" />
+                <h3 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider">
                   Guia de Tags de Substituição — Formato Obrigatório (&ldquo;= AQUI&rdquo;)
                 </h3>
               </div>
-              <p className="text-xs text-gray-400 leading-relaxed">
+              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                 Em sua planilha base, basta colocar as seguintes expressões em qualquer célula onde você deseja que o assistente preencha os dados:
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
                 {/* Tag 1: Escola */}
-                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-2 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-2 py-0.5 rounded border border-[#ffaa2c]/30">
+                    <span className="font-mono text-sm font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-3 py-1 rounded-lg border border-[#ffaa2c]/30">
                       ESCOLA = AQUI
                     </span>
-                    <span className="text-[10px] text-gray-400 font-semibold">Variável</span>
+                    <span className="text-xs text-gray-400 font-semibold">Variável</span>
                   </div>
-                  <p className="text-xs text-white font-medium">Nome da Unidade Escolar</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm sm:text-base text-white font-bold">Nome da Unidade Escolar</p>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                     Substituído pelo nome da escola digitado no Card 2 de Descritivos.
                   </p>
                 </div>
 
                 {/* Tag 2: Município */}
-                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-2 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-2 py-0.5 rounded border border-[#ffaa2c]/30">
+                    <span className="font-mono text-sm font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-3 py-1 rounded-lg border border-[#ffaa2c]/30">
                       MUNICÍPIO = AQUI
                     </span>
-                    <span className="text-[10px] text-gray-400 font-semibold">Variável</span>
+                    <span className="text-xs text-gray-400 font-semibold">Variável</span>
                   </div>
-                  <p className="text-xs text-white font-medium">Município e UF</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm sm:text-base text-white font-bold">Município e UF</p>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                     Substituído pela cidade e sigla do estado (ex: &ldquo;São João do Piauí - PI&rdquo;).
                   </p>
                 </div>
 
                 {/* Tag 3: BDI */}
-                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-2 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-2 py-0.5 rounded border border-[#ffaa2c]/30">
+                    <span className="font-mono text-sm font-bold text-[#ffaa2c] bg-[#ffaa2c]/10 px-3 py-1 rounded-lg border border-[#ffaa2c]/30">
                       BDI = AQUI
                     </span>
-                    <span className="text-[10px] text-gray-400 font-semibold">Variável</span>
+                    <span className="text-xs text-gray-400 font-semibold">Variável</span>
                   </div>
-                  <p className="text-xs text-white font-medium">Percentual de BDI da Obra</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm sm:text-base text-white font-bold">Percentual de BDI da Obra</p>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                     Substituído pela taxa informada (ex: &ldquo;24,50%&rdquo;).
                   </p>
                 </div>
 
                 {/* Tag 4: Mês e Ano */}
-                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-2 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                    <span className="font-mono text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/30">
                       MÊS/ANO = AQUI
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-bold">Automático</span>
+                    <span className="text-xs text-emerald-400 font-bold">Automático</span>
                   </div>
-                  <p className="text-xs text-white font-medium">Mês Atual e Ano Atual</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm sm:text-base text-white font-bold">Mês Atual e Ano Atual</p>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                     Calculado automaticamente pelo sistema de acordo com a data de elaboração (ex: &ldquo;Novembro de 2026&rdquo;).
                   </p>
                 </div>
 
                 {/* Tag 5: Data Extensa */}
-                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-1.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#0e121a] border border-[#232b3d] space-y-2 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
+                    <span className="font-mono text-sm font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-lg border border-emerald-500/30">
                       DATA EXTENSA = AQUI
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-bold">Automático</span>
+                    <span className="text-xs text-emerald-400 font-bold">Automático</span>
                   </div>
-                  <p className="text-xs text-white font-medium">Dia da Semana, Dia, Mês e Ano</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm sm:text-base text-white font-bold">Dia da Semana, Dia, Mês e Ano</p>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                     Calculado automaticamente pelo sistema (ex: &ldquo;Domingo, 8 de novembro de 2026&rdquo;).
                   </p>
                 </div>
 
                 {/* Tag 6: Memorial */}
-                <div className="p-3.5 rounded-xl bg-[#0e121a] border border-blue-500/30 space-y-1.5">
+                <div className="p-4 sm:p-5 rounded-xl bg-[#0e121a] border border-blue-500/30 space-y-2 shadow-md">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/30">
+                    <span className="font-mono text-sm font-bold text-blue-400 bg-blue-500/10 px-3 py-1 rounded-lg border border-blue-500/30">
                       MEMORIAL = AQUI
                     </span>
-                    <span className="text-[10px] text-blue-400 font-bold">Injeção Contínua</span>
+                    <span className="text-xs text-blue-400 font-bold">Injeção Contínua</span>
                   </div>
-                  <p className="text-xs text-white font-medium">Ponto de Início dos Serviços</p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-sm sm:text-base text-white font-bold">Ponto de Início dos Serviços</p>
+                  <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                     Injeta títulos em CAIXA ALTA e serviços sem marcadores, linha por linha, respeitando a célula da coluna.
                   </p>
                 </div>
