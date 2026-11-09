@@ -2217,39 +2217,25 @@ export default function OrcaBaseDashboard() {
                   </div>
                 </div>
 
-                {/* Botões Separados como no PR.023: 1) Compatibilizar (Conferir e Ajustar) e 2) Baixar Planilha Final */}
-                <div className="mt-5 space-y-2.5">
+                {/* Botão Único no Card 3: Compatibilizar na Tela */}
+                <div className="mt-5">
                   <button
                     type="button"
                     onClick={() => runCompatibilityEngine()}
                     disabled={isProcessing}
-                    className="w-full h-13 py-3.5 rounded-xl bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_22px_rgba(255,170,44,0.4)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full h-14 rounded-xl bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] hover:brightness-110 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_22px_rgba(255,170,44,0.4)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isProcessing ? (
                       <>
                         <RefreshCw className="w-5 h-5 animate-spin text-black" />
-                        <span>Compatibilizando Planilha...</span>
+                        <span>Compatibilizando na Tela...</span>
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-5 h-5 text-black" />
-                        <span>Compatibilizar Planilha 1 com Contrato Base</span>
+                        <Play className="w-5 h-5 fill-black text-black" />
+                        <span>Compatibilizar</span>
                       </>
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleDownloadFinalSpreadsheet}
-                    disabled={isDownloading || isProcessing}
-                    className="w-full h-13 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition-all shadow-[0_4px_20px_rgba(16,185,129,0.3)] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    <Download className="w-5 h-5 text-black" />
-                    <span>
-                      {isDownloading
-                        ? "Gerando Planilha Final..."
-                        : "Baixar Planilha Final (.XLSX / .XLSM)"}
-                    </span>
                   </button>
                 </div>
               </div>

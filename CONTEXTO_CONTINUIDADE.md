@@ -1,15 +1,7 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.038
-O ciclo **`PR.038`** implementou o **Cadeado Criptográfico SHA-256 e Blindagem Definitiva da Programação de Compatibilização de Orçamentos**, além de tornar permanentes e separados os botões do Card 3:
-1. **🔒 Cadeado Criptográfico SHA-256 (`src/lib/compatEngineLock.ts`, `scripts/verify-compat-lock.mjs`, `.compat-lock.json` e `AGENTS.md`):**
-   - Toda a programação interna de compatibilização de planilhas e clonagem `.xlsx`/`.xlsm` (`src/lib/excelEngine.ts` + `src/lib/compatEngineLock.ts`) está protegida por verificação SHA-256 no `prebuild` (`npm run build`) e pela Regra #5 em `AGENTS.md`.
-   - Proibido alterar qualquer linha dessa programação sem pedido explícito e específico do usuário.
-2. **Controles Separados e Sempre Visíveis no Card 3 (`src/app/page.tsx`):**
-   - Botões `"Copiar Total Planilha 1"` e `"Aplicar"` sempre visíveis ao lado do campo `Valor final alvo (R$)`.
-   - Botão 1 (`Compatibilizar Planilha 1 com Contrato Base`) e Botão 2 (`Baixar Planilha Final (.XLSX / .XLSM)`) separados e independentes como no `PR.023`.
-
----
-
-## 🎯 Próximo Passo do Agente (Ciclo PR.039)
-1. **Manter o Cadeado `LOCK-PR023-PR038-BLINDADO` intacto** em qualquer futura atualização do sistema.
+## 📍 Ponto Atual de Entrega — Ciclo PR.039
+O ciclo **`PR.039`** configurou o botão principal do Card 3 exclusivamente como **`Compatibilizar`** (compatibilizando na tela), mantendo a Barra Pós-Compatibilização com o botão **`Baixar Planilha Final (.XLSX / .XLSM)`** logo abaixo após a conferência na tela, com o **Cadeado Criptográfico SHA-256 (`LOCK-PR023-PR038-BLINDADO`)** 100% intacto:
+1. **Card 3 (`src/app/page.tsx`):** Botão único **`Compatibilizar`** que executa a compatibilização na tela (`runCompatibilityEngine()`).
+2. **Pós-Compatibilização na Tela:** Exibe o resumo financeiro, a lacuna para ajustar o valor final alvo, a taxa de compatibilização, a mesa de alocação e o botão verde **`Baixar Planilha Final (.XLSX / .XLSM)`** (`handleDownloadFinalSpreadsheet`).
+3. **🔒 Cadeado Criptográfico SHA-256 Verificado:** `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% preservados.
