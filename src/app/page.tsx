@@ -47,10 +47,19 @@ import {
 import {
   saveCustomTemplateToStorage,
   getStoredCustomTemplate,
+  getStoredCustomTemplateBase64,
+  hydrateCustomTemplateToStorage,
   removeCustomTemplateFromStorage,
   generateBlankMemorialTemplateWithTags,
   StoredTemplateMeta,
 } from "@/lib/memorialExcelEngine";
+import {
+  fetchCloudState,
+  fetchStaticDefaultContracts,
+  getOrFetchContractBinaryCloud,
+  pushStateUpdateToCloud,
+  downloadBase64FromCloudChunks,
+} from "@/lib/cloudSyncEngine";
 import {
   COMPAT_ENGINE_LOCK_VERSION,
   generateLockedCompatibleWorkbook,
@@ -348,9 +357,10 @@ export default function OrcaBaseDashboard() {
   // Estado de atualização de card existente na Aba Configurações
   const [updatingCardId, setUpdatingCardId] = useState<string | null>(null);
 
-  // Notificação Toast
+  // Notificação Toast e Sincronização Global em Nuvem
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [isStorageReady, setIsStorageReady] = useState<boolean>(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<"SYNCED" | "SYNCING" | "LOCAL">("SYNCING");
 
   const initialFileInputRef = useRef<HTMLInputElement>(null);
   const contractFileInputRef = useRef<HTMLInputElement>(null);
@@ -361,97 +371,160 @@ export default function OrcaBaseDashboard() {
     setTimeout(() => setToastMsg(null), 5000);
   };
 
-  // Carregamento resiliente do Banco de Dados IndexedDB (sem limite de 5MB do LocalStorage)
-  useEffect(() => {
-    async function initDB() {
-      try {
-        const initialized = await isDBInitialized();
-        if (!initialized) {
-          // Checa se há dados prévios no localStorage para migração suave
-          let migrated: ContractBaseCard[] | null = null;
-          try {
-            const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                migrated = parsed;
-              }
-            }
-          } catch {}
+  // Função central de sincronização bidirecional entre Nuvem (qualquer computador) e IndexedDB local
+  const syncWithCloudDatabase = async (showFeedbackToast = false) => {
+    setCloudSyncStatus("SYNCING");
+    try {
+      const [cloudState, localContracts] = await Promise.all([
+        fetchCloudState(),
+        getAllContractsFromDB().catch(() => [] as ContractBaseCard[]),
+      ]);
 
-          const initialList = migrated || INITIAL_CONTRACTS;
-          await saveAllContractsToDB(initialList);
-          await setDBInitialized();
-          setContracts(initialList);
-          if (initialList.length > 0) {
-            setSelectedContractId(initialList[0].id);
-            await saveAppSettingToDB("selectedContractId", initialList[0].id);
-          }
-        } else {
-          // Banco já inicializado: recupera contratos persistidos pelo usuário
-          const dbContracts = await getAllContractsFromDB();
-          if (Array.isArray(dbContracts) && dbContracts.length > 0) {
-            setContracts(dbContracts);
-            const savedSelectedId = await getAppSettingFromDB<string>("selectedContractId");
-            const activeId =
-              savedSelectedId && dbContracts.some((c) => c.id === savedSelectedId)
-                ? savedSelectedId
-                : dbContracts[0].id;
-            setSelectedContractId(activeId);
-            getContractBinary(activeId).then((bin) => {
-              if (bin) {
-                setContracts((prev) =>
-                  prev.map((c) => (c.id === activeId ? { ...c, rawWorkbookBase64: bin } : c))
-                );
-              }
-            }).catch(() => {});
-          } else {
-            // Se a lista estiver vazia (usuário excluiu todos ou vazio), respeita o estado
-            setContracts(dbContracts || []);
-          }
+      const cloudContracts = Array.isArray(cloudState?.contracts) ? cloudState.contracts : [];
+      const validLocalCustom = (localContracts || []).filter(
+        (c) => c && c.id && !c.id.startsWith("ct-default-")
+      );
 
-          // Recupera palavras-chave customizadas se salvas
-          const savedKeywords = await getAppSettingFromDB<{
-            descKeyword?: string;
-            unitKeyword?: string;
-            qtyKeyword?: string;
-            totalKeyword?: string;
-          }>("customKeywords");
-          if (savedKeywords) {
-            if (savedKeywords.descKeyword) setCustomDescKeyword(savedKeywords.descKeyword);
-            if (savedKeywords.unitKeyword) setCustomUnitKeyword(savedKeywords.unitKeyword);
-            if (savedKeywords.qtyKeyword) setCustomQtyKeyword(savedKeywords.qtyKeyword);
-            if (savedKeywords.totalKeyword) setCustomTotalKeyword(savedKeywords.totalKeyword);
-          }
-
-          // Recupera estratégia de cálculo salva
-          const savedStrategy = await getAppSettingFromDB<CalculationStrategy["mode"]>("calcStrategy");
-          if (savedStrategy) {
-            setCalcStrategy(savedStrategy);
-          }
+      // Mescla contratos da nuvem com eventuais contratos inéditos criados localmente neste navegador
+      const mergedMap = new Map<string, ContractBaseCard>();
+      for (const c of cloudContracts) {
+        if (c && c.id && !c.id.startsWith("ct-default-")) {
+          mergedMap.set(c.id, c);
         }
-      } catch (err) {
-        console.warn("Aviso ao carregar dados do IndexedDB, tentando fallback:", err);
-        try {
-          const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              setContracts(parsed);
-              setSelectedContractId(parsed[0].id);
-            }
-          }
-        } catch {}
-      } finally {
-        setIsStorageReady(true);
       }
-    }
 
-    initDB();
+      const localOnlyToUpload: ContractBaseCard[] = [];
+      for (const localC of validLocalCustom) {
+        if (!mergedMap.has(localC.id)) {
+          mergedMap.set(localC.id, localC);
+          localOnlyToUpload.push(localC);
+        }
+      }
+
+      let finalContracts = Array.from(mergedMap.values());
+      if (finalContracts.length === 0) {
+        const staticDefaults = await fetchStaticDefaultContracts();
+        finalContracts = staticDefaults.length > 0 ? staticDefaults : INITIAL_CONTRACTS;
+      }
+
+      // Salva no IndexedDB local para acesso instantâneo
+      await saveAllContractsToDB(finalContracts);
+      await setDBInitialized();
+      setContracts(finalContracts);
+
+      // Determina o contrato ativo (priorizando Nuvem -> Local -> Primeiro da Lista)
+      const savedLocalSelectedId = await getAppSettingFromDB<string>("selectedContractId");
+      const preferredId =
+        cloudState?.appSettings?.selectedContractId || savedLocalSelectedId || finalContracts[0]?.id;
+      const activeId = finalContracts.some((c) => c.id === preferredId)
+        ? preferredId!
+        : finalContracts[0]?.id;
+
+      if (activeId) {
+        setSelectedContractId(activeId);
+        await saveAppSettingToDB("selectedContractId", activeId);
+        getOrFetchContractBinaryCloud(activeId)
+          .then((bin) => {
+            if (bin) {
+              setContracts((prev) =>
+                prev.map((c) => (c.id === activeId ? { ...c, rawWorkbookBase64: bin } : c))
+              );
+            }
+          })
+          .catch(() => {});
+      }
+
+      // Sincroniza configurações globais (Estratégia de Cálculo e Palavras-Chave)
+      const cloudKeywords = cloudState?.appSettings?.customKeywords;
+      const localKeywords = await getAppSettingFromDB<{
+        descKeyword?: string;
+        unitKeyword?: string;
+        qtyKeyword?: string;
+        totalKeyword?: string;
+      }>("customKeywords");
+      const kw = cloudKeywords || localKeywords;
+      if (kw) {
+        if (kw.descKeyword) setCustomDescKeyword(kw.descKeyword);
+        if (kw.unitKeyword) setCustomUnitKeyword(kw.unitKeyword);
+        if (kw.qtyKeyword) setCustomQtyKeyword(kw.qtyKeyword);
+        if (kw.totalKeyword) setCustomTotalKeyword(kw.totalKeyword);
+      }
+
+      const cloudStrategy = cloudState?.appSettings?.calcStrategy;
+      const localStrategy = await getAppSettingFromDB<CalculationStrategy["mode"]>("calcStrategy");
+      const activeStrategy = cloudStrategy || localStrategy;
+      if (activeStrategy) {
+        setCalcStrategy(activeStrategy);
+      }
+
+      // Sincroniza Planilha Base do Memorial Descritivo (.xlsx com tags "= AQUI") se houver na nuvem
+      if (
+        cloudState?.memorialTemplate?.meta &&
+        Array.isArray(cloudState.memorialTemplate.chunks) &&
+        cloudState.memorialTemplate.chunks.length > 0
+      ) {
+        const cloudMeta = cloudState.memorialTemplate.meta;
+        const currentLocalTpl = getStoredCustomTemplate();
+        if (
+          !currentLocalTpl ||
+          currentLocalTpl.meta?.updatedAt !== cloudMeta.updatedAt ||
+          currentLocalTpl.meta?.fileName !== cloudMeta.fileName
+        ) {
+          downloadBase64FromCloudChunks(cloudState.memorialTemplate.chunks)
+            .then((tplB64) => {
+              if (tplB64) {
+                hydrateCustomTemplateToStorage(cloudMeta, tplB64);
+                setMemorialTemplateMeta(cloudMeta);
+              }
+            })
+            .catch(() => {});
+        } else {
+          setMemorialTemplateMeta(currentLocalTpl.meta);
+        }
+      }
+
+      // Se havia algum contrato inédito apenas neste computador, envia automaticamente para a nuvem
+      if (localOnlyToUpload.length > 0) {
+        for (const locCard of localOnlyToUpload) {
+          const bin = await getContractBinary(locCard.id);
+          await pushStateUpdateToCloud({
+            contracts: finalContracts,
+            contractBinaryBase64: bin ? { contractId: locCard.id, base64: bin } : undefined,
+          });
+        }
+      }
+
+      setCloudSyncStatus("SYNCED");
+      if (showFeedbackToast) {
+        showToast(
+          `Sincronizado com a Nuvem! ${finalContracts.length} contratos base ativos em todos os computadores.`
+        );
+      }
+    } catch (err) {
+      console.warn("Aviso ao sincronizar com a nuvem, operando com cache local:", err);
+      setCloudSyncStatus("LOCAL");
+    } finally {
+      setIsStorageReady(true);
+    }
+  };
+
+  // Carregamento inicial + sincronização automática ao focar a janela/aba (em qualquer computador)
+  useEffect(() => {
+    syncWithCloudDatabase(false);
+
+    const onWindowFocus = () => {
+      syncWithCloudDatabase(false);
+    };
+    window.addEventListener("focus", onWindowFocus);
+    return () => window.removeEventListener("focus", onWindowFocus);
   }, []);
 
-  // Salva contratos no IndexedDB com persistência definitiva (sem cota de 5MB)
-  const persistContracts = (updated: ContractBaseCard[]) => {
+  // Salva contratos no IndexedDB local E sincroniza imediatamente na Nuvem Global
+  const persistContracts = (
+    updated: ContractBaseCard[],
+    binaryUpload?: { contractId: string; base64: string },
+    deleteContractId?: string
+  ) => {
     setContracts(updated);
     saveAllContractsToDB(updated).catch((e) =>
       console.warn("Falha ao persistir contratos no IndexedDB:", e)
@@ -464,20 +537,32 @@ export default function OrcaBaseDashboard() {
       });
       localStorage.setItem(STORAGE_KEY_CONTRACTS, JSON.stringify(lightCopy));
     } catch {
-      // Ignora erro de cota de 5MB do localStorage, pois o IndexedDB grava sem limite
+      // Ignora erro de cota de 5MB do localStorage
     }
+
+    setCloudSyncStatus("SYNCING");
+    pushStateUpdateToCloud({
+      contracts: updated,
+      contractBinaryBase64: binaryUpload,
+      deleteContractId,
+    })
+      .then((ok) => setCloudSyncStatus(ok ? "SYNCED" : "LOCAL"))
+      .catch(() => setCloudSyncStatus("LOCAL"));
   };
 
   const handleSelectContract = (id: string) => {
     setSelectedContractId(id);
     saveAppSettingToDB("selectedContractId", id).catch(() => {});
-    getContractBinary(id).then((bin) => {
-      if (bin) {
-        setContracts((prev) =>
-          prev.map((c) => (c.id === id ? { ...c, rawWorkbookBase64: bin } : c))
-        );
-      }
-    }).catch(() => {});
+    pushStateUpdateToCloud({ appSettings: { selectedContractId: id } }).catch(() => {});
+    getOrFetchContractBinaryCloud(id)
+      .then((bin) => {
+        if (bin) {
+          setContracts((prev) =>
+            prev.map((c) => (c.id === id ? { ...c, rawWorkbookBase64: bin } : c))
+          );
+        }
+      })
+      .catch(() => {});
   };
 
   // Carrega metadados da planilha base do memorial salva no localStorage
@@ -488,7 +573,7 @@ export default function OrcaBaseDashboard() {
     }
   }, []);
 
-  // Upload e vinculação de nova Planilha Base personalizada para o Memorial Descritivo
+  // Upload e vinculação de nova Planilha Base personalizada para o Memorial Descritivo (com sincronização em nuvem)
   const handleUploadMemorialTemplate = async (file: File) => {
     if (!file.name.match(/\.(xlsx|xlsm|xls)$/i)) {
       showToast("Por favor, selecione um arquivo Excel válido (.xlsx ou .xlsm).");
@@ -497,7 +582,16 @@ export default function OrcaBaseDashboard() {
     try {
       const meta = await saveCustomTemplateToStorage(file);
       setMemorialTemplateMeta(meta);
-      showToast(`Planilha base "${file.name}" vinculada com sucesso ao Memorial!`);
+      const b64 = getStoredCustomTemplateBase64();
+      if (b64) {
+        setCloudSyncStatus("SYNCING");
+        pushStateUpdateToCloud({
+          memorialTemplate: { meta, base64: b64 },
+        })
+          .then((ok) => setCloudSyncStatus(ok ? "SYNCED" : "LOCAL"))
+          .catch(() => setCloudSyncStatus("LOCAL"));
+      }
+      showToast(`Planilha base "${file.name}" vinculada e sincronizada na nuvem!`);
     } catch (err: any) {
       console.error("Erro ao salvar template do memorial:", err);
       showToast("Erro ao processar planilha base do memorial.");
@@ -508,6 +602,7 @@ export default function OrcaBaseDashboard() {
   const handleRemoveMemorialTemplate = () => {
     removeCustomTemplateFromStorage();
     setMemorialTemplateMeta(null);
+    pushStateUpdateToCloud({ memorialTemplate: { meta: null } }).catch(() => {});
     showToast("Planilha personalizada desvinculada. Modelo padrão SEDUC/GPR restaurado!");
   };
 
@@ -532,29 +627,35 @@ export default function OrcaBaseDashboard() {
     }
   };
 
-  // Salva automaticamente palavras-chave personalizadas no banco ao digitar
+  // Salva automaticamente palavras-chave personalizadas no banco local e na nuvem ao digitar
   useEffect(() => {
     if (!isStorageReady) return;
     const timer = setTimeout(() => {
-      saveAppSettingToDB("customKeywords", {
+      const kwPayload = {
         descKeyword: customDescKeyword,
         unitKeyword: customUnitKeyword,
         qtyKeyword: customQtyKeyword,
         totalKeyword: customTotalKeyword,
-      }).catch(() => {});
-    }, 600);
+      };
+      saveAppSettingToDB("customKeywords", kwPayload).catch(() => {});
+      pushStateUpdateToCloud({ appSettings: { customKeywords: kwPayload } }).catch(() => {});
+    }, 900);
     return () => clearTimeout(timer);
   }, [isStorageReady, customDescKeyword, customUnitKeyword, customQtyKeyword, customTotalKeyword]);
 
   const handleResetToDefaultContracts = async () => {
-    if (!window.confirm("Deseja restaurar as configurações e contratos para os padrões originais de fábrica?")) {
+    if (!window.confirm("Deseja restaurar as configurações e contratos para os 4 contratos base oficiais salvos no sistema?")) {
       return;
     }
     try {
-      await resetDatabaseToDefaults(INITIAL_CONTRACTS);
-      setContracts(INITIAL_CONTRACTS);
-      setSelectedContractId(INITIAL_CONTRACTS[0].id);
-      showToast("Configurações e contratos restaurados para os padrões originais com sucesso!");
+      const defaults = await fetchStaticDefaultContracts();
+      const listToUse = defaults.length > 0 ? defaults : INITIAL_CONTRACTS;
+      await resetDatabaseToDefaults(listToUse);
+      persistContracts(listToUse);
+      if (listToUse.length > 0) {
+        setSelectedContractId(listToUse[0].id);
+      }
+      showToast("Contratos restaurados para a base oficial do sistema com sucesso!");
     } catch {
       showToast("Erro ao restaurar padrões.");
     }
@@ -737,13 +838,13 @@ export default function OrcaBaseDashboard() {
         };
       });
 
-      persistContracts(updatedList);
+      persistContracts(updatedList, { contractId, base64: b64 });
       setExpandedContractStudyId(contractId);
       if (selectedContractId === contractId) {
         setCompositionMatches([]);
       }
       showToast(
-        `Planilha "${file.name}" lida pelos nomes das colunas: Quantitativo="${study.detectedColumns.qtyHeaderName}", Composição="${study.detectedColumns.descHeaderName}" (${study.items.length} composições)!`
+        `Planilha "${file.name}" salva e sincronizada na nuvem (${study.items.length} composições)!`
       );
     } catch (err) {
       console.error(err);
@@ -761,7 +862,7 @@ export default function OrcaBaseDashboard() {
   ) => {
     setUpdatingCardId(contractId);
     try {
-      const b64 = await getContractBinary(contractId);
+      const b64 = await getOrFetchContractBinaryCloud(contractId);
       if (!b64) {
         showToast("Anexe o arquivo .xlsx neste card para alternar abas ou colunas pelo nome.");
         return;
@@ -812,7 +913,7 @@ export default function OrcaBaseDashboard() {
         setCompositionMatches([]);
       }
       showToast(
-        `Colunas atualizadas pelo nome: Quantitativo="${study.detectedColumns.qtyHeaderName}", Composição="${study.detectedColumns.descHeaderName}" (${study.items.length} composições).`
+        `Colunas atualizadas e sincronizadas na nuvem: Quantitativo="${study.detectedColumns.qtyHeaderName}", Composição="${study.detectedColumns.descHeaderName}" (${study.items.length} composições).`
       );
     } catch (e) {
       console.error(e);
@@ -833,7 +934,7 @@ export default function OrcaBaseDashboard() {
     }
     setUpdatingCardId(contractId);
     try {
-      const b64 = await getContractBinary(contractId);
+      const b64 = await getOrFetchContractBinaryCloud(contractId);
       const currentCard = contracts.find((c) => c.id === contractId);
 
       if (!b64) {
@@ -860,7 +961,7 @@ export default function OrcaBaseDashboard() {
         if (selectedContractId === contractId) {
           setCompositionMatches([]);
         }
-        showToast(`Intervalo atualizado: Linhas ${startRow} a ${endRow} selecionadas!`);
+        showToast(`Intervalo atualizado na nuvem: Linhas ${startRow} a ${endRow} selecionadas!`);
         return;
       }
 
@@ -909,7 +1010,7 @@ export default function OrcaBaseDashboard() {
         setCompositionMatches([]);
       }
       showToast(
-        `Intervalo atualizado com sucesso! ${study.items.length} composições com código filtradas entre a Linha ${startRow} e Linha ${endRow}.`
+        `Intervalo atualizado e sincronizado na nuvem! ${study.items.length} composições filtradas entre a Linha ${startRow} e Linha ${endRow}.`
       );
     } catch (e) {
       console.error(e);
@@ -930,8 +1031,8 @@ export default function OrcaBaseDashboard() {
     }
 
     const newId = `ct-${Date.now()}`;
-    if (newContractBuffer) {
-      const b64 = arrayBufferToBase64(newContractBuffer);
+    const b64 = newContractBuffer ? arrayBufferToBase64(newContractBuffer) : undefined;
+    if (b64) {
       await saveContractBinary(newId, b64);
     }
 
@@ -940,7 +1041,7 @@ export default function OrcaBaseDashboard() {
 
     const newCard: ContractBaseCard = {
       id: newId,
-      rawWorkbookBase64: newContractBuffer ? arrayBufferToBase64(newContractBuffer) : undefined,
+      rawWorkbookBase64: b64,
       contractName: newContractName.trim(),
       contractNumber: newContractNumber.trim(),
       organization: newContractOrg.trim() || "GPR / Engenharia",
@@ -966,9 +1067,10 @@ export default function OrcaBaseDashboard() {
     };
 
     const updated = [newCard, ...contracts];
-    persistContracts(updated);
+    persistContracts(updated, b64 ? { contractId: newId, base64: b64 } : undefined);
     setSelectedContractId(newCard.id);
     saveAppSettingToDB("selectedContractId", newCard.id).catch(() => {});
+    pushStateUpdateToCloud({ appSettings: { selectedContractId: newCard.id } }).catch(() => {});
 
     setNewContractName("");
     setNewContractNumber("");
@@ -978,7 +1080,7 @@ export default function OrcaBaseDashboard() {
     setNewContractStudy(null);
     setIsAddingContract(false);
     showToast(
-      `Contrato "${newCard.contractNumber}" salvo com persistência no banco de dados!`
+      `Contrato "${newCard.contractNumber}" salvo e sincronizado na nuvem para todos os computadores!`
     );
   };
 
@@ -989,13 +1091,14 @@ export default function OrcaBaseDashboard() {
     }
     await deleteContractCardFromDB(id);
     const updated = contracts.filter((c) => c.id !== id);
-    persistContracts(updated);
+    persistContracts(updated, undefined, id);
     if (selectedContractId === id) {
       const nextId = updated[0].id;
       setSelectedContractId(nextId);
       await saveAppSettingToDB("selectedContractId", nextId);
+      pushStateUpdateToCloud({ appSettings: { selectedContractId: nextId } }).catch(() => {});
     }
-    showToast("Contrato Base removido e excluído permanentemente do banco de dados.");
+    showToast("Contrato Base removido e sincronizado na nuvem.");
   };
 
   // ============================================================================
@@ -1043,6 +1146,7 @@ export default function OrcaBaseDashboard() {
   const handleSelectStrategyMode = (newMode: CalculationStrategy["mode"]) => {
     setCalcStrategy(newMode);
     saveAppSettingToDB("calcStrategy", newMode).catch(() => {});
+    pushStateUpdateToCloud({ appSettings: { calcStrategy: newMode } }).catch(() => {});
     if (compositionMatches.length > 0) {
       const updated = applyCalculationStrategyToMatches(
         compositionMatches,
@@ -1277,7 +1381,7 @@ export default function OrcaBaseDashboard() {
     setIsDownloading(true);
 
     try {
-      let contractBase64 = await getContractBinary(selectedContract.id);
+      let contractBase64 = await getOrFetchContractBinaryCloud(selectedContract.id);
       if (!contractBase64 && selectedContract.rawWorkbookBase64) {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
@@ -1346,7 +1450,7 @@ export default function OrcaBaseDashboard() {
       const matchedCount = matrix.filter((m) => m.final_injected_quantity > 0).length;
       const finalSum = matrix.reduce((s, m) => s + m.calculated_total_value, 0);
 
-      let contractBase64 = await getContractBinary(selectedContract.id);
+      let contractBase64 = await getOrFetchContractBinaryCloud(selectedContract.id);
       if (!contractBase64 && selectedContract.rawWorkbookBase64) {
         contractBase64 = selectedContract.rawWorkbookBase64;
       }
@@ -1515,8 +1619,23 @@ export default function OrcaBaseDashboard() {
             </div>
           </div>
 
-          {/* Botão de Conta / Usuário no Canto Superior Direito sobreposto à fachada */}
-          <div className="account-settings">
+          {/* Botão de Conta / Usuário e Sincronização em Nuvem no Canto Superior Direito */}
+          <div className="account-settings flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => syncWithCloudDatabase(true)}
+              className="px-3 py-1.5 rounded-lg bg-[#111622]/90 border border-emerald-500/40 hover:border-emerald-400 text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title="Clique para sincronizar contratos e configurações na nuvem agora (acessível de qualquer computador ou navegador)"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${cloudSyncStatus === "SYNCING" ? "animate-spin text-amber-400" : "text-emerald-400"}`}
+              />
+              <span>
+                {cloudSyncStatus === "SYNCING"
+                  ? "Sincronizando Nuvem..."
+                  : "☁️ Nuvem Ativa (Todos os PCs)"}
+              </span>
+            </button>
             <div className="account-button">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span>Conta • wisterly</span>
@@ -1583,6 +1702,12 @@ export default function OrcaBaseDashboard() {
                     >
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                       🔒 Cadeado de Compatibilização Ativo
+                    </span>
+                    <span
+                      className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[10px] font-mono font-bold flex items-center gap-1"
+                      title="Todos os contratos e configurações ficam salvos na nuvem para acesso em qualquer computador"
+                    >
+                      ☁️ Salvo na Nuvem ({contracts.length} Contratos)
                     </span>
                   </div>
                   <div className="flex items-center gap-2.5">

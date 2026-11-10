@@ -304,12 +304,30 @@ export function getStoredCustomTemplate(): { buffer: ArrayBuffer; meta: StoredTe
 }
 
 /**
- * Remove a planilha base personalizada do LocalStorage, restaurando o padrão
+ *Remove a planilha base personalizada do LocalStorage, restaurando o padrão
  */
 export function removeCustomTemplateFromStorage(): void {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TEMPLATE_STORAGE_KEY);
     localStorage.removeItem(TEMPLATE_META_KEY);
+  }
+}
+
+/**
+ * Retorna o base64 da planilha base personalizada do Memorial (para sincronização em nuvem)
+ */
+export function getStoredCustomTemplateBase64(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TEMPLATE_STORAGE_KEY);
+}
+
+/**
+ * Hidrata no LocalStorage uma planilha base de Memorial vinda da nuvem
+ */
+export function hydrateCustomTemplateToStorage(meta: StoredTemplateMeta, base64: string): void {
+  if (typeof window !== "undefined" && meta && base64) {
+    localStorage.setItem(TEMPLATE_STORAGE_KEY, base64);
+    localStorage.setItem(TEMPLATE_META_KEY, JSON.stringify(meta));
   }
 }
 

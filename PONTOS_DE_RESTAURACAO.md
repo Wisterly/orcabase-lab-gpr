@@ -11,6 +11,34 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.040]
+- **Data/Hora:** 09/11/2026 21:55 (Horário Local)
+- **Tag Git:** `PR.040`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### ☁️ Implementações Estruturais do PR.040 (Sincronização Global em Nuvem Multi-Computador + Embutimento Permanente dos 4 Contratos Base Reais do Usuário):
+1. **Recuperação Integral e Embutimento dos 4 Contratos Reais do Usuário (`public/contracts-base/`):**
+   - Extraídos diretamente do banco IndexedDB local do navegador (`Profile 10`) os **4 contratos reais** cadastrados pelo usuário junto com suas planilhas Excel originais completas (`.xlsx` e `.xlsm`):
+     1. **`RMELO ANTIGA ATA`** (`027/2022` — SEDUC, BDI `22.75%`, aba `ORÇAMENTO`, linhas `18` a `313`, `256` composições, arquivo `ANTIGA ATA - 12ª GRE - xxxxxxx (22,45%) - xxxxxxxxxxx.xlsm` — 20.67 MB).
+     2. **`DESENVOLVA`** (`027` — SEDUC, BDI `24.50%`, aba `sintetico GERAL`, linhas `9` a `221`, `197` composições, arquivo `DESENVOLVA - 12ªGRE - MODELO NOVO DESENVOLVA (26,85%) - CIDADE.xlsx` — 8.21 MB).
+     3. **`FeL / ENGEMAX`** (`049/2024 - CERRADOS` — SEDUC, BDI `21.11%`, aba `ORÇAMENTO`, linhas `12` a `360`, `258` composições, arquivo `CERRADOS - 12ª GRE - MODELO (XX%) - XXXXXX.xlsx` — 8.70 MB).
+     4. **`FeL / ENGEMAX`** (`049/2024 - SEMIÁRIDO` — SEDUC, BDI `21.11%`, aba `ORÇAMENTO`, linhas `19` a `314`, `258` composições, arquivo `SEMIÁRIDO - 12ª GRE - MODELO (XXXX%) - XXXXXXXXXXXX.xlsx` — 8.66 MB).
+   - Todos os 4 contratos e seus binários originais estão embarcados na CDN (`public/contracts-base/`) e gravados no banco em nuvem (`refs/cloud-sync/state`).
+2. **Motor de Sincronização Bidirecional em Nuvem (`src/app/api/cloud-sync/route.ts` e `src/lib/cloudSyncEngine.ts`):**
+   - Criada a API `/api/cloud-sync` integrada ao armazenamento em nuvem (`refs/cloud-sync/state` via GitHub Git Data API com suporte a upload/download de binários grandes de 20MB+ em fatias de 2.4 MB).
+   - Qualquer novo contrato cadastrado no computador do trabalho ou de casa (incluindo sua planilha `.xlsx`/`.xlsm`), qualquer ajuste de intervalo de linhas (`startRow`/`endRow`), remapeamento de colunas, exclusão de contrato, alteração de palavras-chave (`customKeywords`), estratégia de cálculo (`calcStrategy`) ou upload de planilha base do Memorial Descritivo (`.xlsx` com tags `= AQUI`) é salvo automaticamente na nuvem e sincronizado em todos os computadores e navegadores.
+   - Adicionado o botão/indicador **`☁️ Nuvem Ativa (Todos os PCs)`** no topo da interface e sincronização automática ao abrir ou focar a janela.
+3. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` permaneceram 100% intocados e validados no `prebuild`.
+
+---
+
 ### [PR.039]
 - **Data/Hora:** 09/11/2026 01:42 (Horário Local)
 - **Tag Git:** `PR.039`
