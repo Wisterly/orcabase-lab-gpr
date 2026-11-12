@@ -1,0 +1,9 @@
+{
+  "lockVersion": "LOCK-PR023-PR038-BLINDADO",
+  "lockedAt": "2026-11-09T04:37:24.759Z",
+  "description": "Cadeado criptográfico SHA-256 do motor de compatibilização e exportação de planilhas de Orçamento. PROIBIDO alterar sem autorização explícita do usuário.",
+  "hashes": {
+    "src/lib/excelEngine.ts": "dd82af83bc42fa91d884bbcd586a440a23be98c05a8c76e59c22d2a5a03cf53b",
+    "src/lib/compatEngineLock.ts": "ae6839d945d4f78f9832db02396ccd4e05593094a2bdc15f7fe382dd49615771"
+  }
+}
