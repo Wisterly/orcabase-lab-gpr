@@ -58,7 +58,7 @@ INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL E ZERO SERVI
             content: contextMessage,
           },
         ],
-        temperature: 0.1,
+        temperature: 0.2,
         max_tokens: 3500,
       }),
     });

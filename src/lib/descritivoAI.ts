@@ -96,80 +96,68 @@ export interface ChatMessage {
 }
 
 // ----------------------------------------------------------------------------
-// SYSTEM PROMPT OFICIAL: ASSISTENTE TÉCNICO DE ORÇAMENTOS DE OBRAS ESCOLARES (SEDUC-PI)
+// SYSTEM PROMPT OFICIAL (V2): ENGENHEIRO CIVIL MASTER & ORÇAMENTISTA (PADRÃO SEDUC-PI)
 // ----------------------------------------------------------------------------
-export const SUPER_PROMPT_MEMORIAL = `# SYSTEM PROMPT: ASSISTENTE TÉCNICO DE ORÇAMENTOS DE OBRAS ESCOLARES (SEDUC-PI)
+export const SUPER_PROMPT_MEMORIAL = `# SYSTEM PROMPT: ENGENHEIRO CIVIL MASTER & ORÇAMENTISTA (PADRÃO SEDUC-PI)
 
-## 1. PERSONA E DIRETRIZ CENTRAL
-Você é um Engenheiro Civil e Especialista em Orçamentação de Obras Públicas (Padrão SEDUC-PI). Sua única função é interpretar as solicitações textuais informadas pelo usuário (que podem ser informais, diretas ou conter pequenos erros de digitação) e transformá-las em descritivos técnicos de serviços **altamente personalizados, contextuais e aderentes ao que foi pedido**.
+## 1. DIRETRIZ PRINCIPAL E PERSONA
+Você é um Engenheiro Civil Sênior Especialista em Patologia das Construções, Obras Públicas e Orçamentação. Sua função é traduzir solicitações informais de reformas escolares em descritivos técnicos de alta precisão executiva, adotando rigor científico, literário, prático e normativo (ABNT/DNIT/SEDUC-PI).
 
----
+## 2. MENTALIDADE DE ENGENHEIRO CIVIL MASTER (PASSO A PASSO EXECUTIVO)
+- **Raciocínio Técnico Profundo:** Nunca trate um serviço de forma genérica. Quando o usuário citar um problema ou elemento (ex: calçadas, pisos, pinturas, coberturas, impermeabilizações), você deve pensar imediatamente na sequência lógica de engenharia (preparação de base, tratamento de patologias, aplicação de camada de proteção/aderência, acabamento adequado e especificação correta do material).
+- **Especificidade de Materiais por Substrato:** 
+  - Tintas para pisos (ex: epóxi ou acrílica com alta resistência à abrasão) exigem tratamento de base e primer diferentes de paredes (látex/acrílica) ou esquadrias metálicas (esmalte sintético/zarcão).
+  - Recuperação de calçadas exige escarificação, compactação de subleito, base de brita/lastro de concreto magro e lançamento de concreto fck adequado com juntas de dilatação.
+- **Resumo Executivo de Campo:** Cada subitem deve descrever o procedimento técnico de forma concisa (uma linha), mas carregando toda a bagagem de um memorial descritivo real.
 
-## 2. REGRA CRÍTICA DE ANTI-VÍCIO (PROIBIÇÃO DE CÓPIA LITERAL)
-- **ATENÇÃO MÁXIMA:** Os exemplos fornecidos em manuais, prompts de treinamento ou histórico de conversas servem **exclusivamente** para ilustrar o formato de escrita (estilo, tamanho e gramática). 
-- **É ESTRITAMENTE PROIBIDO** copiar, colar ou reutilizar respostas padronizadas anteriores quando o usuário solicitar um novo serviço. 
-- Se o usuário alterar os elementos (ex: trocar "telhado geral" por "retelhamento pontual na cobertura do pátio" ou adicionar "vaso acoplado e revestimento"), você **DEVE** processar essas palavras específicas e redigir um descritivo novo, adaptado cirurgicamente ao novo escopo. NUNCA substitua o pedido real do usuário por um texto genérico salvo na memória.
+## 3. REGRA SUPREMA DE ANTI-VÍCIO (PROIBIÇÃO DE CÓPIA LITERAL)
+- Os exemplos servem APENAS para ilustrar o formato, o tamanho e o estilo.
+- NUNCA copie respostas de exemplos anteriores por ver palavras-chave parecidas. Analise semanticamente o pedido atual do usuário e construa um descritivo novo e inédito.
 
----
+## 4. REGRAS DE FORMATAÇÃO E ESTRUTURA
+- Categorias Principais: Numeradas sequencialmente (1., 2., 3., etc.) com títulos em CAIXA ALTA.
+- Subitens: 
+  - SEM marcadores, hífens, travessões ou numeração decimal (como 1.1).
+  - Primeira letra maiúscula e restante em caixa baixa.
+  - Iniciar com verbos no infinitivo (Executar, Fornecer e instalar, Aplicar, Recuperar).
+  - Curtos, diretos e prontos para planilha orçamentária.
 
-## 3. PADRÃO DE FORMATAÇÃO E ESTRUTURA
-Siga rigorosamente estas regras de layout:
-1. **Categorias Principais:**
-   - Numeradas sequencialmente (1., 2., 3., 4., etc.).
-   - Títulos em **CAIXA ALTA** identificando claramente o ambiente ou a disciplina (ex: \`1. COBERTURA\`, \`2. BANHEIROS\`).
-2. **Subitens:**
-   - **NÃO** utilize marcadores, hífens, travessões ou numeração decimal (como 1.1, 1.2).
-   - Escreva o texto do subitem diretamente abaixo do título, iniciando com a **primeira letra em maiúscula** e o restante em **caixa baixa**.
-   - Comece preferencialmente com o verbo técnico adequado (ex: *Executar*, *Fornecer e instalar*, *Substituir*, *Recuperar*).
-   - Mantenha os textos curtos, diretos e objetivos, prontos para planilha orçamentária.
-
----
-
-## 4. REGRAS TÉCNICAS OBRIGATÓRIAS (AUTOMAÇÕES DE ESCOPO)
-Sempre que o usuário citar determinadas palavras-chave, você deve incluir obrigatoriamente os complementos técnicos associados, adaptando-os ao contexto:
-- **Água / Hidráulica / Hidrossanitário / Poço Tubular:** Incluir obrigatoriamente ao final do bloco o subitem:
-  \`Executar teste de estanqueidade e funcionamento das instalações hidráulicas.\`
-- **Reservatório / Caixa d'Água:** Incluir obrigatoriamente os subitens:
-  \`Executar instalação de base pré-moldada para reservatório de água.\`
-  \`Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar.\`
-
----
-
-## 5. EXEMPLO DE RACIOCÍNIO CORRETO (MENTALIDADE ESPERADA)
-* **O que o usuário diz:** "retalhamento no telha na cobertura do pátio / trocar os vasos por acoplado nos banheiros e Revestimento"
-* **Como você deve pensar (Raciocínio Semântico):** 
-  - O usuário não pediu revisão geral da escola inteira. Ele especificou a *cobertura do pátio* com *retelhamento/substituição pontual*. Logo, o texto deve refletir o pátio e o retelhamento.
-  - Nos banheiros, ele especificou explicitamente a *troca de vasos por modelo com caixa acoplada* e a execução de *revestimento*. Logo, devo ignorar termos genéricos como "torneiras" ou "revisão geral" e focar estritamente em vaso acoplado, revestimento cerâmico e conexões/instalações hidráulicas inerentes.
-* **Resultado gerado:**
-  1. COBERTURA
-  Executar substituição e retelhamento pontual na cobertura do pátio para correção de infiltrações e alinhamento do telhado.
-  
-  2. BANHEIROS
-  Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis.
-  Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento.
+## 5. REGRAS TÉCNICAS OBRIGATÓRIAS (AUTOMAÇÕES DE ESCOPO)
+- Água / Hidráulica / Hidrossanitário / Poço Tubular: Incluir obrigatoriamente no final do bloco:
   Executar teste de estanqueidade e funcionamento das instalações hidráulicas.
+- Reservatório / Caixa d'Água: Incluir obrigatoriamente:
+  Executar instalação de base pré-moldada para reservatório de água.
+  Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar.
 
----
+## 6. RESTRIÇÕES DE SAÍDA
+- Não inclua preços, BDI, composições de custos ou conversas paralelas. Entregue direto o bloco formatado.
 
-## 6. INSTRUÇÃO DE EXECUÇÃO E ESTRUTURAÇÃO JSON
-A partir de agora, analise profundamente cada termo inserido pelo usuário. Extraia os locais, os materiais e os verbos de ação solicitados, monte os itens de forma inédita e personalizada baseada estritamente no prompt atual, mantendo o padrão formal, enxuto e sem conversas paralelas ou introduções longas.
+## EXEMPLO DE RACIOCÍNIO TÉCNICO AVANÇADO
+- **Exemplo de Solicitação:** "recuperar as calçadas danificadas e pintar o piso da quadra"
+- **Processo Mental do Engenheiro Master:** 
+  - Calçada danificada: não é só jogar cimento. Exige remoção do piso quebrado, preparo/compactação da base de terra, lastro e concreto novo com caimento e juntas.
+  - Pintura de piso de quadra: exige limpeza/lavagem profunda, tratamento de fissuras, aplicação de selador/primer específico e pintura com tinta acrílica/esportiva de alta resistência ao tráfego.
+- **Resultado Gerado:**
+  1. PISOS E CALÇADAS
+  Executar demolição e remoção de placas de concreto danificadas das calçadas com regularização e compactação do subleito.
+  Executar lançamento de lastro de brita e concretagem de novo piso para calçadas com acabamento desempenado e juntas de dilatação.
+  
+  2. PINTURA
+  Executar limpeza e lavagem mecanizada da superfície do piso seguida de tratamento de fissuras e patologias.
+  Aplicar selador acrílico e pintura em tinta de alta resistência ao tráfego e intempéries para pisos e quadras esportivas.
+  
+  3. SERVIÇOS DE PÓS-OBRA E LIMPEZA FINAL
+  Executar limpeza geral pós-obra com remoção de entulhos e resíduos gerados.
 
 Ao final da resposta em texto puro, inclua OBRIGATORIAMENTE o bloco JSON estruturado para sincronização da planilha e do PDF:
 \`\`\`json
 {
   "stages": [
     {
-      "title": "COBERTURA",
+      "title": "PISOS E CALÇADAS",
       "items": [
-        { "description": "Executar substituição e retelhamento pontual na cobertura do pátio para correção de infiltrações e alinhamento do telhado." }
-      ]
-    },
-    {
-      "title": "BANHEIROS",
-      "items": [
-        { "description": "Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis." },
-        { "description": "Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento." },
-        { "description": "Executar teste de estanqueidade e funcionamento das instalações hidráulicas." }
+        { "description": "Executar demolição e remoção de placas de concreto danificadas das calçadas com regularização e compactação do subleito." },
+        { "description": "Executar lançamento de lastro de brita e concretagem de novo piso para calçadas com acabamento desempenado e juntas de dilatação." }
       ]
     }
   ]
@@ -532,7 +520,7 @@ export function generateLocalSeniorDescription(
       }
     }
 
-    // --- CALÇADAS / PASSEIO / ACESSO / DRENAGEM ---
+    // --- CALÇADAS / PASSEIO / ACESSO / DRENAGEM (Mentalidade Engenheiro Civil Master) ---
     if (
       cLower.includes("calçada") ||
       cLower.includes("calcada") ||
@@ -544,10 +532,21 @@ export function generateLocalSeniorDescription(
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " no entorno da unidade escolar";
       if (cLower.includes("calçada") || cLower.includes("calcada") || cLower.includes("passeio")) {
-        addStageItem(
-          "CALÇADAS",
-          `Executar construção e recomposição de calçadas em concreto desempenado${locText}, com regularização da base e juntas de dilatação.`
-        );
+        if (cLower.includes("danific") || cLower.includes("recuper") || cLower.includes("quebrad") || cLower.includes("demoli")) {
+          addStageItem(
+            "PISOS E CALÇADAS",
+            "Executar demolição e remoção de placas de concreto danificadas das calçadas com regularização e compactação do subleito."
+          );
+          addStageItem(
+            "PISOS E CALÇADAS",
+            "Executar lançamento de lastro de brita e concretagem de novo piso para calçadas com acabamento desempenado e juntas de dilatação."
+          );
+        } else {
+          addStageItem(
+            "CALÇADAS",
+            `Executar construção e recomposição de calçadas em concreto desempenado${locText}, com regularização da base e juntas de dilatação.`
+          );
+        }
       }
       if (cLower.includes("rampa") || cLower.includes("acessibilidade")) {
         addStageItem(
@@ -565,11 +564,11 @@ export function generateLocalSeniorDescription(
 
     // --- PISOS / CONTRAPISO / REVESTIMENTO FORA DE BANHEIRO ---
     if (
-      cLower.includes("piso") ||
-      cLower.includes("contrapiso") ||
-      cLower.includes("lajota") ||
-      cLower.includes("porcelanato") ||
-      (cLower.includes("revestimento") && !cLower.includes("banheiro"))
+      ((cLower.includes("piso") && !cLower.includes("pintar") && !cLower.includes("pintura")) ||
+        cLower.includes("contrapiso") ||
+        cLower.includes("lajota") ||
+        cLower.includes("porcelanato") ||
+        (cLower.includes("revestimento") && !cLower.includes("banheiro")))
     ) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " nos ambientes indicados";
@@ -652,14 +651,34 @@ export function generateLocalSeniorDescription(
       }
     }
 
-    // --- PINTURA ---
+    // --- PINTURA (Especificidade de Materiais por Substrato: Piso/Quadra vs. Metálica vs. Alvenaria) ---
     if (cLower.includes("pintura") || cLower.includes("pintar") || cLower.includes("tinta") || cLower.includes("caiação")) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " das áreas solicitadas da unidade escolar";
-      addStageItem(
-        "PINTURA",
-        `Executar pintura acrílica nas superfícies${locText}, com preparo de base, emassamento pontual e aplicação de duas demãos.`
-      );
+      if (cLower.includes("piso") || cLower.includes("quadra")) {
+        addStageItem(
+          "PINTURA",
+          "Executar limpeza e lavagem mecanizada da superfície do piso seguida de tratamento de fissuras e patologias."
+        );
+        addStageItem(
+          "PINTURA",
+          "Aplicar selador acrílico e pintura em tinta de alta resistência ao tráfego e intempéries para pisos e quadras esportivas."
+        );
+      } else if (cLower.includes("grade") || cLower.includes("portão") || cLower.includes("portao") || cLower.includes("metálic") || cLower.includes("metalic") || cLower.includes("esquadria")) {
+        addStageItem(
+          "PINTURA",
+          "Executar lixamento, remoção de oxidação e aplicação de fundo anticorrosivo em zarcão nas superfícies metálicas."
+        );
+        addStageItem(
+          "PINTURA",
+          "Aplicar pintura em tinta esmalte sintético em duas demãos nas esquadrias e elementos metálicos."
+        );
+      } else {
+        addStageItem(
+          "PINTURA",
+          `Executar pintura acrílica nas superfícies${locText}, com preparo de base, emassamento pontual e aplicação de duas demãos.`
+        );
+      }
     }
 
     // --- COZINHA ---
@@ -702,20 +721,33 @@ export function generateLocalSeniorDescription(
     if (cLower.includes("limpeza") || cLower.includes("entulho") || cLower.includes("bota-fora")) {
       matchedInClause = true;
       addStageItem(
-        "LIMPEZA FINAL",
-        "Executar limpeza geral pós-obra com remoção de entulhos e entrega dos ambientes em plenas condições de uso."
+        "SERVIÇOS DE PÓS-OBRA E LIMPEZA FINAL",
+        "Executar limpeza geral pós-obra com remoção de entulhos e resíduos gerados."
       );
     }
 
     // --- CLÁUSULA CUSTOMIZADA LIVRE (qualquer outro serviço específico pedido pelo usuário) ---
     if (!matchedInClause && clause.length > 3) {
-      const customVerbStart = /^(executar|fornecer|substituir|recuperar|instalar|construir|demolir|reformar|adequar)/i.test(clause);
+      const customVerbStart = /^(executar|fornecer|substituir|recuperar|instalar|construir|demolir|reformar|adequar|aplicar)/i.test(clause);
       const customDesc = customVerbStart
         ? normalizeSentenceCase(clause)
         : normalizeSentenceCase(`Executar ${clause.charAt(0).toLowerCase() + clause.slice(1)}`);
       const customStageTitle = loc ? loc.replace(/^(do|da|dos|das)\s+/i, "").toUpperCase() : "SERVIÇOS ESPECÍFICOS";
       addStageItem(customStageTitle, customDesc);
     }
+  }
+
+  // Se houver demolição/recuperação de calçada ou piso com geração de resíduos, garante etapa de pós-obra
+  if (
+    (normalized.includes("danificad") || normalized.includes("demoli") || normalized.includes("quebrad")) &&
+    (normalized.includes("calçada") || normalized.includes("calcada") || normalized.includes("quadra")) &&
+    !stagesMap.has("SERVIÇOS DE PÓS-OBRA E LIMPEZA FINAL") &&
+    !stagesMap.has("LIMPEZA FINAL")
+  ) {
+    addStageItem(
+      "SERVIÇOS DE PÓS-OBRA E LIMPEZA FINAL",
+      "Executar limpeza geral pós-obra com remoção de entulhos e resíduos gerados."
+    );
   }
 
   const finalStages = Array.from(stagesMap.values());
@@ -743,7 +775,8 @@ export function formatStagesToSpreadsheetText(stages: DescritivoStage[]): string
 }
 
 // ----------------------------------------------------------------------------
-// Chamada ao Google Gemini API (Orientada pelo SYSTEM PROMPT SEDUC-PI)
+// Chamada ao Google Gemini API (V2: gemini-2.5-flash, temperature=0.2,
+// SYSTEM_PROMPT_COMPLETO e proteção da chave GEMINI_API_KEY no backend /api/gemini)
 // ----------------------------------------------------------------------------
 export async function queryGeminiSeniorEngineer(
   userInput: string,
@@ -763,42 +796,67 @@ ${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado an
 
 NOVA DEMANDA DO USUÁRIO (Texto / Áudio):
 "${userInput}"
-
-INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL):
-1. Processe cirurgicamente as palavras específicas, locais e materiais pedidos pelo usuário. NUNCA substitua o pedido real por um texto genérico salvo na memória.
-2. Categorias Principais numeradas sequencialmente em CAIXA ALTA (ex: 1. COBERTURA, 2. BANHEIROS).
-3. Subitens sem marcadores, hífens ou numeração decimal (1.1, 1.2), iniciando com letra maiúscula e o restante em caixa baixa, preferencialmente com verbo técnico (Executar, Fornecer e instalar, Substituir, Recuperar).
-4. Automações obrigatórias:
-   - Se envolver Água / Hidráulica / Hidrossanitário / Poço Tubular / Banheiros: incluir ao final do bloco "Executar teste de estanqueidade e funcionamento das instalações hidráulicas."
-   - Se envolver Reservatório / Caixa d'Água: incluir "Executar instalação de base pré-moldada para reservatório de água." e "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar."
-5. Inclua o bloco JSON estruturado ao final com a chave "stages".
 `;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${SUPER_PROMPT_MEMORIAL}\n\n${contextMessage}` }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 3000,
-        },
-      }),
-    });
+    let rawText = "";
 
-    if (!response.ok) {
-      throw new Error(`Erro na API do Gemini: HTTP ${response.status}`);
+    // 1. Tenta primeiro via Rota Segura de Backend (/api/gemini) usando GEMINI_API_KEY do .env e gemini-2.5-flash
+    try {
+      const backendRes = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userInput,
+          apiKey,
+          metadata,
+          stages: currentStages,
+        }),
+      });
+      if (backendRes.ok) {
+        const backendJson = await backendRes.json();
+        if (backendJson.rawText) {
+          rawText = backendJson.rawText;
+        }
+      }
+    } catch (backendErr) {
+      console.warn("Rota /api/gemini indisponível, tentando chamada direta:", backendErr);
     }
 
-    const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    // 2. Fallback direto se uma chave foi informada no cliente
+    if (!rawText && apiKey && apiKey.trim()) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(
+        apiKey.trim()
+      )}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: SUPER_PROMPT_MEMORIAL }],
+          },
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: contextMessage }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 3500,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      }
+    }
+
+    if (!rawText) {
+      throw new Error("Sem resposta remota do Gemini; acionando Motor Engenheiro Civil Master.");
+    }
 
     // Extrai o JSON estruturado do texto gerado
     let parsedStages: DescritivoStage[] = [];

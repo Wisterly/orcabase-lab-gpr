@@ -247,12 +247,12 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
   const [isProcessingAI, setIsProcessingAI] = useState(false);
   const [isListeningAudio, setIsListeningAudio] = useState(false);
 
-  // Estados dos Motores de IA (OpenAI / ChatGPT, Gemini e Local)
+  // Estados dos Motores de IA (OpenAI / ChatGPT, Gemini 2.5 Flash e Local)
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [openaiModel, setOpenaiModel] = useState("gpt-4o-mini");
   const [geminiApiKey, setGeminiApiKey] = useState("");
-  const [selectedAiProvider, setSelectedAiProvider] = useState<"openai" | "gemini" | "local">("openai");
-  const [modalActiveTab, setModalActiveTab] = useState<"openai" | "gemini" | "local">("openai");
+  const [selectedAiProvider, setSelectedAiProvider] = useState<"openai" | "gemini" | "local">("gemini");
+  const [modalActiveTab, setModalActiveTab] = useState<"openai" | "gemini" | "local">("gemini");
   const [isTestingApiKey, setIsTestingApiKey] = useState(false);
   const [showApiKeyPassword, setShowApiKeyPassword] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
@@ -294,12 +294,9 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
       } else if (savedOpenAiKey) {
         setSelectedAiProvider("openai");
         setModalActiveTab("openai");
-      } else if (savedGeminiKey) {
+      } else {
         setSelectedAiProvider("gemini");
         setModalActiveTab("gemini");
-      } else {
-        setSelectedAiProvider("openai");
-        setModalActiveTab("openai");
       }
     } catch (e) {
       // Ignora erro de acesso ao localStorage
@@ -402,8 +399,8 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
         const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, stages, openaiModel);
         aiResponseText = result.textResponse;
         newStages = result.stages;
-      } else if (selectedAiProvider === "gemini" && geminiApiKey) {
-        // Envia para o Google Gemini
+      } else if (selectedAiProvider === "gemini") {
+        // Envia para o Google Gemini 2.5 Flash via Backend Seguro (/api/gemini com .env GEMINI_API_KEY)
         const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
         aiResponseText = result.textResponse;
         newStages = result.stages;
@@ -412,15 +409,15 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
         const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, stages, openaiModel);
         aiResponseText = result.textResponse;
         newStages = result.stages;
-      } else if (geminiApiKey) {
-        // Fallback para Gemini se houver chave
-        const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
-        aiResponseText = result.textResponse;
-        newStages = result.stages;
-      } else {
+      } else if (selectedAiProvider === "local") {
         // Processa via Motor Sênior Local da Engenharia de Infraestrutura Escolar
         newStages = generateLocalSeniorDescription(text, stages);
         aiResponseText = formatStagesToSpreadsheetText(newStages);
+      } else {
+        // Padrão: Google Gemini 2.5 Flash via Backend (/api/gemini) com fallback para Motor Engenheiro Civil Master
+        const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
+        aiResponseText = result.textResponse;
+        newStages = result.stages;
       }
 
       setStages(newStages);

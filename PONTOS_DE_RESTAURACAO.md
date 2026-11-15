@@ -11,6 +11,29 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.047]
+- **Data/Hora:** 15/11/2026 03:26 (Horário Local)
+- **Tag Git:** `PR.047` (Ponto de Recuperação Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Rota Segura Gemini 2.5 Flash: https://orcabase-lab-gpr.vercel.app/api/gemini
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.047 (`SUPER MASTER PROMPT & GUIA DE IMPLEMENTAÇÃO V2: ASSISTENTE TÉCNICO SEDUC-PI`):
+1. **Passo 1 — Segurança e Configuração do Backend (`.env` e `.gitignore`):**
+   - Criado o arquivo `.env` na raiz com `GEMINI_API_KEY` protegida no backend e validado o bloqueio de versionamento no `.gitignore` para que a chave jamais seja exposta em repositórios públicos.
+2. **Passo 2 — Script de Integração em Python (`api/gerar_descritivo.py`) e Rota Backend Next.js (`src/app/api/gemini/route.ts`):**
+   - Criado `api/gerar_descritivo.py` utilizando `from google import genai`, `from google.genai import types`, `load_dotenv()`, `model="gemini-2.5-flash"`, `system_instruction=SYSTEM_PROMPT_COMPLETO` e `temperature=0.2`.
+   - Criada a rota segura `src/app/api/gemini/route.ts` para consumo transparente pelo frontend sem expor `GEMINI_API_KEY`.
+3. **Passo 3 & Passo 4 — Super System Prompt (`ENGENHEIRO CIVIL MASTER & ORÇAMENTISTA — PADRÃO SEDUC-PI`) e Raciocínio Técnico Avançado (`src/lib/descritivoAI.ts` e `src/components/DescritivoView.tsx`):**
+   - Incorporado integralmente o novo `SYSTEM_PROMPT_COMPLETO` (Persona de Engenheiro Civil Sênior em Patologia das Construções ABNT/DNIT/SEDUC-PI, Passo a Passo Executivo, Especificidade de Materiais por Substrato — pisos/quadras vs. paredes vs. metálicas, recuperação de calçadas com subleito e lastro de brita —, Regra Suprema de Anti-Vício, Automações de Escopo e Exemplos Avançados).
+4. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% intocados.
+
+---
+
 ### [PR.046] (PONTO DE RECUPERAÇÃO DE SEGURANÇA — SNAPSHOT ANTES DO SUPER MASTER PROMPT)
 - **Data/Hora:** 15/11/2026 03:18 (Horário Local)
 - **Tag Git:** `PR.046`
