@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.041]
+- **Data/Hora:** 15/11/2026 01:13 (Horário Local)
+- **Tag Git:** `PR.041`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.041 (Limpeza Visual do Card "Dados do Memorial" na Aba Descritivos):
+1. **Remoção do Quadro "Datas Automáticas" e do Rodapé `SEDUC / GPR • Planilha Base | Tags = AQUI Prontas` (`src/components/DescritivoView.tsx`):**
+   - Removido visualmente todo o painel inferior de `Datas Automáticas` (`Mês e Ano Atual`, `Data Extensa com Dia da Semana`, `💡 Autossuficiente`) e a faixa inferior `SEDUC / GPR • Planilha Base | Tags = AQUI Prontas` do Card 2 (`Dados do Memorial`), conforme indicado na imagem enviada pelo usuário.
+   - O Card `Dados do Memorial` agora exibe de forma limpa apenas os campos variáveis editáveis (`Nome da Escola (Unidade Escolar)`, `Município`, `UF` e `BDI da Obra (%)`), enquanto o motor interno continua calculando e preenchendo automaticamente as datas vigentes na geração do Excel e do PDF.
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` permaneceram 100% intocados e validados no `prebuild`.
+
+---
+
 ### [PR.040]
 - **Data/Hora:** 09/11/2026 21:55 (Horário Local)
 - **Tag Git:** `PR.040`
