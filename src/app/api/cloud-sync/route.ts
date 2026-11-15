@@ -59,8 +59,13 @@ function getFallbackInitialState(): CloudSyncState {
       },
     },
     memorialTemplate: {
-      meta: null,
-      chunks: [],
+      meta: {
+        fileName: "DESCRITIVO MODELO.xlsx",
+        fileSize: 19674,
+        updatedAt: "2026-11-15T05:25:00.000Z",
+        tagsCount: 9,
+      },
+      chunks: ["STATIC:/contracts-base/DESCRITIVO_MODELO.xlsx"],
     },
   };
 }

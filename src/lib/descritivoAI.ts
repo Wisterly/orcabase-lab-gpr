@@ -1062,7 +1062,7 @@ INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL E ZERO SERVI
 }
 
 // ============================================================================
-// GERAÇÃO DE PDF OFICIAL DO MEMORIAL DESCRITIVO (Layout A4 Executivo)
+// GERAÇÃO DE PDF OFICIAL DO MEMORIAL DESCRITIVO (Fiel ao DESCRITIVO MODELO.xlsx)
 // ============================================================================
 export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: DescritivoStage[]): jsPDF {
   const doc = new jsPDF({
@@ -1073,223 +1073,199 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
 
   const pageWidth = 210;
   const pageHeight = 297;
-  const margin = 20;
+  const margin = 14;
   const printableWidth = pageWidth - margin * 2;
   let currentY = margin;
 
+  const schoolUpper = (metadata.schoolName || metadata.propertyId || "UNIDADE ESCOLAR").trim().toUpperCase();
+  const cityUpper = (metadata.city || "TERESINA").trim().toUpperCase();
+  const mesAnoFormatted = (metadata.mesAnoRef || "Novembro de 2026").replace(/\s+de\s+/i, ", ").toUpperCase();
+  const footerDateFormatted = (metadata.dataExtensa || "domingo, 15 de novembro de 2026").toLowerCase();
+
   const checkPageBreak = (neededHeight: number) => {
-    if (currentY + neededHeight > pageHeight - margin - 15) {
+    if (currentY + neededHeight > pageHeight - margin - 12) {
       doc.addPage();
       currentY = margin;
-      drawPageBorderAndHeader();
     }
   };
 
-  const drawPageBorderAndHeader = () => {
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(0.8);
-    doc.line(margin, margin - 5, pageWidth - margin, margin - 5);
+  // 1. BLOCO SUPERIOR (Linhas 2 a 9 do DESCRITIVO MODELO.xlsx)
+  doc.setDrawColor(20, 20, 20);
+  doc.setLineWidth(0.35);
 
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    doc.line(margin, margin - 3, pageWidth - margin, margin - 3);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text(
-      `Memorial Descritivo — ${metadata.propertyId || metadata.schoolName || metadata.projectName} | Página ${doc.getCurrentPageInfo().pageNumber}`,
-      margin,
-      pageHeight - 10
-    );
-    doc.text("OrçaBase.lab — GPR Engenharia", pageWidth - margin - 40, pageHeight - 10);
-  };
-
-  // 1. CABEÇALHO INSTITUCIONAL
-  drawPageBorderAndHeader();
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(15, 23, 42);
-  doc.text((metadata.organization || "GOVERNO DO ESTADO — SECRETARIA DA EDUCAÇÃO").toUpperCase(), pageWidth / 2, currentY, { align: "center" });
-  currentY += 5;
-
+  // Linha 2: PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - <ESCOLA> (Fundo Azul #0070C0)
+  doc.setFillColor(0, 112, 192);
+  doc.rect(margin, currentY, printableWidth, 8, "FD");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(249, 115, 22);
-  doc.text(`${(metadata.gre || "GPR").toUpperCase()} — DEPARTAMENTO DE ENGENHARIA E INFRAESTRUTURA ESCOLAR`, pageWidth / 2, currentY, { align: "center" });
+  doc.setTextColor(255, 255, 255);
+  doc.text(`PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - ${schoolUpper}`, pageWidth / 2, currentY + 5.3, {
+    align: "center",
+  });
   currentY += 8;
 
-  // Caixa Título Principal
-  doc.setFillColor(15, 23, 42);
-  doc.roundedRect(margin, currentY, printableWidth, 12, 1.5, 1.5, "F");
-
+  // Linha 3: GOVERNO DO ESTADO DO PIAUÍ (Fundo Azul #0070C0)
+  doc.setFillColor(0, 112, 192);
+  doc.rect(margin, currentY, printableWidth, 5.5, "FD");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(212, 175, 55);
-  doc.text("MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS", pageWidth / 2, currentY + 7.5, { align: "center" });
-  currentY += 16;
-
-  // 2. QUADRO RESUMO DE IDENTIFICAÇÃO DO IMÓVEL / UNIDADE ESCOLAR
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.4);
-  const quadroHeight = 32;
-  doc.roundedRect(margin, currentY, printableWidth, quadroHeight, 1, 1, "FD");
-
   doc.setFontSize(8.5);
-  doc.setTextColor(50, 50, 50);
+  doc.setTextColor(255, 255, 255);
+  doc.text("GOVERNO DO ESTADO DO PIAUÍ", pageWidth / 2, currentY + 3.8, { align: "center" });
+  currentY += 5.5;
 
-  const col1X = margin + 4;
-  const col2X = margin + 95;
-  let qY = currentY + 5;
-
+  // Linha 4: SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
+  doc.setFillColor(255, 255, 255);
+  doc.rect(margin, currentY, printableWidth, 5.5, "FD");
   doc.setFont("helvetica", "bold");
-  doc.text("UNIDADE ESCOLAR:", col1X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(metadata.schoolName || metadata.propertyId || "-", col1X + 38, qY);
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC", pageWidth / 2, currentY + 3.8, { align: "center" });
+  currentY += 5.5;
 
+  // Linha 5: UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
+  doc.rect(margin, currentY, printableWidth, 6, "FD");
+  doc.text("UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF", pageWidth / 2, currentY + 4.1, { align: "center" });
+  currentY += 6;
+
+  // Linhas 6 a 9: Tabela de Metadados (OBJETO, DATA, UNIDADE, MUNICÍPIO, L.S., BDI)
+  const wColLabel = 24;
+  const wColMain = printableWidth - wColLabel - 44;
+  const wColLsLabel = 26;
+  const wColLsVal = 18;
+  const xMain = margin + wColLabel;
+  const xLsLabel = xMain + wColMain;
+  const xLsVal = xLsLabel + wColLsLabel;
+
+  const drawMetaRow = (
+    labelLeft: string,
+    valLeft: string,
+    midText: string | null,
+    labelRight: string,
+    valRight: string
+  ) => {
+    const h = 5.5;
+    doc.setDrawColor(20, 20, 20);
+    doc.rect(margin, currentY, wColLabel, h);
+    doc.rect(xMain, currentY, wColMain, h);
+    doc.rect(xLsLabel, currentY, wColLsLabel, h);
+    doc.rect(xLsVal, currentY, wColLsVal, h);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(labelLeft, margin + wColLabel - 1.5, currentY + 3.8, { align: "right" });
+
+    if (midText) {
+      const splitX = xMain + 38;
+      doc.line(splitX, currentY, splitX, currentY + h);
+      doc.setFont("helvetica", "normal");
+      doc.text(valLeft, xMain + 2, currentY + 3.8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.8);
+      doc.text(midText, splitX + (wColMain - 38) / 2, currentY + 3.8, { align: "center" });
+    } else {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      doc.text(valLeft, xMain + 2, currentY + 3.8);
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.text(labelRight, xLsLabel + wColLsLabel - 1.5, currentY + 3.8, { align: "right" });
+    doc.text(valRight, xLsVal + wColLsVal - 1.5, currentY + 3.8, { align: "right" });
+
+    currentY += h;
+  };
+
+  drawMetaRow(
+    "OBJETO:",
+    "MANUTENÇÃO PREDIAL DAS UNIDADES ESCOLARES DA REDE ESTADUAL",
+    null,
+    "L.S. (MENSAL)=",
+    "70,90%"
+  );
+  drawMetaRow(
+    "DATA:",
+    mesAnoFormatted,
+    "DATA BASE: SINAPI_PI | SEINFRA_CE | ORSE_SE",
+    "L.S. (HORISTA)=",
+    "113,05%"
+  );
+  drawMetaRow("UNIDADE.:", schoolUpper, null, "BDI (DIF)=", "0,00%");
+  drawMetaRow("MUNICÍPIO:", cityUpper, null, "BDI=", metadata.bdiPercent || "24,50%");
+
+  currentY += 3.5;
+
+  // Linha 11: Faixa Cinza MEMORIAL DESCRITIVO
+  doc.setFillColor(217, 217, 217);
+  doc.setDrawColor(20, 20, 20);
+  doc.rect(margin, currentY, printableWidth, 8.5, "FD");
   doc.setFont("helvetica", "bold");
-  doc.text("MUNICÍPIO / UF:", col2X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${metadata.city || "-"}${metadata.uf ? ` - ${metadata.uf}` : ""}`, col2X + 28, qY);
+  doc.setFontSize(11.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text("MEMORIAL DESCRITIVO", pageWidth / 2, currentY + 5.8, { align: "center" });
+  currentY += 11.5;
 
-  qY += 5.5;
-  doc.setFont("helvetica", "bold");
-  doc.text("BDI APLICADO (%):", col1X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(metadata.bdiPercent || "24,50%", col1X + 38, qY);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("MÊS / ANO REF.:", col2X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(metadata.mesAnoRef || "Novembro de 2026", col2X + 28, qY);
-
-  qY += 5.5;
-  doc.setFont("helvetica", "bold");
-  doc.text("FINALIDADE / OBJETO:", col1X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(metadata.purpose || metadata.objectDescription || "Reforma e Manutenção Predial", col1X + 38, qY);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("GRE / REGIONAL:", col2X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(metadata.gre || "SEDUC / GPR", col2X + 28, qY);
-
-  qY += 5.5;
-  doc.setFont("helvetica", "bold");
-  doc.text("RESPONSÁVEL TÉCNICO:", col1X, qY);
-  doc.setFont("helvetica", "normal");
-  doc.text(`${metadata.engineerName || "Engenheiro Civil"} (${metadata.creaNumber || "CREA/CAU"})`, col1X + 38, qY);
-
-  currentY += quadroHeight + 6;
-
-  // 3. INTRODUÇÃO
-  checkPageBreak(25);
+  // Linha 13: SERVIÇOS - <ESCOLA>
+  doc.setFillColor(255, 255, 255);
+  doc.rect(margin, currentY, printableWidth, 6.5, "FD");
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text("DISPOSIÇÕES GERAIS E NORMAS APLICÁVEIS", margin, currentY);
-  currentY += 4.5;
+  doc.text(`SERVIÇOS - ${schoolUpper}`, pageWidth / 2, currentY + 4.5, { align: "center" });
+  currentY += 9.5;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(60, 60, 60);
-  const introText =
-    "O presente Memorial Descritivo tem por finalidade fixar as diretrizes técnicas, métodos executivos e padrões de qualidade exigidos para a execução dos serviços de engenharia e adequação da infraestrutura escolar, em estrita observância às normas da ABNT e especificações do órgão contratante.";
-  const splitIntro = doc.splitTextToSize(introText, printableWidth);
-  doc.text(splitIntro, margin, currentY);
-  currentY += splitIntro.length * 4 + 6;
+  // 2. ETAPAS E ITENS TÉCNICOS (Fiel ao DESCRITIVO MODELO.xlsx: Título Vermelho Centralizado + Caixa de Itens)
+  const innerMargin = margin + 4;
+  const innerWidth = printableWidth - 8;
 
-  // 4. ETAPAS E ITENS TÉCNICOS (Categorias Principais numeradas 1., 2., 3. em CAIXA ALTA e subitens diretos)
   stages.forEach((stage, sIdx) => {
-    checkPageBreak(25);
+    const cleanTitle = stage.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    const numberedTitle = `${sIdx + 1}. ${cleanTitle}`;
 
-    doc.setFillColor(241, 245, 249);
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(0.6);
-    doc.rect(margin, currentY, printableWidth, 7, "FD");
+    // Calcula altura total dos itens do bloco
+    const itemBlocks: string[][] = stage.items.map((item) => {
+      const cleanDesc = normalizeSentenceCase(item.description);
+      return doc.splitTextToSize(cleanDesc, innerWidth - 6);
+    });
+    const itemsHeight = itemBlocks.reduce((acc, lines) => acc + lines.length * 4.2 + 2, 4);
 
+    checkPageBreak(7 + itemsHeight + 6);
+
+    // Caixa do Título da Categoria (Vermelho Negrito Centralizado)
+    doc.setDrawColor(30, 30, 30);
+    doc.setLineWidth(0.3);
+    doc.rect(innerMargin, currentY, innerWidth, 6.5);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
-    doc.setTextColor(15, 23, 42);
-    const cleanTitle = stage.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
-    doc.text(`${sIdx + 1}. ${cleanTitle}`, margin + 3, currentY + 5);
-    currentY += 10;
+    doc.setTextColor(255, 0, 0);
+    doc.text(numberedTitle, pageWidth / 2, currentY + 4.5, { align: "center" });
+    currentY += 6.5;
 
-    stage.items.forEach((item) => {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.5);
-      doc.setTextColor(40, 40, 40);
+    // Caixa dos Subitens
+    const boxStartY = currentY;
+    let itemY = currentY + 4.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.8);
+    doc.setTextColor(20, 20, 20);
 
-      const cleanDesc = normalizeSentenceCase(item.description);
-      const splitItem = doc.splitTextToSize(cleanDesc, printableWidth - 4);
-
-      checkPageBreak(splitItem.length * 4 + 4);
-
-      doc.text(splitItem, margin + 2, currentY);
-      currentY += splitItem.length * 4 + 3;
+    itemBlocks.forEach((lines) => {
+      doc.text(lines, innerMargin + 3, itemY);
+      itemY += lines.length * 4.2 + 1.8;
     });
 
-    currentY += 2;
+    const actualBoxH = Math.max(8, itemY - boxStartY);
+    doc.rect(innerMargin, boxStartY, innerWidth, actualBoxH);
+    currentY = boxStartY + actualBoxH + 4;
   });
 
-  // 5. RECEBIMENTO E CONCLUSÃO
-  checkPageBreak(45);
-  currentY += 4;
-
+  // Linha 37: Data Extensa com Dia da Semana no Rodapé
+  checkPageBreak(14);
+  currentY += 3;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
-  doc.text("RECEBIMENTO E CONCLUSÃO DOS SERVIÇOS", margin, currentY);
-  currentY += 4.5;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(60, 60, 60);
-  const finishText =
-    "Os serviços serão recebidos mediante vistoria da equipe de engenharia fiscal, mediante constatação da completa conformidade com as presentes especificações técnicas, testes funcionais e limpeza final de todas as áreas afetadas.";
-  const splitFinish = doc.splitTextToSize(finishText, printableWidth);
-  doc.text(splitFinish, margin, currentY);
-  currentY += splitFinish.length * 3.8 + 10;
-
-  // Local e Data por extenso com Dia da Semana (Atualizado Automaticamente)
-  checkPageBreak(35);
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8.5);
-  doc.setTextColor(70, 70, 70);
-  const localDataStr = `${metadata.city || "Teresina"} - ${metadata.uf || "PI"}, ${metadata.dataExtensa || "Domingo, 15 de novembro de 2026"}.`;
-  doc.text(localDataStr, pageWidth / 2, currentY, { align: "center" });
-  currentY += 14;
-
-  // Linhas para Assinatura
-  checkPageBreak(25);
-  const signColWidth = (printableWidth - 10) / 2;
-
-  // Assinatura 1
-  doc.setDrawColor(150, 150, 150);
-  doc.setLineWidth(0.4);
-  doc.line(margin + 5, currentY, margin + 5 + signColWidth, currentY);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(30, 30, 30);
-  doc.text(metadata.engineerName || "Engenheiro Responsável Técnico", margin + 5 + signColWidth / 2, currentY + 4, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 100, 100);
-  doc.text(metadata.creaNumber || "CREA/CAU", margin + 5 + signColWidth / 2, currentY + 7.5, { align: "center" });
-
-  // Assinatura 2
-  const sign2X = margin + signColWidth + 10;
-  doc.line(sign2X + 5, currentY, sign2X + 5 + signColWidth, currentY);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(30, 30, 30);
-  doc.text("Fiscal de Obras / Órgão Contratante", sign2X + 5 + signColWidth / 2, currentY + 4, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 100, 100);
-  doc.text(metadata.organization || "SEDUC / GPR", sign2X + 5 + signColWidth / 2, currentY + 7.5, { align: "center" });
+  doc.text(footerDateFormatted, pageWidth / 2, currentY, { align: "center" });
 
   return doc;
 }

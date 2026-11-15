@@ -11,6 +11,40 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.044]
+- **Data/Hora:** 15/11/2026 02:38 (Horário Local)
+- **Tag Git:** `PR.044`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.044 (Correção Definitiva do Upload da Planilha Base do Memorial Descritivo + Vinculação e Padronização Fiel ao `DESCRITIVO MODELO.xlsx`):
+1. **Diagnóstico e Correção do Erro de Upload em `Configurações -> Demandas de Descritivos` (`src/lib/memorialExcelEngine.ts` e `src/app/page.tsx`):**
+   - **Causa Raiz:** O arquivo `DESCRITIVO MODELO.xlsx` (7,68 MB no disco, contendo 53 MB de vínculos externos legados `xl/externalLinks/*`) estourava o limite de 5 MB do `localStorage` do navegador ao tentar executar `localStorage.setItem("orcabase_memorial_template_base64", base64)`, gerando `QuotaExceededError`.
+   - **Correção Aplicada:**
+     - Migrado o armazenamento binário da Planilha Base do Memorial para **IndexedDB (`orcabase_memorial_db`) + Cache em Memória + Sincronização em Nuvem Fatiada (`uploadBase64InChunksToCloud`)**, suportando arquivos de qualquer tamanho (10 MB, 20 MB+) sem jamais estourar limite de memória.
+     - Adicionado o otimizador automático `sanitizeAndInspectMemorialZip`, que remove vínculos externos quebrados `#REF!` mantendo 100% das abas, estilos, bordas, mesclagens, fórmulas e o Brasão Oficial do Governo do Piauí / SEDUC (`xl/media/image1.png`).
+     - Embutido e pré-vinculado automaticamente o arquivo oficial **`DESCRITIVO MODELO.xlsx`** (`public/contracts-base/DESCRITIVO_MODELO.xlsx`) em todo o sistema e na nuvem.
+2. **Motor Cirúrgico OpenXML (`JSZip`) Fiel ao `DESCRITIVO MODELO.xlsx` (`injectMemorialIntoExcelTemplate` em `src/lib/memorialExcelEngine.ts`):**
+   - Substituído o motor antigo baseado em `XLSX.write` (que perdia imagens, cores e bordas) por edição cirúrgica OpenXML via `JSZip`, preservando 100% do layout original do `DESCRITIVO MODELO.xlsx`:
+     - **`B2`:** Preserva a fórmula `"PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - "&C8` e atualiza o texto com o Nome da Escola em CAIXA ALTA;
+     - **`C7` (`DATA:`):** Preenche automaticamente com `MÊS ATUAL, ANO ATUAL` em CAIXA ALTA (ex: `NOVEMBRO, 2026`);
+     - **`C8` (`UNIDADE.:`):** Preenche com o Nome da Escola em CAIXA ALTA;
+     - **`C9` (`MUNICÍPIO:`):** Preenche com o nome da cidade em CAIXA ALTA;
+     - **`I9` (`BDI=`):** Preenche como valor numérico percentual nativo do Excel (`s="25"`, `0.00%`);
+     - **`B13`:** Preserva a fórmula `"SERVIÇOS - "&C8` e atualiza o cabeçalho de serviços;
+     - **Linhas Dinâmicas de Categorias e Serviços (`C17+`):** Gera dinamicamente cada bloco com o Título da Categoria centralizado em negrito vermelho (`1. COBERTURA`, `2. BANHEIROS`, mesclado `C:H`), a caixa contornada com todos os subitens de serviço (`wrapText="1"` e altura automática), as bordas de fechamento da moldura externa e, na última linha (`B:I` mesclado), a **Data Extensa com Dia da Semana** calculada automaticamente (ex: `domingo, 15 de novembro de 2026`).
+3. **Pré-Visualização ao Vivo em Tela e PDF Padronizados com o `DESCRITIVO MODELO.xlsx` (`src/components/DescritivoView.tsx` e `src/lib/descritivoAI.ts`):**
+   - O Card 3 (`Visualizador do Memorial`), o modal `Visualizar em Tela Cheia` e o PDF (`Baixar PDF Oficial`) agora exibem fielmente o layout da planilha base (`DESCRITIVO MODELO.xlsx`), incluindo o cabeçalho azul institucional com o brasão da SEDUC-PI (`/seduc-ugerf-header.png`), o quadro completo `OBJETO / DATA / UNIDADE / MUNICÍPIO / L.S. / BDI`, a faixa `MEMORIAL DESCRITIVO`, `SERVIÇOS - <ESCOLA>`, os títulos em vermelho centralizado, as caixas de serviços e a data automática no rodapé.
+4. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` permaneceram 100% intocados e validados no `prebuild`.
+
+---
+
 ### [PR.043]
 - **Data/Hora:** 15/11/2026 02:15 (Horário Local)
 - **Tag Git:** `PR.043`

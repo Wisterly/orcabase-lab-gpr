@@ -51,6 +51,8 @@ import {
   hydrateCustomTemplateToStorage,
   removeCustomTemplateFromStorage,
   generateBlankMemorialTemplateWithTags,
+  ensureDefaultMemorialTemplateLoaded,
+  DEFAULT_BUILTIN_MEMORIAL_META,
   StoredTemplateMeta,
 } from "@/lib/memorialExcelEngine";
 import {
@@ -286,7 +288,7 @@ export default function OrcaBaseDashboard() {
   const [configDemandTab, setConfigDemandTab] = useState<"ORCAMENTO" | "DESCRITIVO">("ORCAMENTO");
 
   // Planilha Base do Memorial Descritivo (.xlsx) com suporte a tags "= AQUI"
-  const [memorialTemplateMeta, setMemorialTemplateMeta] = useState<StoredTemplateMeta | null>(null);
+  const [memorialTemplateMeta, setMemorialTemplateMeta] = useState<StoredTemplateMeta | null>(DEFAULT_BUILTIN_MEMORIAL_META);
   const [isDraggingMemorialTemplate, setIsDraggingMemorialTemplate] = useState(false);
   const memorialTemplateInputRef = useRef<HTMLInputElement>(null);
 
@@ -464,16 +466,16 @@ export default function OrcaBaseDashboard() {
         cloudState.memorialTemplate.chunks.length > 0
       ) {
         const cloudMeta = cloudState.memorialTemplate.meta;
-        const currentLocalTpl = getStoredCustomTemplate();
+        const currentLocalTpl = await getStoredCustomTemplate();
         if (
           !currentLocalTpl ||
           currentLocalTpl.meta?.updatedAt !== cloudMeta.updatedAt ||
           currentLocalTpl.meta?.fileName !== cloudMeta.fileName
         ) {
           downloadBase64FromCloudChunks(cloudState.memorialTemplate.chunks)
-            .then((tplB64) => {
+            .then(async (tplB64) => {
               if (tplB64) {
-                hydrateCustomTemplateToStorage(cloudMeta, tplB64);
+                await hydrateCustomTemplateToStorage(cloudMeta, tplB64);
                 setMemorialTemplateMeta(cloudMeta);
               }
             })
@@ -481,6 +483,9 @@ export default function OrcaBaseDashboard() {
         } else {
           setMemorialTemplateMeta(currentLocalTpl.meta);
         }
+      } else {
+        const defaultMeta = await ensureDefaultMemorialTemplateLoaded();
+        setMemorialTemplateMeta(defaultMeta);
       }
 
       // Se havia algum contrato inédito apenas neste computador, envia automaticamente para a nuvem
@@ -565,12 +570,13 @@ export default function OrcaBaseDashboard() {
       .catch(() => {});
   };
 
-  // Carrega metadados da planilha base do memorial salva no localStorage
+  // Carrega a planilha base do memorial (`DESCRITIVO MODELO.xlsx` ou personalizada no IndexedDB)
   useEffect(() => {
-    const stored = getStoredCustomTemplate();
-    if (stored && stored.meta) {
-      setMemorialTemplateMeta(stored.meta);
-    }
+    ensureDefaultMemorialTemplateLoaded()
+      .then((meta) => {
+        if (meta) setMemorialTemplateMeta(meta);
+      })
+      .catch(() => {});
   }, []);
 
   // Upload e vinculação de nova Planilha Base personalizada para o Memorial Descritivo (com sincronização em nuvem)
@@ -580,9 +586,10 @@ export default function OrcaBaseDashboard() {
       return;
     }
     try {
+      showToast(`Processando e vinculando "${file.name}"...`);
       const meta = await saveCustomTemplateToStorage(file);
       setMemorialTemplateMeta(meta);
-      const b64 = getStoredCustomTemplateBase64();
+      const b64 = await getStoredCustomTemplateBase64();
       if (b64) {
         setCloudSyncStatus("SYNCING");
         pushStateUpdateToCloud({
@@ -591,37 +598,41 @@ export default function OrcaBaseDashboard() {
           .then((ok) => setCloudSyncStatus(ok ? "SYNCED" : "LOCAL"))
           .catch(() => setCloudSyncStatus("LOCAL"));
       }
-      showToast(`Planilha base "${file.name}" vinculada e sincronizada na nuvem!`);
+      showToast(
+        `Planilha base "${file.name}" vinculada com sucesso! (${meta.tagsCount || 9} marcações =AQUI ativas)`
+      );
     } catch (err: any) {
       console.error("Erro ao salvar template do memorial:", err);
       showToast("Erro ao processar planilha base do memorial.");
     }
   };
 
-  // Restauração do Modelo Padrão SEDUC / GPR para o Memorial
-  const handleRemoveMemorialTemplate = () => {
-    removeCustomTemplateFromStorage();
-    setMemorialTemplateMeta(null);
-    pushStateUpdateToCloud({ memorialTemplate: { meta: null } }).catch(() => {});
-    showToast("Planilha personalizada desvinculada. Modelo padrão SEDUC/GPR restaurado!");
+  // Restauração do Modelo Padrão SEDUC / GPR (`DESCRITIVO MODELO.xlsx`) para o Memorial
+  const handleRemoveMemorialTemplate = async () => {
+    const restoredMeta = await removeCustomTemplateFromStorage();
+    setMemorialTemplateMeta(restoredMeta);
+    pushStateUpdateToCloud({
+      memorialTemplate: { meta: restoredMeta },
+    }).catch(() => {});
+    showToast("Planilha base restaurada para o DESCRITIVO MODELO.xlsx oficial!");
   };
 
   // Download da Planilha Exemplo com as tags "= AQUI" esquematizadas
-  const handleDownloadBlankTemplate = () => {
+  const handleDownloadBlankTemplate = async () => {
     try {
-      const bytes = generateBlankMemorialTemplateWithTags();
+      const bytes = await generateBlankMemorialTemplateWithTags();
       const blob = new Blob([bytes.buffer as ArrayBuffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "Modelo_Base_Memorial_Tags_AQUI.xlsx";
+      a.download = "DESCRITIVO MODELO.xlsx";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast("Download do modelo com tags (= AQUI) concluído!");
+      showToast("Download do DESCRITIVO MODELO.xlsx com tags (=AQUI) concluído!");
     } catch (e) {
       showToast("Erro ao gerar modelo de exemplo.");
     }

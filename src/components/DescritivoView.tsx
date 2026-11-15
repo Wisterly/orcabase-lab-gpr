@@ -413,17 +413,12 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
   };
 
   // Ação de Baixar Memorial Descritivo em Planilha Excel (.xlsx) com substituição de tags "= AQUI"
-  const handleBaixarExcelMemorial = () => {
+  const handleBaixarExcelMemorial = async () => {
     try {
-      if (stages.length === 0) {
-        showToast("Gere ou adicione itens ao memorial antes de baixar a planilha.");
-        return;
-      }
+      showToast("Gerando planilha Excel oficial (DESCRITIVO MODELO.xlsx)...");
 
-      showToast("Gerando planilha Excel oficial com injeção de dados...");
-
-      // Tenta carregar planilha base personalizada enviada pelo usuário nas Configurações
-      const stored = getStoredCustomTemplate();
+      // Carrega planilha base (`DESCRITIVO MODELO.xlsx` ou personalizada enviada nas Configurações)
+      const stored = await getStoredCustomTemplate();
       let excelBytes: Uint8Array;
 
       const injectionParams = {
@@ -437,9 +432,9 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
       };
 
       if (stored && stored.buffer) {
-        excelBytes = injectMemorialIntoExcelTemplate(stored.buffer, injectionParams);
+        excelBytes = await injectMemorialIntoExcelTemplate(stored.buffer, injectionParams);
       } else {
-        excelBytes = generateDefaultMemorialTemplate(injectionParams);
+        excelBytes = await generateDefaultMemorialTemplate(injectionParams);
       }
 
       // Criação do arquivo para download no navegador
@@ -450,13 +445,13 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
       const a = document.createElement("a");
       const safeSchool = formData.schoolName.replace(/[^a-zA-Z0-9_\-]/g, "_").slice(0, 35);
       a.href = url;
-      a.download = `Memorial_Descritivo_${safeSchool || "Escolar"}.xlsx`;
+      a.download = `DESCRITIVO_${safeSchool || "ESCOLAR"}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast("Planilha Excel (.xlsx) baixada com sucesso!");
+      showToast("Planilha Excel (.xlsx) baixada com sucesso no padrão DESCRITIVO MODELO!");
     } catch (err: any) {
       console.error("Erro ao gerar Excel do memorial:", err);
       showToast(`Erro ao gerar planilha Excel: ${err?.message || "falha na injeção"}`);
@@ -990,105 +985,141 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
               <ChevronRight className="w-4 h-4" />
             </button>
 
-            {/* Folha A4 Realista do PDF (Proporcional à Altura Compacta) */}
+            {/* Folha A4 Fiel à Planilha Base (DESCRITIVO MODELO.xlsx) */}
             <div
               style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: "center top" }}
-              className="w-full max-w-[245px] sm:max-w-[265px] aspect-[1/1.38] bg-white text-slate-900 rounded-sm shadow-[0_20px_45px_rgba(0,0,0,0.65)] p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden transition-transform duration-200 select-none my-auto"
+              className="w-full max-w-[255px] sm:max-w-[275px] aspect-[1/1.38] bg-white text-slate-900 rounded-sm shadow-[0_20px_45px_rgba(0,0,0,0.65)] p-2 sm:p-2.5 flex flex-col justify-between relative overflow-hidden transition-transform duration-200 select-none my-auto border border-slate-300"
             >
-              {/* Cabeçalho da Folha */}
-              <div>
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-1.5">
-                  <div className="flex items-center gap-1">
-                    <span className="font-bold text-[10px] text-slate-800 tracking-tight">
-                      OrçaBase.Lab <span className="text-[#e65c00]">- GPR</span>
-                    </span>
+              {/* Topo e Corpo Fiel ao DESCRITIVO MODELO.xlsx */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Bloco Superior (Linhas 2 a 9 da Planilha Base) */}
+                <div className="border border-slate-800 text-[5.5px] leading-[1.15]">
+                  {/* Linhas 2 a 5: Cabeçalho Azul + Logo Governo do Piauí / SEDUC */}
+                  <div className="grid grid-cols-12 border-b border-slate-800">
+                    <div className="col-span-9 border-r border-slate-800">
+                      <div className="bg-[#0070C0] text-white font-extrabold text-center py-0.5 px-1 border-b border-slate-800 uppercase truncate text-[6px]">
+                        PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - {(formData.schoolName || "UNIDADE ESCOLAR").toUpperCase()}
+                      </div>
+                      <div className="bg-[#0070C0] text-white font-semibold text-center py-0.5 border-b border-slate-800 uppercase">
+                        GOVERNO DO ESTADO DO PIAUÍ
+                      </div>
+                      <div className="bg-white text-slate-900 font-semibold text-center py-0.5 border-b border-slate-800 uppercase">
+                        SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
+                      </div>
+                      <div className="bg-white text-slate-900 font-semibold text-center py-0.5 uppercase">
+                        UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
+                      </div>
+                    </div>
+                    <div className="col-span-3 bg-[#0070C0] flex items-center justify-center p-0.5">
+                      <img
+                        src="/seduc-ugerf-header.png"
+                        alt="SEDUC-PI"
+                        className="max-h-9 w-auto object-contain"
+                      />
+                    </div>
                   </div>
-                  <span className="px-1.5 py-0.5 rounded bg-red-600 text-[8px] font-bold text-white tracking-widest uppercase">
-                    PDF
-                  </span>
+
+                  {/* Linha 6: OBJETO + L.S. (MENSAL) */}
+                  <div className="grid grid-cols-12 border-b border-slate-800">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">OBJETO:</div>
+                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-800 truncate">
+                      MANUTENÇÃO PREDIAL DAS UNIDADES ESCOLARES DA REDE ESTADUAL
+                    </div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 text-[5px]">L.S.(M)=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-semibold text-[5px]">70,90%</div>
+                  </div>
+
+                  {/* Linha 7: DATA + DATA BASE + L.S. (HORISTA) */}
+                  <div className="grid grid-cols-12 border-b border-slate-800">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">DATA:</div>
+                    <div className="col-span-3 px-1 py-0.5 border-r border-slate-800 font-semibold uppercase truncate">
+                      {(formData.mesAnoRef || "").replace(/\s+de\s+/i, ", ").toUpperCase()}
+                    </div>
+                    <div className="col-span-4 px-0.5 py-0.5 border-r border-slate-800 font-bold text-center truncate text-[4.8px]">
+                      SINAPI_PI │ SEINFRA_CE │ ORSE_SE
+                    </div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 text-[5px]">L.S.(H)=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-semibold text-[5px]">113,05%</div>
+                  </div>
+
+                  {/* Linha 8: UNIDADE + BDI (DIF) */}
+                  <div className="grid grid-cols-12 border-b border-slate-800">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">UNIDADE.:</div>
+                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-800 font-semibold uppercase truncate">
+                      {(formData.schoolName || "").toUpperCase()}
+                    </div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 text-[5px]">BDI(DIF)=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-semibold text-[5px]">0,00%</div>
+                  </div>
+
+                  {/* Linha 9: MUNICÍPIO + BDI */}
+                  <div className="grid grid-cols-12">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">MUNICÍPIO:</div>
+                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-800 font-semibold uppercase truncate">
+                      {(formData.municipio || "").toUpperCase()}
+                    </div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 font-bold text-[5px]">BDI=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-bold text-[#c2410c] text-[5px]">
+                      {formData.bdiPercent}
+                    </div>
+                  </div>
                 </div>
 
-                <h4 className="text-center font-bold text-[10px] text-slate-900 tracking-tight mb-1.5 uppercase">
+                {/* Linha 11: Faixa Cinza MEMORIAL DESCRITIVO */}
+                <div className="mt-1 border border-slate-800 bg-[#D9D9D9] text-center font-extrabold text-[7px] text-slate-900 py-0.5 uppercase tracking-wide">
                   MEMORIAL DESCRITIVO
-                </h4>
+                </div>
 
-                {stages.length === 0 ? (
-                  <div className="py-5 px-3 flex flex-col items-center justify-center text-center space-y-2 text-slate-400 my-auto">
-                    <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
-                      <FileText className="w-4 h-4" />
+                {/* Linha 13: SERVIÇOS - NOME DA ESCOLA */}
+                <div className="mt-1 border border-slate-800 bg-white text-center font-extrabold text-[6.5px] text-slate-900 py-0.5 px-1 uppercase truncate">
+                  SERVIÇOS - {(formData.schoolName || "").toUpperCase()}
+                </div>
+
+                {/* Moldura Externa dos Serviços (Linhas 15 a 36 da Planilha Base) */}
+                <div className="mt-1 flex-1 border-[1.5px] border-slate-900 p-1.5 flex flex-col justify-between overflow-hidden">
+                  {stages.length === 0 ? (
+                    <div className="my-auto py-3 px-2 flex flex-col items-center justify-center text-center space-y-1.5 text-slate-400">
+                      <FileSpreadsheet className="w-4 h-4 text-amber-600" />
+                      <strong className="text-[7.5px] font-bold text-slate-700 uppercase">
+                        Planilha Base Vinculada
+                      </strong>
+                      <p className="text-[6.5px] text-slate-500 leading-tight">
+                        Descreva os serviços no chat ao lado para preenchimento automático dentro da planilha base.
+                      </p>
                     </div>
-                    <strong className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">
-                      Aguardando Serviços
-                    </strong>
-                    <p className="text-[7.5px] text-slate-500 max-w-[200px] leading-relaxed">
-                      Envie um áudio ou texto no chat descrevendo os serviços desejados para gerar o memorial técnico exclusivo.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5 text-[7.5px] text-slate-700 leading-tight">
-                    {/* Quadro de Metadados (Página 1) */}
-                    {currentPage === 1 && (
-                      <div className="bg-slate-100 p-1.5 rounded border border-slate-200 space-y-0.5 mb-1.5 text-[7px]">
-                        <p className="font-bold text-slate-800 truncate">
-                          Unidade: {formData.schoolName}
-                        </p>
-                        <div className="flex justify-between text-slate-700">
-                          <span>Local: {formData.municipio} - {formData.uf}</span>
-                          <span className="font-bold text-[#e65c00]">BDI: {formData.bdiPercent}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Ref: {formData.mesAnoRef}</span>
-                          <span>GRE: {formData.gre}</span>
-                        </div>
-                      </div>
-                    )}
+                  ) : (
+                    <div className="space-y-1.5 overflow-hidden">
+                      {stages
+                        .slice((currentPage - 1) * 2, currentPage * 2)
+                        .map((stg, idx) => {
+                          const globalIndex = (currentPage - 1) * 2 + idx + 1;
+                          const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+                          return (
+                            <div key={stg.id} className="space-y-0.5">
+                              {/* Título Centralizado em Vermelho Negrito igual ao DESCRITIVO MODELO.xlsx */}
+                              <div className="border border-b-0 border-slate-700 text-center font-extrabold text-[6.8px] text-[#FF0000] py-0.5 uppercase">
+                                {globalIndex}. {cleanTitle}
+                              </div>
+                              {/* Caixa de Subitens com Borda */}
+                              <div className="border border-slate-700 p-1 space-y-0.5 bg-white">
+                                {stg.items.map((it) => (
+                                  <p key={it.id} className="text-[6.2px] text-slate-900 leading-[1.2] line-clamp-2">
+                                    {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
 
-                    {/* Etapas Dinâmicas Reais da Página Atual */}
-                    {stages
-                      .slice((currentPage - 1) * 2, currentPage * 2)
-                      .map((stg, idx) => {
-                        const globalIndex = (currentPage - 1) * 2 + idx + 1;
-                        const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
-                        return (
-                          <div key={stg.id} className="space-y-0.5">
-                            <p className="font-bold text-slate-800 uppercase text-[7.5px] border-l-2 border-[#ffaa2c] pl-1 bg-slate-100 py-0.5">
-                              {globalIndex}. {cleanTitle}
-                            </p>
-                            {stg.items.map((it) => (
-                              <p key={it.id} className="text-slate-600 pl-1.5 line-clamp-2">
-                                {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
-                              </p>
-                            ))}
-                          </div>
-                        );
-                      })}
-
-                    {/* Fechamento com Assinaturas na Última Página */}
-                    {currentPage === totalPages && (
-                      <div className="pt-1.5 text-center text-[6.5px] text-slate-500 border-t border-slate-200 mt-1.5">
-                        <p className="italic mb-1">
-                          {formData.municipio} - {formData.uf}, {formData.dataExtensa}.
-                        </p>
-                        <div className="flex justify-between gap-2 pt-0.5 text-[6px]">
-                          <div className="flex-1">
-                            <div className="border-b border-slate-300 mb-0.5" />
-                            <p className="font-bold text-slate-700 truncate">{formData.engineerName}</p>
-                            <p className="text-slate-400">{formData.creaNumber}</p>
-                          </div>
-                          <div className="flex-1">
-                            <div className="border-b border-slate-300 mb-0.5" />
-                            <p className="font-bold text-slate-700">Fiscal Contratante</p>
-                            <p className="text-slate-400">SEDUC / GPR</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Linha 37: Data Extensa com Dia da Semana no Rodapé da Planilha Base */}
+                <div className="pt-0.5 text-center font-bold text-[6px] text-slate-900 lowercase">
+                  {(formData.dataExtensa || "").toLowerCase()}
+                </div>
               </div>
-
-              {/* Onda/Curva Laranja no Rodapé da Folha */}
-              <div className="w-full h-1.5 bg-gradient-to-r from-[#ffaa2c] via-[#f97316] to-[#cb5606] rounded-b -mx-4 -mb-4" />
             </div>
 
             {/* Badge de Paginação no Rodapé */}
@@ -1237,62 +1268,103 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
               </div>
             </div>
 
-            {/* Conteúdo Renderizado do Memorial em Alta Definição */}
+            {/* Conteúdo Renderizado em Alta Definição Fiel ao DESCRITIVO MODELO.xlsx */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-[#090b10] flex justify-center">
-              <div className="w-full max-w-2xl bg-white text-slate-900 rounded-sm shadow-2xl p-8 sm:p-12 space-y-6 text-xs leading-relaxed">
-                {/* Cabeçalho A4 */}
-                <div className="text-center border-b-2 border-[#d4af37] pb-4">
-                  <p className="font-extrabold text-[13px] text-slate-900 uppercase">
-                    GOVERNO DO ESTADO — SECRETARIA DA EDUCAÇÃO
-                  </p>
-                  <p className="text-[11px] font-bold text-[#e65c00] uppercase">
-                    SUPERINTENDÊNCIA DE ENGENHARIA E INFRAESTRUTURA ESCOLAR / GPR
-                  </p>
-                  <div className="mt-3 py-1.5 px-4 bg-slate-900 text-[#ffaa2c] font-black text-sm rounded uppercase">
-                    MEMORIAL DESCRITIVO E ESPECIFICAÇÕES TÉCNICAS
+              <div className="w-full max-w-3xl bg-white text-slate-900 rounded-sm shadow-2xl p-6 sm:p-8 space-y-3 text-xs leading-relaxed border border-slate-300">
+                {/* Bloco de Cabeçalho e Metadados (Linhas 2 a 9 da Planilha Base) */}
+                <div className="border border-slate-900 text-[11px]">
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-9 border-r border-slate-900">
+                      <div className="bg-[#0070C0] text-white font-extrabold text-center py-1.5 px-2 border-b border-slate-900 uppercase text-xs sm:text-sm">
+                        PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - {(formData.schoolName || "UNIDADE ESCOLAR").toUpperCase()}
+                      </div>
+                      <div className="bg-[#0070C0] text-white font-semibold text-center py-1 border-b border-slate-900 uppercase">
+                        GOVERNO DO ESTADO DO PIAUÍ
+                      </div>
+                      <div className="bg-white text-slate-900 font-semibold text-center py-1 border-b border-slate-900 uppercase">
+                        SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
+                      </div>
+                      <div className="bg-white text-slate-900 font-semibold text-center py-1 uppercase">
+                        UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
+                      </div>
+                    </div>
+                    <div className="col-span-3 bg-[#0070C0] flex items-center justify-center p-2">
+                      <img
+                        src="/seduc-ugerf-header.png"
+                        alt="Governo do Piauí / SEDUC"
+                        className="max-h-20 w-auto object-contain"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Linha 6: OBJETO */}
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">OBJETO:</div>
+                    <div className="col-span-7 px-2 py-1 border-r border-slate-900">
+                      MANUTENÇÃO PREDIAL DAS UNIDADES ESCOLARES DA REDE ESTADUAL
+                    </div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 text-[10px]">L.S. (MENSAL)=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 font-semibold text-[10px]">70,90%</div>
+                  </div>
+
+                  {/* Linha 7: DATA + DATA BASE */}
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">DATA:</div>
+                    <div className="col-span-3 px-2 py-1 border-r border-slate-900 font-semibold uppercase">
+                      {(formData.mesAnoRef || "").replace(/\s+de\s+/i, ", ").toUpperCase()}
+                    </div>
+                    <div className="col-span-4 px-2 py-1 border-r border-slate-900 font-bold text-center text-[10px]">
+                      DATA BASE: SINAPI_PI │ SEINFRA_CE │ ORSE_SE
+                    </div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 text-[10px]">L.S. (HORISTA)=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 font-semibold text-[10px]">113,05%</div>
+                  </div>
+
+                  {/* Linha 8: UNIDADE */}
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">UNIDADE.:</div>
+                    <div className="col-span-7 px-2 py-1 border-r border-slate-900 font-semibold uppercase">
+                      {(formData.schoolName || "").toUpperCase()}
+                    </div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 text-[10px]">BDI (DIF)=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 font-semibold text-[10px]">0,00%</div>
+                  </div>
+
+                  {/* Linha 9: MUNICÍPIO + BDI */}
+                  <div className="grid grid-cols-12">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">MUNICÍPIO:</div>
+                    <div className="col-span-7 px-2 py-1 border-r border-slate-900 font-semibold uppercase">
+                      {(formData.municipio || "").toUpperCase()}
+                    </div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 font-bold text-[10px]">BDI=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 font-bold text-[#c2410c] text-[10px]">
+                      {formData.bdiPercent}
+                    </div>
                   </div>
                 </div>
 
-                {/* Quadro de Identificação */}
-                <div className="p-3.5 bg-slate-100 rounded border border-slate-200 grid grid-cols-2 gap-2 text-[10px]">
-                  <div>
-                    <span className="font-bold text-slate-700">UNIDADE ESCOLAR: </span>
-                    <span className="text-slate-900 font-semibold">{formData.schoolName}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-700">MUNICÍPIO / UF: </span>
-                    <span className="text-slate-900">{formData.municipio} - {formData.uf}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-700">BDI APLICADO (%): </span>
-                    <span className="text-[#e65c00] font-bold">{formData.bdiPercent}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-700">MÊS / ANO REF.: </span>
-                    <span className="text-slate-900 font-medium">{formData.mesAnoRef}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-700">GRE / REGIONAL: </span>
-                    <span className="text-slate-900">{formData.gre}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-700">FINALIDADE: </span>
-                    <span className="text-slate-900">{formData.finalidade}</span>
-                  </div>
+                {/* Linha 11: MEMORIAL DESCRITIVO */}
+                <div className="border border-slate-900 bg-[#D9D9D9] py-2 text-center font-extrabold text-sm text-slate-900 uppercase">
+                  MEMORIAL DESCRITIVO
                 </div>
 
-                {/* Etapas e Itens Técnicos (Padrão Oficial SEDUC-PI: Categorias numeradas em CAIXA ALTA e subitens diretos) */}
-                <div className="space-y-5">
+                {/* Linha 13: SERVIÇOS - NOME DA ESCOLA */}
+                <div className="border border-slate-900 bg-white py-1.5 text-center font-extrabold text-xs text-slate-900 uppercase">
+                  SERVIÇOS - {(formData.schoolName || "").toUpperCase()}
+                </div>
+
+                {/* Moldura dos Serviços (Linhas 15 a 36 da Planilha Base) */}
+                <div className="border-2 border-slate-900 p-4 space-y-4">
                   {stages.map((stg, idx) => {
                     const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
                     return (
-                      <div key={stg.id} className="space-y-2">
-                        <div className="bg-slate-200 px-3 py-1 font-bold text-slate-900 border-l-4 border-[#ffaa2c] text-xs uppercase">
+                      <div key={stg.id}>
+                        <div className="border border-b-0 border-slate-800 py-1 px-3 text-center font-extrabold text-xs text-[#FF0000] uppercase">
                           {idx + 1}. {cleanTitle}
                         </div>
-                        <div className="space-y-1.5 pl-2">
+                        <div className="border border-slate-800 p-3 space-y-1.5">
                           {stg.items.map((it) => (
-                            <div key={it.id} className="text-slate-800 text-[11px] leading-relaxed">
+                            <div key={it.id} className="text-slate-900 text-xs leading-relaxed">
                               {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
                             </div>
                           ))}
@@ -1302,23 +1374,9 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   })}
                 </div>
 
-                {/* Data e Local por extenso com Dia da Semana e Assinaturas */}
-                <div className="pt-6 text-center">
-                  <p className="italic text-slate-600 text-[11px] mb-6">
-                    {formData.municipio} - {formData.uf}, {formData.dataExtensa}.
-                  </p>
-                  <div className="grid grid-cols-2 gap-8 text-[10px]">
-                    <div>
-                      <div className="border-b border-slate-400 mb-1" />
-                      <p className="font-bold text-slate-900">{formData.engineerName}</p>
-                      <p className="text-slate-500">{formData.creaNumber}</p>
-                    </div>
-                    <div>
-                      <div className="border-b border-slate-400 mb-1" />
-                      <p className="font-bold text-slate-900">Fiscal de Obras / Órgão Contratante</p>
-                      <p className="text-slate-500">SEDUC / GPR</p>
-                    </div>
-                  </div>
+                {/* Linha 37: Data Extensa com Dia da Semana no Rodapé */}
+                <div className="pt-2 text-center font-bold text-xs text-slate-900 lowercase">
+                  {(formData.dataExtensa || "").toLowerCase()}
                 </div>
               </div>
             </div>

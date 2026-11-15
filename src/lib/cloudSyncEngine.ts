@@ -4,7 +4,7 @@ import {
   getContractBinary,
   saveContractBinary,
 } from "./excelEngine";
-import { StoredTemplateMeta } from "./memorialExcelEngine";
+import { StoredTemplateMeta, DEFAULT_BUILTIN_MEMORIAL_META } from "./memorialExcelEngine";
 
 const CHUNK_SIZE = 2_400_000; // ~2.4 MB por chunk (seguro abaixo do limite de 4.5 MB da Vercel)
 
@@ -92,6 +92,10 @@ export async function fetchCloudState(): Promise<CloudSyncStateClient | null> {
       appSettings: {
         selectedContractId: fallbackContracts[0].id,
         calcStrategy: "KEEP_TOTAL_VALUE",
+      },
+      memorialTemplate: {
+        meta: DEFAULT_BUILTIN_MEMORIAL_META,
+        chunks: ["STATIC:/contracts-base/DESCRITIVO_MODELO.xlsx"],
       },
     };
   }
