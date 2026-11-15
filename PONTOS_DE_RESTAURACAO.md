@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.042]
+- **Data/Hora:** 15/11/2026 01:58 (Horário Local)
+- **Tag Git:** `PR.042` (Ponto anterior `PR.041` preservado na tag `PR.041` / commit `1067873` para retorno imediato se solicitado)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.042 (Ajuste Proporcional Compacto "Tudo em 1 Página" na Aba Descritivos sem Necessidade de Scroll):
+1. **Redução Proporcional de Cards, Fontes, Botões e Espaçamentos na Aba Descritivos (`src/components/DescritivoView.tsx`):**
+   - Altura dos 3 cards principais (`Assistente OrçaBase.lab`, `Dados do Memorial` e `Visualizador do Memorial`) reduzida de `800px/840px` para `h-[520px] lg:h-[calc(100vh-250px)] lg:min-h-[480px] lg:max-h-[580px]`, permitindo visualizar os 3 cards e a barra inferior (`Ações do Memorial Descritivo Oficial`) inteiros na tela sem precisar rolar a página ou diminuir o zoom.
+   - Cabeçalhos dos cards, avatares, bolhas de mensagem, inputs (`h-10`), folha A4 do visualizador (`max-w-[245px] sm:max-w-[265px]`) e botões de ação inferiores redimensionados proporcionalmente para caberem com leitura limpa em uma única tela.
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` permaneceram 100% intocados e validados no `prebuild`.
+
+---
+
 ### [PR.041]
 - **Data/Hora:** 15/11/2026 01:13 (Horário Local)
 - **Tag Git:** `PR.041`
