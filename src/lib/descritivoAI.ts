@@ -286,17 +286,24 @@ export function enforceMandatoryScopeAutomations(
   });
 }
 
-export function isRemoveOrAlterCommand(text: string): boolean {
+export function isExplicitRemoveCommand(text: string): boolean {
   const lower = text.toLowerCase().trim();
-  return /\b(remova|remover|tire|tirar|exclua|excluir|retire|retirar|apague|apagar|delete|altere|alterar|mude|mudar|corrija|corrigir|substitua o título|substitua o item)\b/i.test(
-    lower
-  );
+  // Só considera comando de exclusão do memorial quando a frase inicia com verbo imperativo de exclusão
+  return /^(remova|tire|exclua|retire|apague|delete)\b/i.test(lower);
+}
+
+export function isExplicitAlterCommand(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  // Só considera comando de alteração do memorial quando a frase inicia com "altere" ou "mude o item/título"
+  return /^(altere|mude o item|mude o título|mude a descrição|corrija o item|corrija o título)\b/i.test(lower);
 }
 
 /**
- * Mescla acumulativamente as etapas anteriores com as novas etapas geradas pela IA
- * quando o usuário apenas digita novos serviços (sem pedir remoção ou alteração),
- * garantindo que o memorial NUNCA seja zerado sem clicar no botão "Novo Memorial".
+ * Mescla acumulativamente as etapas anteriores com as novas etapas geradas pela IA.
+ * Regra absoluta:
+ * - Se não começou com "remova/tire/exclua" nem "altere", SEMPRE mantém 100% das etapas
+ *   que já estavam no memorial e ADICIONA as novas etapas/serviços.
+ * - O memorial nunca é zerado aqui (só é zerado quando o usuário aperta o botão "Novo Memorial").
  */
 export function mergeAccumulatedStages(
   currentStages: DescritivoStage[],
@@ -307,14 +314,14 @@ export function mergeAccumulatedStages(
     return aiStages;
   }
 
-  // Se o usuário pediu explicitamente para remover ou alterar, respeita a lista editada pela IA
-  if (isRemoveOrAlterCommand(userInput)) {
+  // Se o usuário iniciou a frase pedindo explicitamente para remover ou alterar um item do memorial:
+  if (isExplicitRemoveCommand(userInput) || isExplicitAlterCommand(userInput)) {
     return aiStages;
   }
 
   const mergedMap = new Map<string, DescritivoStage>();
 
-  // 1. Mantém todas as etapas que já estavam sendo trabalhadas no memorial
+  // 1. Mantém 100% de todas as etapas que já estavam sendo trabalhadas no memorial
   currentStages.forEach((stg) => {
     const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
     mergedMap.set(cleanTitle, {
@@ -386,8 +393,8 @@ export function generateLocalSeniorDescription(
     });
   });
 
-  // 2. Trata comandos explícitos de remoção
-  if (normalized.includes("tire") || normalized.includes("remova") || normalized.includes("exclua") || normalized.includes("retire")) {
+  // 2. Trata comandos explícitos de remoção (apenas quando a frase inicia com remova/tire/exclua)
+  if (isExplicitRemoveCommand(userInput)) {
     if (normalized.includes("elétrica") || normalized.includes("eletrica")) stagesMap.delete("ELÉTRICA");
     if (normalized.includes("pintura")) {
       stagesMap.delete("PINTURA");
@@ -397,10 +404,14 @@ export function generateLocalSeniorDescription(
     if (normalized.includes("cobertura") || normalized.includes("telhado")) stagesMap.delete("COBERTURA");
     if (normalized.includes("banheiro")) stagesMap.delete("BANHEIROS");
     if (normalized.includes("cozinha")) stagesMap.delete("COZINHA");
+    if (normalized.includes("fachada")) stagesMap.delete("FACHADA");
+    if (normalized.includes("muro")) stagesMap.delete("MURO");
+    if (normalized.includes("laboratório") || normalized.includes("laboratorio")) stagesMap.delete("LABORATÓRIO DE INFORMÁTICA");
     if (normalized.includes("calçada") || normalized.includes("calcada")) {
       stagesMap.delete("CALÇADAS");
       stagesMap.delete("CALÇADAS E ÁREAS EXTERNAS");
     }
+    return Array.from(stagesMap.values());
   }
 
   const addStageItem = (rawTitle: string, itemDesc: string) => {

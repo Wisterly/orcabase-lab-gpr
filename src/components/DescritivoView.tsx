@@ -50,6 +50,7 @@ import {
   generateMemorialWordDoc,
   getMemorialPDFBlobUrl,
   formatStagesToSpreadsheetText,
+  mergeAccumulatedStages,
   getAutomaticDates,
   AutomaticDates,
 } from "@/lib/descritivoAI";
@@ -230,7 +231,13 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
 
   // Iniciar Novo Memorial do Zero (Limpar Contexto)
   const handleResetNewMemorial = () => {
+    stagesRef.current = [];
     setStages([]);
+    try {
+      localStorage.removeItem("orcabase_active_memorial_stages");
+    } catch {
+      // ignora
+    }
     setMessages([
       {
         id: `welcome-${Date.now()}`,
@@ -275,10 +282,24 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
+  const stagesRef = useRef<DescritivoStage[]>(stages);
 
-  // Carrega chaves e preferências de IA salvas no localStorage (Padrão Oficial: Gemini API)
+  useEffect(() => {
+    stagesRef.current = stages;
+  }, [stages]);
+
+  // Carrega chaves, preferências de IA e memorial ativo salvo no localStorage
   useEffect(() => {
     try {
+      const savedStagesJson = localStorage.getItem("orcabase_active_memorial_stages");
+      if (savedStagesJson) {
+        const parsedSaved = JSON.parse(savedStagesJson);
+        if (Array.isArray(parsedSaved) && parsedSaved.length > 0) {
+          stagesRef.current = parsedSaved;
+          setStages(parsedSaved);
+        }
+      }
+
       const savedOpenAiKey = localStorage.getItem("orcabase_openai_api_key");
       const savedOpenAiModel = localStorage.getItem("orcabase_openai_model");
       const savedGeminiKey = localStorage.getItem("orcabase_gemini_api_key");
@@ -397,26 +418,33 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
       let aiResponseText = "";
       let newStages: DescritivoStage[] = [];
 
+      // Lê sempre o estado mais recente via stagesRef.current (sem risco de stale closure).
       // Se os itens atuais forem apenas o placeholder inicial de demonstração (stg-init-*),
       // a 1ª mensagem do usuário inicia o memorial real dele; a partir daí, TODAS as mensagens
       // acumulam/adicionam automaticamente no memorial atual e SÓ zeram ao clicar no botão "Novo Memorial".
+      const currentList = stagesRef.current;
       const isInitialDemoPlaceholder =
-        stages.length > 0 && stages.every((s) => s.id.startsWith("stg-init-"));
-      const activeStages = isInitialDemoPlaceholder ? [] : stages;
+        currentList.length > 0 && currentList.every((s) => String(s.id || "").startsWith("stg-init-"));
+      const activeStages = isInitialDemoPlaceholder ? [] : currentList;
 
       if (selectedAiProvider === "openai" && openaiApiKey) {
-        // Envia para o ChatGPT / OpenAI orientado pela Especificação Técnica Oficial
         const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, activeStages, openaiModel);
-        aiResponseText = result.textResponse;
         newStages = result.stages;
       } else {
-        // Padrão Principal: Envia para a API do Google Gemini via Backend (/api/gemini + system_prompt_seduc.md)
         const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, activeStages);
-        aiResponseText = result.textResponse;
         newStages = result.stages;
       }
 
-      setStages(newStages);
+      // Garante fusão acumulativa direta no componente (mantém 100% de activeStages + adiciona newStages)
+      const consolidatedStages = mergeAccumulatedStages(activeStages, newStages, text);
+      stagesRef.current = consolidatedStages;
+      setStages(consolidatedStages);
+      try {
+        localStorage.setItem("orcabase_active_memorial_stages", JSON.stringify(consolidatedStages));
+      } catch {
+        // ignora
+      }
+      aiResponseText = formatStagesToSpreadsheetText(consolidatedStages);
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,

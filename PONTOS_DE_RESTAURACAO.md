@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.053]
+- **Data/Hora:** 15/11/2026 05:00 (Horário Local)
+- **Tag Git:** `PR.053` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Rota Segura Gemini Next.js: https://orcabase-lab-gpr.vercel.app/api/gemini
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.053 (Blindagem Dupla de Continuidade Acumulativa no Componente `DescritivoView.tsx` + `stagesRef` + Persistência em `localStorage`):
+1. **Blindagem Direta em `handleSendMessage` (`src/components/DescritivoView.tsx` e `src/lib/descritivoAI.ts`):**
+   - Adicionado `stagesRef` (`useRef<DescritivoStage[]>`) e persistência no `localStorage` (`orcabase_active_memorial_stages`) sincronizados em tempo real para eliminar qualquer risco de closure defasada (`stale state`) entre o 1º e o 2º envio no chat.
+   - Refinada a detecção `isExplicitRemoveCommand` / `isExplicitAlterCommand` para só disparar quando a frase realmente iniciar com `"remova/tire/exclua"` ou `"altere"`, impedindo que serviços normais contendo palavras como `"tirar as quebradas"`, `"remover piso"` ou `"corrigir telhado"` desabilitassem o merge acumulativo.
+   - Aplicado `mergeAccumulatedStages(activeStages, newStages, text)` diretamente dentro de `handleSendMessage` em `src/components/DescritivoView.tsx` antes de atualizar o estado e o texto do chat (`formatStagesToSpreadsheetText(consolidatedStages)`), garantindo matematicamente que todo serviço extra digitado seja somado ao memorial em andamento e que o memorial só zere ao clicar no botão **`Novo Memorial`**.
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% intocados.
+
+---
+
 ### [PR.052]
 - **Data/Hora:** 15/11/2026 04:51 (Horário Local)
 - **Tag Git:** `PR.052` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
