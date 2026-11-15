@@ -103,11 +103,18 @@ export const SUPER_PROMPT_MEMORIAL = `# SYSTEM PROMPT: ENGENHEIRO CIVIL MASTER &
 ## 1. DIRETRIZ PRINCIPAL E PERSONA
 Você é um Engenheiro Civil Sênior Especialista em Patologia das Construções, Obras Públicas e Orçamentação. Sua função é traduzir solicitações informais de reformas escolares em descritivos técnicos de alta precisão executiva, adotando rigor científico, literário, prático e normativo (ABNT/DNIT/SEDUC-PI).
 
-## 2. MENTALIDADE DE ENGENHEIRO CIVIL MASTER (PASSO A PASSO EXECUTIVO)
-- **Raciocínio Técnico Profundo:** Nunca trate um serviço de forma genérica. Quando o usuário citar um problema ou elemento (ex: calçadas, pisos, pinturas, coberturas, impermeabilizações), você deve pensar imediatamente na sequência lógica de engenharia (preparação de base, tratamento de patologias, aplicação de camada de proteção/aderência, acabamento adequado e especificação correta do material).
-- **Especificidade de Materiais por Substrato:** 
-  - Tintas para pisos (ex: epóxi ou acrílica com alta resistência à abrasão) exigem tratamento de base e primer diferentes de paredes (látex/acrílica) ou esquadrias metálicas (esmalte sintético/zarcão).
-  - Recuperação de calçadas exige escarificação, compactação de subleito, base de brita/lastro de concreto magro e lançamento de concreto fck adequado com juntas de dilatação.
+## 2. MENTALIDADE DE ENGENHEIRO CIVIL MASTER (PASSO A PASSO EXECUTIVO EM 100% DOS SERVIÇOS)
+- **Raciocínio Técnico Profundo Universal:** Esta mentalidade aplica-se OBRIGATORIAMENTE a **TODOS os serviços e disciplinas da engenharia civil** que forem listados ou debatidos pelo usuário (coberturas, impermeabilizações, alvenarias, rebocos, pisos, revestimentos cerâmicos, calçadas, pinturas, forros, esquadrias, elétrica, hidrossanitário, reservatórios, poços, drenagem, recuperação estrutural, muros, quadras, cozinhas, etc.). Os exemplos abaixo são apenas ilustrativos: você deve aplicar a mesma lógica executiva a qualquer serviço solicitado.
+- **Tríade Executiva de Engenharia (Para Qualquer Serviço):** Sempre que o usuário solicitar um serviço, pense e estruture na sequência lógica de execução de obra:
+  1. **Preparo da Base / Demolição / Remoção:** Remoção de elementos danificados, limpeza, escarificação, apicoamento ou regularização e compactação de base/substrato.
+  2. **Tratamento de Patologias / Camada de Aderência / Infraestrutura:** Aplicação de chapisco, primer, selador, imprimação, fundo anticorrosivo (zarcão), impermeabilização, lastro de brita, contrapiso ou infraestrutura de suporte/tubulação.
+  3. **Execução Principal e Acabamento Especificado por Substrato:** Instalação, concretagem, assentamento ou pintura com o material técnico exato para aquele substrato e ambiente, incluindo juntas, rejuntamento, vedação ou testes normativos.
+- **Especificidade de Materiais por Substrato (Universal):** 
+  - **Pinturas:** Pisos e quadras exigem lavagem mecanizada, tratamento de fissuras, selador acrílico e tinta acrílica/epóxi de alta resistência à abrasão e tráfego; Paredes exigem lixamento, selador, emassamento e tinta acrílica; Metais/Grades exigem remoção de oxidação, fundo anticorrosivo (zarcão) e esmalte sintético; Madeiras exigem lixamento, fundo nivelador e esmalte/verniz.
+  - **Calçadas e Pisos:** Exigem demolição do trecho danificado, regularização/compactação de subleito, lastro de brita/concreto magro e concreto com fck adequado, acabamento desempenado e juntas de dilatação (ou argamassa colante AC-II/AC-III e rejunte no caso de pisos cerâmicos/porcelanato).
+  - **Coberturas e Telhados:** Exigem remoção de telhas quebradas, revisão/substituição de peças do madeiramento ou estrutura metálica, retelhamento com alinhamento dos panos e revisão de cumeeiras, calhas e rufos.
+  - **Alvenaria e Revestimentos:** Exigem remoção de reboco podre/solto, limpeza da base, chapisco de aderência e execução de emboço/reboco desempenado.
+  - **Elétrica, Hidráulica, Forros e Esquadrias:** Descrever sempre a revisão/adequação da base ou infraestrutura, o fornecimento/instalação dos componentes especificados e o acabamento/teste funcional.
 - **Resumo Executivo de Campo:** Cada subitem deve descrever o procedimento técnico de forma concisa (uma linha), mas carregando toda a bagagem de um memorial descritivo real.
 
 ## 3. REGRA SUPREMA DE ANTI-VÍCIO (PROIBIÇÃO DE CÓPIA LITERAL)
@@ -367,7 +374,7 @@ export function generateLocalSeniorDescription(
     const loc = extractSpecificLocation(clause);
     let matchedInClause = false;
 
-    // --- COBERTURA / TELHADO / RETELHAMENTO / GOTEIRAS ---
+    // --- COBERTURA / TELHADO / RETELHAMENTO / GOTEIRAS (Mentalidade Engenheiro Civil Master) ---
     if (
       cLower.includes("telha") ||
       cLower.includes("cobertura") ||
@@ -381,24 +388,99 @@ export function generateLocalSeniorDescription(
       matchedInClause = true;
       const targetLoc = loc ? `na cobertura ${loc}` : "na cobertura da unidade escolar";
 
-      if (cLower.includes("retelhamento") || cLower.includes("retalhamento") || cLower.includes("goteira") || cLower.includes("infiltra") || cLower.includes("telha")) {
-        addStageItem(
-          "COBERTURA",
-          `Executar substituição e retelhamento pontual ${targetLoc} para correção de infiltrações e alinhamento do telhado.`
-        );
-      }
       if (cLower.includes("madeira") || cLower.includes("estrutura") || cLower.includes("caibro") || cLower.includes("ripa") || cLower.includes("terça")) {
         addStageItem(
           "COBERTURA",
-          `Executar revisão e substituição de peças danificadas do madeiramento ${targetLoc}.`
+          `Executar remoção de peças danificadas e recomposição estrutural do madeiramento de sustentação ${targetLoc}.`
         );
       }
-      if (cLower.includes("calha") || cLower.includes("rufo")) {
+      if (cLower.includes("retelhamento") || cLower.includes("retalhamento") || cLower.includes("goteira") || cLower.includes("infiltra") || cLower.includes("telha") || cLower.includes("cobertura")) {
         addStageItem(
           "COBERTURA",
-          `Executar instalação e revisão de calhas e rufos metálicos ${targetLoc} para escoamento pluvial.`
+          `Executar revisão da trama e substituição de telhas danificadas com retelhamento ${targetLoc} para correção de infiltrações e alinhamento dos panos.`
         );
       }
+      if (cLower.includes("calha") || cLower.includes("rufo") || cLower.includes("infiltra") || cLower.includes("goteira")) {
+        addStageItem(
+          "COBERTURA",
+          `Executar revisão e vedação de cumeeiras, calhas e rufos ${targetLoc} para adequado escoamento pluvial e estanqueidade.`
+        );
+      }
+    }
+
+    // --- IMPERMEABILIZAÇÃO / LAJES / UMIDADE (Mentalidade Engenheiro Civil Master) ---
+    if (
+      cLower.includes("impermeabiliza") ||
+      cLower.includes("manta") ||
+      cLower.includes("umidade") ||
+      (cLower.includes("laje") && (cLower.includes("infiltra") || cLower.includes("vazamento")))
+    ) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " nas áreas afetadas por umidade";
+      addStageItem(
+        "IMPERMEABILIZAÇÃO",
+        `Executar limpeza, escarificação e regularização da superfície${locText} com caimento adequado para os pontos de drenagem.`
+      );
+      addStageItem(
+        "IMPERMEABILIZAÇÃO",
+        `Aplicar camada de imprimação aderente e sistema impermeabilizante especificado${locText}, seguido de proteção mecânica.`
+      );
+    }
+
+    // --- ALVENARIA / REBOCO / CHAPISCO / PAREDES / MUROS (Mentalidade Engenheiro Civil Master) ---
+    if (
+      cLower.includes("alvenaria") ||
+      cLower.includes("reboco") ||
+      cLower.includes("emboço") ||
+      cLower.includes("emboco") ||
+      cLower.includes("chapisco") ||
+      cLower.includes("trinca") ||
+      cLower.includes("fissura") ||
+      cLower.includes("muro")
+    ) {
+      matchedInClause = true;
+      const stageName = cLower.includes("muro") ? "MUROS E FECHAMENTO PERIMETRAL" : "ALVENARIA E REVESTIMENTOS ARGAMASSADOS";
+      const locText = loc ? ` ${loc}` : " da unidade escolar";
+
+      if (cLower.includes("muro") && (cLower.includes("constru") || cLower.includes("levant") || cLower.includes("novo") || cLower.includes("caído") || cLower.includes("recuper"))) {
+        addStageItem(
+          stageName,
+          "Executar demolição de trechos comprometidos, escavação e fundação em viga baldrame impermeabilizada para o fechamento perimetral."
+        );
+        addStageItem(
+          stageName,
+          "Executar elevação de alvenaria de vedação travada com pilares e cintas de amarração em concreto armado, incluindo chapisco e reboco."
+        );
+      } else {
+        addStageItem(
+          stageName,
+          `Executar remoção de revestimento argamassado desagregado, tratamento de fissuras e limpeza do substrato${locText}.`
+        );
+        addStageItem(
+          stageName,
+          `Aplicar chapisco de aderência e executar recomposição de emboço e reboco desempenado nas superfícies${locText}.`
+        );
+      }
+    }
+
+    // --- RECUPERAÇÃO ESTRUTURAL / PILARES / VIGAS / ARMADURA (Mentalidade Engenheiro Civil Master) ---
+    if (
+      cLower.includes("pilar") ||
+      cLower.includes("viga") ||
+      cLower.includes("armadura") ||
+      cLower.includes("ferragem exposta") ||
+      cLower.includes("estrutural")
+    ) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " nos elementos estruturais afetados";
+      addStageItem(
+        "RECUPERAÇÃO ESTRUTURAL",
+        `Executar escarificação do concreto deteriorado, escovação e tratamento anticorrosivo das armaduras expostas${locText}.`
+      );
+      addStageItem(
+        "RECUPERAÇÃO ESTRUTURAL",
+        `Aplicar ponte de aderência estrutural e recompor a seção dos elementos${locText} com argamassa polimérica ou graute de alta resistência.`
+      );
     }
 
     // --- BANHEIROS / VASOS / ACOPLADO / REVESTIMENTO EM BANHEIRO / TORNEIRAS / HIDROSSANITÁRIO ---
@@ -424,12 +506,12 @@ export function generateLocalSeniorDescription(
         if (cLower.includes("acoplad")) {
           addStageItem(
             "BANHEIROS",
-            "Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis."
+            "Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo anel de vedação, conexões e engates flexíveis."
           );
         } else {
           addStageItem(
             "BANHEIROS",
-            "Executar substituição e assentamento de vasos sanitários nos banheiros, incluindo conexões e vedação."
+            "Executar remoção de louças danificadas e assentamento de novos vasos sanitários nos banheiros, incluindo conexões, fixação e vedação."
           );
         }
       }
@@ -438,7 +520,7 @@ export function generateLocalSeniorDescription(
         addedSpecificBathroomItem = true;
         addStageItem(
           "BANHEIROS",
-          "Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento."
+          "Executar preparo e regularização das paredes dos banheiros seguido de assentamento de revestimento cerâmico com argamassa colante e rejuntamento impermeável."
         );
       }
 
@@ -446,7 +528,7 @@ export function generateLocalSeniorDescription(
         addedSpecificBathroomItem = true;
         addStageItem(
           "BANHEIROS",
-          "Fornecer e instalar torneiras e metais sanitários nos lavatórios dos banheiros."
+          "Fornecer e instalar lavatórios, torneiras, registros, sifões e metais sanitários nos banheiros com vedação das conexões."
         );
       }
 
@@ -454,22 +536,22 @@ export function generateLocalSeniorDescription(
         addedSpecificBathroomItem = true;
         addStageItem(
           "BANHEIROS",
-          "Executar recomposição e instalação de forro nos banheiros."
+          "Executar nivelamento de estrutura de fixação e instalação de forro nos banheiros com acabamento perimetral."
         );
       }
 
-      if (cLower.includes("porta") || cLower.includes("fechadura") || cLower.includes("trinco")) {
+      if (cLower.includes("porta") || cLower.includes("fechadura") || cLower.includes("trinco") || cLower.includes("divisória") || cLower.includes("divisoria")) {
         addedSpecificBathroomItem = true;
         addStageItem(
           "BANHEIROS",
-          "Executar revisão e substituição de portas, trincos e ferragens das cabines dos banheiros."
+          "Executar revisão e substituição de portas, divisórias, trincos, dobradiças e ferragens das cabines dos banheiros."
         );
       }
 
       if (!addedSpecificBathroomItem) {
         addStageItem(
           "BANHEIROS",
-          "Executar revisão e adequação das instalações hidrossanitárias dos banheiros da unidade escolar."
+          "Executar revisão das tubulações de água fria e esgoto sanitário dos banheiros, com substituição de conexões, ralos e acessórios danificados."
         );
       }
     }
@@ -499,7 +581,11 @@ export function generateLocalSeniorDescription(
       if (cLower.includes("poço") || cLower.includes("poco")) {
         addStageItem(
           stageName,
-          "Executar manutenção e adequação da rede de recalque e interligação do poço tubular da unidade escolar."
+          "Executar limpeza, manutenção do conjunto motobomba submerso e adequação do quadro de comando e proteção do poço tubular."
+        );
+        addStageItem(
+          stageName,
+          "Executar adequação da tubulação de recalque, válvula de retenção e interligação hidráulica do poço ao reservatório da unidade escolar."
         );
       }
       if (cLower.includes("reservat") || cLower.includes("caixa")) {
@@ -511,11 +597,15 @@ export function generateLocalSeniorDescription(
           stageName,
           "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar."
         );
+        addStageItem(
+          stageName,
+          "Executar montagem de barrilete de distribuição, tubulações de alimentação, extravasor, limpeza e registros de manobra."
+        );
       }
       if (cLower.includes("tubula") || cLower.includes("rede") || cLower.includes("hidráulic") || cLower.includes("hidraulic")) {
         addStageItem(
           stageName,
-          "Executar adequação da tubulação e conexões de distribuição de água fria."
+          "Executar revisão e substituição de tubulações, conexões e registros da rede de distribuição de água fria."
         );
       }
     }
@@ -544,63 +634,81 @@ export function generateLocalSeniorDescription(
         } else {
           addStageItem(
             "CALÇADAS",
-            `Executar construção e recomposição de calçadas em concreto desempenado${locText}, com regularização da base e juntas de dilatação.`
+            `Executar preparo, regularização e compactação de base com lastro granular para calçadas${locText}.`
+          );
+          addStageItem(
+            "CALÇADAS",
+            `Executar concretagem de calçadas com acabamento desempenado e juntas de dilatação${locText}.`
           );
         }
       }
       if (cLower.includes("rampa") || cLower.includes("acessibilidade")) {
         addStageItem(
           "CALÇADAS",
-          "Executar adequação de rampa de acessibilidade com piso tátil e acabamento antiderrapante."
+          "Executar conformação de base e construção de rampa de acessibilidade conforme normas da ABNT, incluindo piso tátil e acabamento antiderrapante."
         );
       }
       if (cLower.includes("drenagem") || cLower.includes("canaleta") || cLower.includes("grelha")) {
         addStageItem(
-          "DRENAGEM",
-          "Executar canaleta de drenagem pluvial com grelha para escoamento de águas superficiais."
+          "DRENAGEM PLUVIAL",
+          "Executar escavação, regularização de valas com caimento e assentamento de canaletas de drenagem pluvial com grelhas e caixas de passagem."
         );
       }
     }
 
-    // --- PISOS / CONTRAPISO / REVESTIMENTO FORA DE BANHEIRO ---
+    // --- PISOS / CONTRAPISO / REVESTIMENTO FORA DE BANHEIRO (Mentalidade Engenheiro Civil Master) ---
     if (
       ((cLower.includes("piso") && !cLower.includes("pintar") && !cLower.includes("pintura")) ||
         cLower.includes("contrapiso") ||
         cLower.includes("lajota") ||
         cLower.includes("porcelanato") ||
+        cLower.includes("granilite") ||
         (cLower.includes("revestimento") && !cLower.includes("banheiro")))
     ) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " nos ambientes indicados";
-      if (cLower.includes("quebrado") || cLower.includes("recuper") || cLower.includes("danific") || cLower.includes("reparo")) {
+      if (cLower.includes("cerâmic") || cLower.includes("ceramic") || cLower.includes("porcelanato") || cLower.includes("lajota")) {
         addStageItem(
           "PISOS E REVESTIMENTOS",
-          `Recuperar os trechos de piso quebrado${locText}, com demolição das partes soltas, regularização de contrapiso e recomposição do acabamento.`
+          `Executar remoção de peças danificadas, limpeza da base e regularização de contrapiso${locText}.`
         );
-      } else if (cLower.includes("cerâmic") || cLower.includes("ceramic") || cLower.includes("porcelanato")) {
         addStageItem(
           "PISOS E REVESTIMENTOS",
-          `Executar assentamento de revestimento cerâmico${locText}, incluindo argamassa colante e rejuntamento.`
+          `Executar assentamento de revestimento cerâmico${locText} com argamassa colante adequada ao tráfego, incluindo rodapés e rejuntamento.`
+        );
+      } else if (cLower.includes("quebrado") || cLower.includes("recuper") || cLower.includes("danific") || cLower.includes("reparo")) {
+        addStageItem(
+          "PISOS E REVESTIMENTOS",
+          `Executar demolição e remoção dos trechos de piso quebrado${locText} com preparo e compactação da base.`
+        );
+        addStageItem(
+          "PISOS E REVESTIMENTOS",
+          `Executar regularização de contrapiso e recomposição do acabamento de piso${locText} com nivelamento da superfície.`
         );
       } else {
         addStageItem(
           "PISOS E REVESTIMENTOS",
-          `Executar regularização e recomposição de piso${locText} para nivelamento da superfície.`
+          `Executar preparo da superfície, regularização de contrapiso e recomposição de piso${locText} para perfeito nivelamento.`
         );
       }
     }
 
-    // --- FORROS ---
+    // --- FORROS (Mentalidade Engenheiro Civil Master) ---
     if ((cLower.includes("forro") || cLower.includes("pvc") || cLower.includes("gesso")) && !cLower.includes("banheiro")) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " nas salas de aula e ambientes solicitados";
+      const tipoForro = cLower.includes("gesso") ? "de gesso" : cLower.includes("mineral") ? "mineral" : "de PVC";
       addStageItem(
         "FORROS",
-        `Executar instalação e recomposição de forro${locText}, incluindo estrutura de fixação e acabamento perimetral.`
+        `Executar remoção de partes danificadas e instalação de estrutura auxiliar nivelada de sustentação${locText}.`
+      );
+      addStageItem(
+        "FORROS",
+        `Fornecer e instalar forro ${tipoForro}${locText}, incluindo rodaforro e arremates perimetrais.`
       );
     }
 
-    // --- ELÉTRICA / ILUMINAÇÃO / QUADROS / TOMADAS ---
+    // --- ELÉTRICA / ILUMINAÇÃO / QUADROS / TOMADAS (Mentalidade Engenheiro Civil Master) ---
     if (
       cLower.includes("elétrica") ||
       cLower.includes("eletrica") ||
@@ -614,44 +722,37 @@ export function generateLocalSeniorDescription(
       cLower.includes("quadro") ||
       cLower.includes("fiação") ||
       cLower.includes("fiacao") ||
-      cLower.includes("cabo")
+      cLower.includes("cabo") ||
+      cLower.includes("subestação") ||
+      cLower.includes("subestacao")
     ) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " da unidade escolar";
+      if (cLower.includes("quadro") || cLower.includes("disjuntor") || cLower.includes("elétrica") || cLower.includes("eletrica")) {
+        addStageItem(
+          "ELÉTRICA",
+          `Executar revisão de eletrodutos, substituição de cabos condutores danificados e balanceamento dos circuitos elétricos${locText}.`
+        );
+        addStageItem(
+          "ELÉTRICA",
+          `Executar adequação dos quadros de distribuição elétrica${locText}, com instalação de disjuntores termomagnéticos, barramentos e identificação dos circuitos.`
+        );
+      }
       if (cLower.includes("lumin") || cLower.includes("ilumina") || cLower.includes("led") || cLower.includes("lâmpada") || cLower.includes("lampada")) {
         addStageItem(
           "ELÉTRICA",
-          `Fornecer e instalar luminárias de LED${locText}, com revisão dos pontos de comando e circuitos de iluminação.`
+          `Fornecer e instalar luminárias de LED${locText}, incluindo revisão da fiação de alimentação e pontos de comando.`
         );
       }
       if (cLower.includes("tomada") || cLower.includes("interruptor")) {
         addStageItem(
           "ELÉTRICA",
-          `Substituir tomadas e interruptores danificados${locText}, incluindo espelhos e conexões elétricas.`
-        );
-      }
-      if (cLower.includes("quadro") || cLower.includes("disjuntor")) {
-        addStageItem(
-          "ELÉTRICA",
-          `Executar adequação do quadro de distribuição elétrica${locText}, com substituição de disjuntores e identificação dos circuitos.`
-        );
-      }
-      if (
-        !cLower.includes("lumin") &&
-        !cLower.includes("ilumina") &&
-        !cLower.includes("tomada") &&
-        !cLower.includes("interruptor") &&
-        !cLower.includes("quadro") &&
-        !cLower.includes("disjuntor")
-      ) {
-        addStageItem(
-          "ELÉTRICA",
-          `Executar revisão das instalações elétricas${locText}, com correção de pontos inoperantes e substituição de componentes danificados.`
+          `Substituir tomadas e interruptores danificados${locText}, incluindo caixas de passagem, módulos, espelhos e conexões elétricas.`
         );
       }
     }
 
-    // --- PINTURA (Especificidade de Materiais por Substrato: Piso/Quadra vs. Metálica vs. Alvenaria) ---
+    // --- PINTURA (Especificidade de Materiais por Substrato: Piso/Quadra vs. Metálica vs. Madeira vs. Alvenaria) ---
     if (cLower.includes("pintura") || cLower.includes("pintar") || cLower.includes("tinta") || cLower.includes("caiação")) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " das áreas solicitadas da unidade escolar";
@@ -664,7 +765,7 @@ export function generateLocalSeniorDescription(
           "PINTURA",
           "Aplicar selador acrílico e pintura em tinta de alta resistência ao tráfego e intempéries para pisos e quadras esportivas."
         );
-      } else if (cLower.includes("grade") || cLower.includes("portão") || cLower.includes("portao") || cLower.includes("metálic") || cLower.includes("metalic") || cLower.includes("esquadria")) {
+      } else if (cLower.includes("grade") || cLower.includes("portão") || cLower.includes("portao") || cLower.includes("metálic") || cLower.includes("metalic") || cLower.includes("ferro")) {
         addStageItem(
           "PINTURA",
           "Executar lixamento, remoção de oxidação e aplicação de fundo anticorrosivo em zarcão nas superfícies metálicas."
@@ -673,10 +774,23 @@ export function generateLocalSeniorDescription(
           "PINTURA",
           "Aplicar pintura em tinta esmalte sintético em duas demãos nas esquadrias e elementos metálicos."
         );
+      } else if (cLower.includes("madeira") || cLower.includes("porta")) {
+        addStageItem(
+          "PINTURA",
+          "Executar lixamento, correção de imperfeições e aplicação de fundo nivelador nas esquadrias de madeira."
+        );
+        addStageItem(
+          "PINTURA",
+          "Aplicar pintura em tinta esmalte sintético em duas demãos nas esquadrias de madeira."
+        );
       } else {
         addStageItem(
           "PINTURA",
-          `Executar pintura acrílica nas superfícies${locText}, com preparo de base, emassamento pontual e aplicação de duas demãos.`
+          `Executar lixamento, remoção de partes soltas, aplicação de selador acrílico e emassamento pontual nas superfícies${locText}.`
+        );
+        addStageItem(
+          "PINTURA",
+          `Aplicar pintura com tinta acrílica em duas demãos nas paredes e tetos${locText}.`
         );
       }
     }
@@ -687,19 +801,19 @@ export function generateLocalSeniorDescription(
       if (cLower.includes("gás") || cLower.includes("gas")) {
         addStageItem(
           "COZINHA",
-          "Executar construção de abrigo externo para GLP (casa de gás) com portinhola ventilada e tubulação de interligação."
+          "Executar base em concreto e alvenaria para abrigo externo de GLP (casa de gás), incluindo revestimento, portinhola ventilada e tubulação de cobre."
         );
       }
       if (cLower.includes("exaustor") || cLower.includes("coifa")) {
         addStageItem(
           "COZINHA",
-          "Fornecer e instalar exaustor na cozinha para renovação de ar e exaustão térmica."
+          "Executar abertura técnica, instalação elétrica dedicada e fixação de exaustor na cozinha para renovação de ar e exaustão térmica."
         );
       }
       if (cLower.includes("bancada") || cLower.includes("pia")) {
         addStageItem(
           "COZINHA",
-          "Executar adequação de bancada e pia da cozinha com revestimento cerâmico e sifonamento."
+          "Executar instalação de bancada em granito com cuba inoxidável na cozinha, incluindo revestimento cerâmico, torneira e sifonamento."
         );
       }
     }
@@ -707,13 +821,19 @@ export function generateLocalSeniorDescription(
     // --- ESQUADRIAS / PORTAS / JANELAS / GRADES ---
     if (
       (cLower.includes("porta") || cLower.includes("janela") || cLower.includes("esquadria") || cLower.includes("fechadura") || cLower.includes("grade") || cLower.includes("portão") || cLower.includes("portao")) &&
-      !cLower.includes("banheiro")
+      !cLower.includes("banheiro") &&
+      !cLower.includes("pintar") &&
+      !cLower.includes("pintura")
     ) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " da unidade escolar";
       addStageItem(
         "ESQUADRIAS E FERRAGENS",
-        `Executar revisão e substituição de esquadrias, fechaduras, dobradiças e ferragens danificadas${locText}.`
+        `Executar remoção de elementos empenados ou danificados e ajuste de marcos, batentes e caixilhos${locText}.`
+      );
+      addStageItem(
+        "ESQUADRIAS E FERRAGENS",
+        `Fornecer e instalar esquadrias, fechaduras, dobradiças e ferragens${locText} em perfeitas condições de funcionamento.`
       );
     }
 
@@ -727,12 +847,19 @@ export function generateLocalSeniorDescription(
     }
 
     // --- CLÁUSULA CUSTOMIZADA LIVRE (qualquer outro serviço específico pedido pelo usuário) ---
+    // Aplica a Tríade Executiva de Engenheiro Civil Master mesmo para serviços inéditos
     if (!matchedInClause && clause.length > 3) {
       const customVerbStart = /^(executar|fornecer|substituir|recuperar|instalar|construir|demolir|reformar|adequar|aplicar)/i.test(clause);
-      const customDesc = customVerbStart
-        ? normalizeSentenceCase(clause)
-        : normalizeSentenceCase(`Executar ${clause.charAt(0).toLowerCase() + clause.slice(1)}`);
+      const cleanClauseText = clause.replace(/^[\s•\-\*\d\.\)]+\s*/, "").trim();
       const customStageTitle = loc ? loc.replace(/^(do|da|dos|das)\s+/i, "").toUpperCase() : "SERVIÇOS ESPECÍFICOS";
+
+      addStageItem(
+        customStageTitle,
+        `Executar preparo técnico da base, regularização do substrato e serviços preliminares necessários para ${cleanClauseText.charAt(0).toLowerCase() + cleanClauseText.slice(1)}.`
+      );
+      const customDesc = customVerbStart
+        ? normalizeSentenceCase(cleanClauseText)
+        : normalizeSentenceCase(`Executar ${cleanClauseText.charAt(0).toLowerCase() + cleanClauseText.slice(1)} com materiais normatizados e acabamento técnico adequado`);
       addStageItem(customStageTitle, customDesc);
     }
   }
