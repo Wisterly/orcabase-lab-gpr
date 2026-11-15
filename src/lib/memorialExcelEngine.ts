@@ -213,6 +213,12 @@ export async function sanitizeAndInspectMemorialZip(
         if (zip.file("xl/workbook.xml")) {
           let wbXml = await zip.file("xl/workbook.xml")!.async("string");
           wbXml = wbXml.replace(/<externalReferences>[\s\S]*?<\/externalReferences>/g, "");
+          if (wbXml.includes("<definedNames>")) {
+            wbXml = wbXml.replace(
+              /<definedNames>[\s\S]*?<\/definedNames>/g,
+              '<definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">DESCRITIVO!$B$1:$I$37</definedName></definedNames>'
+            );
+          }
           zip.file("xl/workbook.xml", wbXml);
         }
       }
@@ -593,8 +599,17 @@ export async function injectMemorialIntoExcelTemplate(
         stg.items.forEach((it) => {
           const rawItem = it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim();
           const formattedItem = rawItem ? rawItem.charAt(0).toUpperCase() + rawItem.slice(1) : "";
-          const estimatedLines = Math.max(1, Math.ceil(formattedItem.length / 100));
-          const rowHt = estimatedLines === 1 ? "15.75" : String(estimatedLines * 15.5);
+          // Calcula largura visual real para Aptos Narrow 12pt nas colunas mescladas C:H
+          let visualUnits = 0;
+          for (const ch of formattedItem) {
+            if (/[iIl1!.,;:'|\s]/.test(ch)) visualUnits += 0.45;
+            else if (/[rftjJ()]/.test(ch)) visualUnits += 0.58;
+            else if (/[aceéáãâsçz]/.test(ch)) visualUnits += 0.82;
+            else if (/[mMwW%A-ZÀ-Ú]/.test(ch)) visualUnits += 1.35;
+            else visualUnits += 1.12;
+          }
+          const estimatedLines = Math.max(1, Math.ceil(visualUnits / 122.5));
+          const rowHt = estimatedLines === 1 ? "15.75" : String(estimatedLines * 15.75);
 
           dynamicRowsXml.push(
             `<row r="${currentRow}" spans="2:18" ht="${rowHt}" customHeight="1" x14ac:dyDescent="0.35">` +
@@ -683,6 +698,16 @@ export async function injectMemorialIntoExcelTemplate(
       sheetXml = sheetXml.replace(/<dataValidations[\s\S]*?<\/dataValidations>/g, "");
 
       zip.file(sheetPath, sheetXml);
+
+      // Atualiza Print_Area em xl/workbook.xml para abranger até a última linha gerada (currentRow)
+      if (zip.file("xl/workbook.xml")) {
+        let wbXml = await zip.file("xl/workbook.xml")!.async("string");
+        wbXml = wbXml.replace(
+          /<definedNames>[\s\S]*?<\/definedNames>/g,
+          `<definedNames><definedName name="_xlnm.Print_Area" localSheetId="0">DESCRITIVO!$B$1:$I$${currentRow}</definedName></definedNames>`
+        );
+        zip.file("xl/workbook.xml", wbXml);
+      }
     }
   } else {
     // Caso o usuário anexe outra planilha qualquer com tags "= AQUI" em células diversas:

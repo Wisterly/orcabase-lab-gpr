@@ -5,6 +5,7 @@
 // ============================================================================
 
 import jsPDF from "jspdf";
+import { SEDUC_PI_HEADER_LOGO_BASE64 } from "./seducHeaderLogo";
 
 export interface DescritivoItem {
   id: string;
@@ -1062,7 +1063,7 @@ INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL E ZERO SERVI
 }
 
 // ============================================================================
-// GERAÇÃO DE PDF OFICIAL DO MEMORIAL DESCRITIVO (Fiel ao DESCRITIVO MODELO.xlsx)
+// GERAÇÃO DE PDF OFICIAL DO MEMORIAL DESCRITIVO (100% Fiel ao DESCRITIVO MODELO.xlsx)
 // ============================================================================
 export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: DescritivoStage[]): jsPDF {
   const doc = new jsPDF({
@@ -1073,199 +1074,265 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
 
   const pageWidth = 210;
   const pageHeight = 297;
-  const margin = 14;
-  const printableWidth = pageWidth - margin * 2;
-  let currentY = margin;
+  // Margens laterais equivalentes ao pageMargins left=0.27", right=0.27" do Excel (~7.5mm)
+  const marginX = 7.5;
+  const marginTop = 18;
+  const printableWidth = pageWidth - marginX * 2; // 195mm
+  let currentY = marginTop;
 
-  const schoolUpper = (metadata.schoolName || metadata.propertyId || "UNIDADE ESCOLAR").trim().toUpperCase();
-  const cityUpper = (metadata.city || "TERESINA").trim().toUpperCase();
+  const schoolUpper = (metadata.schoolName || metadata.propertyId || "CETI FADE III").trim().toUpperCase();
+  const cityUpper = (metadata.city || "CAJAZEIRAS DO PIAUÍ").trim().toUpperCase();
   const mesAnoFormatted = (metadata.mesAnoRef || "Novembro de 2026").replace(/\s+de\s+/i, ", ").toUpperCase();
   const footerDateFormatted = (metadata.dataExtensa || "domingo, 15 de novembro de 2026").toLowerCase();
 
-  const checkPageBreak = (neededHeight: number) => {
-    if (currentY + neededHeight > pageHeight - margin - 12) {
-      doc.addPage();
-      currentY = margin;
-    }
-  };
+  const bdiRaw = (metadata.bdiPercent || "24,50%").trim();
+  const bdiFormatted = bdiRaw.endsWith("%") ? bdiRaw : `${bdiRaw}%`;
 
-  // 1. BLOCO SUPERIOR (Linhas 2 a 9 do DESCRITIVO MODELO.xlsx)
-  doc.setDrawColor(20, 20, 20);
-  doc.setLineWidth(0.35);
+  // Proporções exatas das colunas B..I do DESCRITIVO MODELO.xlsx
+  // B=14mm | C..G=142mm | H=19.5mm | I=19.5mm (Total = 195mm)
+  const wColB = 14;
+  const wColCG = 142;
+  const wColH = 19.5;
+  const wColI = 19.5;
+  const wColBG = wColB + wColCG; // 156mm (B2:G5)
+  const wColHI = wColH + wColI; // 39mm (H2:I5 — Brasão SEDUC-PI)
 
-  // Linha 2: PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - <ESCOLA> (Fundo Azul #0070C0)
-  doc.setFillColor(0, 112, 192);
-  doc.rect(margin, currentY, printableWidth, 8, "FD");
+  const xColB = marginX;
+  const xColC = xColB + wColB;
+  const xColH = xColB + wColBG;
+  const xColI = xColH + wColH;
+
+  // 1. CABEÇALHO SUPERIOR (Linhas 2 a 5 do Excel: B2:G5 à esquerda + H2:I5 com Brasão à direita)
+  const hRow2 = 6.2;
+  const hRow3 = 3.8;
+  const hRow4 = 3.8;
+  const hRow5 = 5.4;
+  const hHeaderBlock = hRow2 + hRow3 + hRow4 + hRow5; // 19.2mm
+
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.28);
+  doc.setFillColor(255, 255, 255);
+
+  // Caixa direita mesclada H2:I5 (Brasão do Governo do Piauí / SEDUC)
+  doc.rect(xColH, currentY, wColHI, hHeaderBlock, "FD");
+  try {
+    // O brasão original tem proporção 215x143 (~1.5:1) posicionado à direita de H2:I5
+    const imgW = 36.5;
+    const imgH = 17.6;
+    const imgX = xColH + (wColHI - imgW) / 2;
+    const imgY = currentY + (hHeaderBlock - imgH) / 2;
+    doc.addImage(SEDUC_PI_HEADER_LOGO_BASE64, "PNG", imgX, imgY, imgW, imgH);
+  } catch (e) {
+    console.warn("Aviso ao renderizar brasão no PDF:", e);
+  }
+
+  // Linha 2 (B2:G2): PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - <ESCOLA>
+  doc.rect(xColB, currentY, wColBG, hRow2);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(255, 255, 255);
-  doc.text(`PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - ${schoolUpper}`, pageWidth / 2, currentY + 5.3, {
+  doc.setTextColor(0, 0, 0);
+  doc.text(`PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - ${schoolUpper}`, xColB + wColBG / 2, currentY + 4.3, {
     align: "center",
   });
-  currentY += 8;
+  currentY += hRow2;
 
-  // Linha 3: GOVERNO DO ESTADO DO PIAUÍ (Fundo Azul #0070C0)
-  doc.setFillColor(0, 112, 192);
-  doc.rect(margin, currentY, printableWidth, 5.5, "FD");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text("GOVERNO DO ESTADO DO PIAUÍ", pageWidth / 2, currentY + 3.8, { align: "center" });
-  currentY += 5.5;
+  // Linha 3 (B3:G3): GOVERNO DO ESTADO DO PIAUÍ
+  doc.rect(xColB, currentY, wColBG, hRow3);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.8);
+  doc.text("GOVERNO DO ESTADO DO PIAUÍ", xColB + wColBG / 2, currentY + 2.7, { align: "center" });
+  currentY += hRow3;
 
-  // Linha 4: SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
-  doc.setFillColor(255, 255, 255);
-  doc.rect(margin, currentY, printableWidth, 5.5, "FD");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC", pageWidth / 2, currentY + 3.8, { align: "center" });
-  currentY += 5.5;
+  // Linha 4 (B4:G4): SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
+  doc.rect(xColB, currentY, wColBG, hRow4);
+  doc.text("SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC", xColB + wColBG / 2, currentY + 2.7, { align: "center" });
+  currentY += hRow4;
 
-  // Linha 5: UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
-  doc.rect(margin, currentY, printableWidth, 6, "FD");
-  doc.text("UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF", pageWidth / 2, currentY + 4.1, { align: "center" });
-  currentY += 6;
+  // Linha 5 (B5:G5): UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
+  doc.rect(xColB, currentY, wColBG, hRow5);
+  doc.text("UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF", xColB + wColBG / 2, currentY + 3.6, { align: "center" });
+  currentY += hRow5;
 
-  // Linhas 6 a 9: Tabela de Metadados (OBJETO, DATA, UNIDADE, MUNICÍPIO, L.S., BDI)
-  const wColLabel = 24;
-  const wColMain = printableWidth - wColLabel - 44;
-  const wColLsLabel = 26;
-  const wColLsVal = 18;
-  const xMain = margin + wColLabel;
-  const xLsLabel = xMain + wColMain;
-  const xLsVal = xLsLabel + wColLsLabel;
-
-  const drawMetaRow = (
-    labelLeft: string,
-    valLeft: string,
-    midText: string | null,
-    labelRight: string,
-    valRight: string
+  // 2. TABELA DE METADADOS (Linhas 6 a 9 do Excel)
+  const hMeta = 3.8;
+  const drawSeducMetaRow = (
+    labelB: string,
+    valC: string,
+    midDatabaseText: string | null,
+    labelH: string,
+    valI: string,
+    isBottomRow: boolean = false
   ) => {
-    const h = 5.5;
-    doc.setDrawColor(20, 20, 20);
-    doc.rect(margin, currentY, wColLabel, h);
-    doc.rect(xMain, currentY, wColMain, h);
-    doc.rect(xLsLabel, currentY, wColLsLabel, h);
-    doc.rect(xLsVal, currentY, wColLsVal, h);
+    doc.setLineWidth(0.28);
+    doc.rect(xColB, currentY, wColB, hMeta);
+    doc.rect(xColC, currentY, wColCG, hMeta);
+    doc.rect(xColH, currentY, wColH, hMeta);
+    doc.rect(xColI, currentY, wColI, hMeta);
 
+    // Rótulo na Coluna B (alinhado à direita, negrito)
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(7.5);
-    doc.setTextColor(15, 23, 42);
-    doc.text(labelLeft, margin + wColLabel - 1.5, currentY + 3.8, { align: "right" });
+    doc.setFontSize(6.8);
+    doc.setTextColor(0, 0, 0);
+    doc.text(labelB, xColB + wColB - 1, currentY + 2.7, { align: "right" });
 
-    if (midText) {
-      const splitX = xMain + 38;
-      doc.line(splitX, currentY, splitX, currentY + h);
+    // Conteúdo em C:G
+    if (midDatabaseText) {
+      const wDatePart = 68;
+      const xSplit = xColC + wDatePart;
+      doc.line(xSplit, currentY, xSplit, currentY + hMeta);
       doc.setFont("helvetica", "normal");
-      doc.text(valLeft, xMain + 2, currentY + 3.8);
+      doc.setFontSize(6.8);
+      doc.text(valC, xColC + 1.2, currentY + 2.7);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6.8);
-      doc.text(midText, splitX + (wColMain - 38) / 2, currentY + 3.8, { align: "center" });
+      doc.text(midDatabaseText, xSplit + (wColCG - wDatePart) / 2, currentY + 2.7, { align: "center" });
     } else {
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      doc.text(valLeft, xMain + 2, currentY + 3.8);
+      doc.setFontSize(6.8);
+      doc.text(valC, xColC + 1.2, currentY + 2.7);
     }
 
+    // Coluna H (L.S. / BDI label)
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
-    doc.text(labelRight, xLsLabel + wColLsLabel - 1.5, currentY + 3.8, { align: "right" });
-    doc.text(valRight, xLsVal + wColLsVal - 1.5, currentY + 3.8, { align: "right" });
+    doc.setFontSize(6.3);
+    doc.text(labelH, xColH + wColH - 1, currentY + 2.7, { align: "right" });
 
-    currentY += h;
+    // Coluna I (Valor percentual)
+    doc.text(valI, xColI + wColI - 1, currentY + 2.7, { align: "right" });
+
+    if (isBottomRow) {
+      doc.setLineWidth(0.45);
+      doc.line(xColB, currentY + hMeta, xColB + printableWidth, currentY + hMeta);
+    }
+
+    currentY += hMeta;
   };
 
-  drawMetaRow(
+  drawSeducMetaRow(
     "OBJETO:",
     "MANUTENÇÃO PREDIAL DAS UNIDADES ESCOLARES DA REDE ESTADUAL",
     null,
     "L.S. (MENSAL)=",
     "70,90%"
   );
-  drawMetaRow(
+  drawSeducMetaRow(
     "DATA:",
     mesAnoFormatted,
-    "DATA BASE: SINAPI_PI | SEINFRA_CE | ORSE_SE",
+    "DATA BASE: SINAPI_PI  |  SEINFRA_CE  |  ORSE_SE",
     "L.S. (HORISTA)=",
     "113,05%"
   );
-  drawMetaRow("UNIDADE.:", schoolUpper, null, "BDI (DIF)=", "0,00%");
-  drawMetaRow("MUNICÍPIO:", cityUpper, null, "BDI=", metadata.bdiPercent || "24,50%");
+  drawSeducMetaRow("UNIDADE.:", schoolUpper, null, "BDI (DIF)=", "0,00%");
+  drawSeducMetaRow("MUNICÍPIO:", cityUpper, null, "BDI=", bdiFormatted, true);
 
-  currentY += 3.5;
+  // Linha 10: Espaço em branco (3.6mm)
+  currentY += 3.6;
 
-  // Linha 11: Faixa Cinza MEMORIAL DESCRITIVO
+  // 3. FAIXA CINZA "MEMORIAL DESCRITIVO" (Linha 11: B11:I11)
+  const hRow11 = 8.4;
   doc.setFillColor(217, 217, 217);
-  doc.setDrawColor(20, 20, 20);
-  doc.rect(margin, currentY, printableWidth, 8.5, "FD");
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.28);
+  doc.rect(xColB, currentY, printableWidth, hRow11, "FD");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text("MEMORIAL DESCRITIVO", pageWidth / 2, currentY + 5.8, { align: "center" });
-  currentY += 11.5;
+  doc.setFontSize(9.2);
+  doc.setTextColor(0, 0, 0);
+  doc.text("MEMORIAL DESCRITIVO", xColB + printableWidth / 2, currentY + 5.3, { align: "center" });
+  currentY += hRow11;
 
-  // Linha 13: SERVIÇOS - <ESCOLA>
+  // Linha 12: Espaço em branco (3.6mm)
+  currentY += 3.6;
+
+  // 4. FAIXA "SERVIÇOS - <ESCOLA>" (Linha 13: B13:I13)
+  const hRow13 = 4.4;
   doc.setFillColor(255, 255, 255);
-  doc.rect(margin, currentY, printableWidth, 6.5, "FD");
+  doc.rect(xColB, currentY, printableWidth, hRow13, "FD");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text(`SERVIÇOS - ${schoolUpper}`, pageWidth / 2, currentY + 4.5, { align: "center" });
-  currentY += 9.5;
+  doc.setFontSize(7.6);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`SERVIÇOS - ${schoolUpper}`, xColB + printableWidth / 2, currentY + 3.1, { align: "center" });
+  currentY += hRow13;
 
-  // 2. ETAPAS E ITENS TÉCNICOS (Fiel ao DESCRITIVO MODELO.xlsx: Título Vermelho Centralizado + Caixa de Itens)
-  const innerMargin = margin + 4;
-  const innerWidth = printableWidth - 8;
+  // Linha 14: Espaço antes da Moldura Externa (3.4mm)
+  currentY += 3.4;
 
-  stages.forEach((stage, sIdx) => {
+  // 5. MOLDURA EXTERNA (B15:I{penúltima}) E CAIXA INTERNA CONTÍNUA (C17:H{antepenúltima})
+  const outerBoxStartY = currentY;
+  const innerBoxX = xColC; // Começa na coluna C
+  const innerBoxW = wColCG + wColH; // Vai de C até H (161.5mm)
+  const innerBoxStartY = outerBoxStartY + 5.2; // Duas linhas de respiro superior (Linhas 15 e 16)
+
+  let cursorY = innerBoxStartY;
+
+  const stagesToRender: DescritivoStage[] =
+    stages && stages.length > 0
+      ? stages
+      : [
+          {
+            id: "empty-stage",
+            stageCode: "1",
+            title: "SERVIÇOS GERAIS",
+            items: [],
+          },
+        ];
+
+  stagesToRender.forEach((stage, sIdx) => {
     const cleanTitle = stage.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
     const numberedTitle = `${sIdx + 1}. ${cleanTitle}`;
 
-    // Calcula altura total dos itens do bloco
-    const itemBlocks: string[][] = stage.items.map((item) => {
-      const cleanDesc = normalizeSentenceCase(item.description);
-      return doc.splitTextToSize(cleanDesc, innerWidth - 6);
-    });
-    const itemsHeight = itemBlocks.reduce((acc, lines) => acc + lines.length * 4.2 + 2, 4);
-
-    checkPageBreak(7 + itemsHeight + 6);
-
-    // Caixa do Título da Categoria (Vermelho Negrito Centralizado)
-    doc.setDrawColor(30, 30, 30);
-    doc.setLineWidth(0.3);
-    doc.rect(innerMargin, currentY, innerWidth, 6.5);
+    // Linha do Título (Em CAIXA ALTA, Negrito Vermelho Centralizado na caixa C:H)
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
+    doc.setFontSize(7.6);
     doc.setTextColor(255, 0, 0);
-    doc.text(numberedTitle, pageWidth / 2, currentY + 4.5, { align: "center" });
-    currentY += 6.5;
+    doc.text(numberedTitle, innerBoxX + innerBoxW / 2, cursorY + 3.1, { align: "center" });
+    cursorY += 3.8;
 
-    // Caixa dos Subitens
-    const boxStartY = currentY;
-    let itemY = currentY + 4.5;
+    // Linha espaçadora vazia logo abaixo do título (Linha 18 / 27 do Excel)
+    cursorY += 3.4;
+
+    // Subitens de serviço da categoria
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.8);
-    doc.setTextColor(20, 20, 20);
+    doc.setFontSize(7.4);
+    doc.setTextColor(0, 0, 0);
 
-    itemBlocks.forEach((lines) => {
-      doc.text(lines, innerMargin + 3, itemY);
-      itemY += lines.length * 4.2 + 1.8;
+    stage.items.forEach((item) => {
+      const cleanDesc = normalizeSentenceCase(item.description);
+      const wrappedLines: string[] = doc.splitTextToSize(cleanDesc, innerBoxW - 2.2);
+      wrappedLines.forEach((lineText) => {
+        doc.text(lineText, innerBoxX + 0.8, cursorY + 2.8);
+        cursorY += 3.7;
+      });
     });
 
-    const actualBoxH = Math.max(8, itemY - boxStartY);
-    doc.rect(innerMargin, boxStartY, innerWidth, actualBoxH);
-    currentY = boxStartY + actualBoxH + 4;
+    // Linha separadora entre categorias (Linha 25 do Excel)
+    if (sIdx < stagesToRender.length - 1) {
+      cursorY += 3.7;
+    }
   });
 
-  // Linha 37: Data Extensa com Dia da Semana no Rodapé
-  checkPageBreak(14);
-  currentY += 3;
+  // Linha de fechamento inferior da caixa interna C:H (Linha 34 do Excel)
+  const innerBoxEndY = cursorY + 3.6;
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.28);
+  doc.rect(innerBoxX, innerBoxStartY, innerBoxW, innerBoxEndY - innerBoxStartY);
+
+  // Linha horizontal intermediária da moldura externa (Linha 35 do Excel) e base espessa (Linha 36)
+  const midBottomLineY = innerBoxEndY + 3.6;
+  const outerBoxEndY = midBottomLineY + 3.4;
+
+  // Desenha a Moldura Externa Espessa (B15:I36)
+  doc.setLineWidth(0.5);
+  doc.rect(xColB, outerBoxStartY, printableWidth, outerBoxEndY - outerBoxStartY);
+
+  // Linha horizontal fina interna (base da Linha 35 de B até I)
+  doc.setLineWidth(0.25);
+  doc.line(xColB, midBottomLineY, xColB + printableWidth, midBottomLineY);
+
+  // 6. DATA EXTENSA COM DIA DA SEMANA NO RODAPÉ (Linha 37: B37:I37)
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(15, 23, 42);
-  doc.text(footerDateFormatted, pageWidth / 2, currentY, { align: "center" });
+  doc.setFontSize(7.0);
+  doc.setTextColor(0, 0, 0);
+  doc.text(footerDateFormatted, xColB + printableWidth / 2, outerBoxEndY + 2.9, { align: "center" });
 
   return doc;
 }

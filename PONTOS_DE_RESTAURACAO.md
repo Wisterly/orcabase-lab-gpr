@@ -11,6 +11,36 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.045]
+- **Data/Hora:** 15/11/2026 03:12 (Horário Local)
+- **Tag Git:** `PR.045`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - PDF Editado (`CETI FADE III`): https://orcabase-lab-gpr.vercel.app/MEMORIAL_DESCRITIVO_CETI_FADE_III.pdf
+  - Excel Editado (`CETI FADE III`): https://orcabase-lab-gpr.vercel.app/MEMORIAL_DESCRITIVO_CETI_FADE_III.xlsx
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.045 (Edição Oficial do `DESCRITIVO MODELO.xlsx` para `CETI FADE III` em PDF e Excel + Calibração 1:1 do Visualizador e Motor PDF Nativo):
+1. **Geração do Arquivo Excel Editado e PDF Oficial do `CETI FADE III` (`public/MEMORIAL_DESCRITIVO_CETI_FADE_III.xlsx` e `public/MEMORIAL_DESCRITIVO_CETI_FADE_III.pdf`):**
+   - Aplicadas todas as substituições solicitadas mantendo **100% das configurações, fontes (`Aptos Narrow`), cores, bordas, mesclagens e área de impressão (`_xlnm.Print_Area`)** do `DESCRITIVO MODELO.xlsx`:
+     - **Unidade Escolar (`C8`, `B2` e `B13`):** `CETI FADE III` (`PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - CETI FADE III` em `B2` e `SERVIÇOS - CETI FADE III` em `B13`);
+     - **Município (`C9`):** `CAJAZEIRAS DO PIAUÍ`;
+     - **BDI (`I9`):** `24,50%`;
+     - **Data Mês/Ano Atual (`C7`):** `NOVEMBRO, 2026`;
+     - **Data Extensa no Rodapé:** `domingo, 15 de novembro de 2026`;
+     - **5 Títulos em Vermelho Caixa Alta + Subitens (`1. COBERTURA`, `2. BANHEIROS`, `3. CALÇADAS`, `4. PISOS E REVESTIMENTOS`, `5. PINTURA`)** com calibração proporcional exata de altura de linha (`15.75pt` / `31.5pt`) e atualização dinâmica de `_xlnm.Print_Area` em `xl/workbook.xml`.
+2. **Alinhamento 1:1 do Visualizador do Memorial e do Motor PDF Nativo (`src/lib/descritivoAI.ts`, `src/lib/seducHeaderLogo.ts` e `src/components/DescritivoView.tsx`):**
+   - Embutido o Brasão Oficial do Governo do Piauí / SEDUC em Base64 (`src/lib/seducHeaderLogo.ts`) diretamente no motor `buildMemorialPDFDoc` (`src/lib/descritivoAI.ts`) na caixa mesclada `H2:I5`.
+   - Reconstruída a renderização do PDF (`Baixar PDF Oficial`) e do Visualizador do Memorial (`DescritivoView.tsx`) com o cabeçalho branco oficial (`B2:G5`), quadro de metadados, faixa cinza `MEMORIAL DESCRITIVO`, `SERVIÇOS - <ESCOLA>`, moldura externa espessa (`B15:I36`), caixa interna contínua única (`C17:H34`) com títulos em vermelho centralizado e subitens, e data extensa no rodapé.
+3. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` permaneceram 100% intocados e validados no `prebuild`.
+
+---
+
 ### [PR.044]
 - **Data/Hora:** 15/11/2026 02:38 (Horário Local)
 - **Tag Git:** `PR.044`

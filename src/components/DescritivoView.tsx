@@ -83,14 +83,14 @@ export default function DescritivoView({
   // 2. ESTADO DOS DADOS DO MEMORIAL (Escola, Município, BDI, GRE e Datas)
   // --------------------------------------------------------------------------
   const [formData, setFormData] = useState({
-    schoolName: initialSchoolName || "CETI Dep. Francisco Antônio Paes Landim Neto",
-    municipio: initialCity ? initialCity.split(" - ")[0] : "São João do Piauí",
+    schoolName: initialSchoolName || "CETI FADE III",
+    municipio: initialCity ? initialCity.split(" - ")[0] : "Cajazeiras do Piauí",
     uf: initialCity && initialCity.includes("-") ? initialCity.split("-")[1].trim() : "PI",
     bdiPercent: "24,50%",
     gre: initialGre || "12ª GRE",
     finalidade: "Reforma e Manutenção da Unidade Escolar",
     mesAnoRef: autoDates.mesAnoRef, // Ex: "Novembro de 2026"
-    dataExtensa: autoDates.dataExtensa, // Ex: "Domingo, 8 de novembro de 2026"
+    dataExtensa: autoDates.dataExtensa, // Ex: "Domingo, 15 de novembro de 2026"
     engineerName: "Engenheiro Responsável Técnico",
     creaNumber: "CREA-PI nº 12345/D",
   });
@@ -129,9 +129,87 @@ export default function DescritivoView({
   );
 
   // --------------------------------------------------------------------------
-  // 2. ETAPAS E ITENS TÉCNICOS (Início 100% Limpo — Zero Serviços Fantasmas)
+  // 2. ETAPAS E ITENS TÉCNICOS (Padrão Oficial SEDUC-PI: CETI FADE III)
   // --------------------------------------------------------------------------
-  const [stages, setStages] = useState<DescritivoStage[]>([]);
+  const [stages, setStages] = useState<DescritivoStage[]>([
+    {
+      id: "stg-init-1",
+      stageCode: "1",
+      title: "COBERTURA",
+      items: [
+        {
+          id: "it-init-1-1",
+          itemNumber: "1",
+          description:
+            "Executar substituição e retelhamento pontual na cobertura do pátio para correção de infiltrações e alinhamento do telhado.",
+        },
+      ],
+    },
+    {
+      id: "stg-init-2",
+      stageCode: "2",
+      title: "BANHEIROS",
+      items: [
+        {
+          id: "it-init-2-1",
+          itemNumber: "1",
+          description:
+            "Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis.",
+        },
+        {
+          id: "it-init-2-2",
+          itemNumber: "2",
+          description:
+            "Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento.",
+        },
+        {
+          id: "it-init-2-3",
+          itemNumber: "3",
+          description:
+            "Executar teste de estanqueidade e funcionamento das instalações hidráulicas.",
+        },
+      ],
+    },
+    {
+      id: "stg-init-3",
+      stageCode: "3",
+      title: "CALÇADAS",
+      items: [
+        {
+          id: "it-init-3-1",
+          itemNumber: "1",
+          description:
+            "Executar construção e recomposição de calçadas em concreto desempenado no entorno da unidade escolar, com regularização da base e juntas de dilatação.",
+        },
+      ],
+    },
+    {
+      id: "stg-init-4",
+      stageCode: "4",
+      title: "PISOS E REVESTIMENTOS",
+      items: [
+        {
+          id: "it-init-4-1",
+          itemNumber: "1",
+          description:
+            "Executar regularização e recomposição de piso nos ambientes indicados para nivelamento da superfície.",
+        },
+      ],
+    },
+    {
+      id: "stg-init-5",
+      stageCode: "5",
+      title: "PINTURA",
+      items: [
+        {
+          id: "it-init-5-1",
+          itemNumber: "1",
+          description:
+            "Executar pintura acrílica nas superfícies das áreas solicitadas da unidade escolar, com preparo de base, emassamento pontual e aplicação de duas demãos.",
+        },
+      ],
+    },
+  ]);
 
   // --------------------------------------------------------------------------
   // 3. ESTADO DO CHAT (Mensagem de Acolhimento Inicial Limpa)
@@ -993,24 +1071,24 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
               {/* Topo e Corpo Fiel ao DESCRITIVO MODELO.xlsx */}
               <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Bloco Superior (Linhas 2 a 9 da Planilha Base) */}
-                <div className="border border-slate-800 text-[5.5px] leading-[1.15]">
-                  {/* Linhas 2 a 5: Cabeçalho Azul + Logo Governo do Piauí / SEDUC */}
-                  <div className="grid grid-cols-12 border-b border-slate-800">
-                    <div className="col-span-9 border-r border-slate-800">
-                      <div className="bg-[#0070C0] text-white font-extrabold text-center py-0.5 px-1 border-b border-slate-800 uppercase truncate text-[6px]">
-                        PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - {(formData.schoolName || "UNIDADE ESCOLAR").toUpperCase()}
+                <div className="border border-slate-900 text-[5.2px] leading-[1.15] bg-white text-black">
+                  {/* Linhas 2 a 5: Cabeçalho Branco + Brasão Governo do Piauí / SEDUC */}
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-9 border-r border-slate-900">
+                      <div className="bg-white text-black font-extrabold text-center py-0.5 px-1 border-b border-slate-900 uppercase truncate text-[5.8px]">
+                        PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - {(formData.schoolName || "CETI FADE III").toUpperCase()}
                       </div>
-                      <div className="bg-[#0070C0] text-white font-semibold text-center py-0.5 border-b border-slate-800 uppercase">
+                      <div className="bg-white text-black font-normal text-center py-0.5 border-b border-slate-900 uppercase">
                         GOVERNO DO ESTADO DO PIAUÍ
                       </div>
-                      <div className="bg-white text-slate-900 font-semibold text-center py-0.5 border-b border-slate-800 uppercase">
+                      <div className="bg-white text-black font-normal text-center py-0.5 border-b border-slate-900 uppercase">
                         SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
                       </div>
-                      <div className="bg-white text-slate-900 font-semibold text-center py-0.5 uppercase">
+                      <div className="bg-white text-black font-normal text-center py-0.5 uppercase">
                         UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
                       </div>
                     </div>
-                    <div className="col-span-3 bg-[#0070C0] flex items-center justify-center p-0.5">
+                    <div className="col-span-3 bg-white flex items-center justify-center p-0.5">
                       <img
                         src="/seduc-ugerf-header.png"
                         alt="SEDUC-PI"
@@ -1020,103 +1098,103 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   </div>
 
                   {/* Linha 6: OBJETO + L.S. (MENSAL) */}
-                  <div className="grid grid-cols-12 border-b border-slate-800">
-                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">OBJETO:</div>
-                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-800 truncate">
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-900">OBJETO:</div>
+                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-900 truncate">
                       MANUTENÇÃO PREDIAL DAS UNIDADES ESCOLARES DA REDE ESTADUAL
                     </div>
-                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 text-[5px]">L.S.(M)=</div>
-                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-semibold text-[5px]">70,90%</div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-900 text-[4.8px]">L.S.(M)=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 text-[4.8px]">70,90%</div>
                   </div>
 
                   {/* Linha 7: DATA + DATA BASE + L.S. (HORISTA) */}
-                  <div className="grid grid-cols-12 border-b border-slate-800">
-                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">DATA:</div>
-                    <div className="col-span-3 px-1 py-0.5 border-r border-slate-800 font-semibold uppercase truncate">
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-900">DATA:</div>
+                    <div className="col-span-3 px-1 py-0.5 border-r border-slate-900 uppercase truncate">
                       {(formData.mesAnoRef || "").replace(/\s+de\s+/i, ", ").toUpperCase()}
                     </div>
-                    <div className="col-span-4 px-0.5 py-0.5 border-r border-slate-800 font-bold text-center truncate text-[4.8px]">
-                      SINAPI_PI │ SEINFRA_CE │ ORSE_SE
+                    <div className="col-span-4 px-0.5 py-0.5 border-r border-slate-900 font-bold text-center truncate text-[4.6px]">
+                      DATA BASE: SINAPI_PI │ SEINFRA_CE │ ORSE_SE
                     </div>
-                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 text-[5px]">L.S.(H)=</div>
-                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-semibold text-[5px]">113,05%</div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-900 text-[4.8px]">L.S.(H)=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 text-[4.8px]">113,05%</div>
                   </div>
 
                   {/* Linha 8: UNIDADE + BDI (DIF) */}
-                  <div className="grid grid-cols-12 border-b border-slate-800">
-                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">UNIDADE.:</div>
-                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-800 font-semibold uppercase truncate">
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-900">UNIDADE.:</div>
+                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-900 uppercase truncate">
                       {(formData.schoolName || "").toUpperCase()}
                     </div>
-                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 text-[5px]">BDI(DIF)=</div>
-                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-semibold text-[5px]">0,00%</div>
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-900 text-[4.8px]">BDI(DIF)=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 text-[4.8px]">0,00%</div>
                   </div>
 
                   {/* Linha 9: MUNICÍPIO + BDI */}
-                  <div className="grid grid-cols-12">
-                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-800">MUNICÍPIO:</div>
-                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-800 font-semibold uppercase truncate">
+                  <div className="grid grid-cols-12 border-b border-slate-900">
+                    <div className="col-span-2 font-bold text-right pr-1 py-0.5 border-r border-slate-900">MUNICÍPIO:</div>
+                    <div className="col-span-7 px-1 py-0.5 border-r border-slate-900 uppercase truncate">
                       {(formData.municipio || "").toUpperCase()}
                     </div>
-                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-800 font-bold text-[5px]">BDI=</div>
-                    <div className="col-span-1 text-right pr-0.5 py-0.5 font-bold text-[#c2410c] text-[5px]">
+                    <div className="col-span-2 text-right pr-0.5 py-0.5 border-r border-slate-900 text-[4.8px]">BDI=</div>
+                    <div className="col-span-1 text-right pr-0.5 py-0.5 text-[4.8px]">
                       {formData.bdiPercent}
                     </div>
                   </div>
                 </div>
 
                 {/* Linha 11: Faixa Cinza MEMORIAL DESCRITIVO */}
-                <div className="mt-1 border border-slate-800 bg-[#D9D9D9] text-center font-extrabold text-[7px] text-slate-900 py-0.5 uppercase tracking-wide">
+                <div className="mt-1 border border-slate-900 bg-[#D9D9D9] text-center font-extrabold text-[6.5px] text-black py-0.5 uppercase">
                   MEMORIAL DESCRITIVO
                 </div>
 
                 {/* Linha 13: SERVIÇOS - NOME DA ESCOLA */}
-                <div className="mt-1 border border-slate-800 bg-white text-center font-extrabold text-[6.5px] text-slate-900 py-0.5 px-1 uppercase truncate">
+                <div className="mt-1 border border-slate-900 bg-white text-center font-extrabold text-[6px] text-black py-0.5 px-1 uppercase truncate">
                   SERVIÇOS - {(formData.schoolName || "").toUpperCase()}
                 </div>
 
-                {/* Moldura Externa dos Serviços (Linhas 15 a 36 da Planilha Base) */}
-                <div className="mt-1 flex-1 border-[1.5px] border-slate-900 p-1.5 flex flex-col justify-between overflow-hidden">
-                  {stages.length === 0 ? (
-                    <div className="my-auto py-3 px-2 flex flex-col items-center justify-center text-center space-y-1.5 text-slate-400">
-                      <FileSpreadsheet className="w-4 h-4 text-amber-600" />
-                      <strong className="text-[7.5px] font-bold text-slate-700 uppercase">
-                        Planilha Base Vinculada
-                      </strong>
-                      <p className="text-[6.5px] text-slate-500 leading-tight">
-                        Descreva os serviços no chat ao lado para preenchimento automático dentro da planilha base.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5 overflow-hidden">
-                      {stages
-                        .slice((currentPage - 1) * 2, currentPage * 2)
-                        .map((stg, idx) => {
-                          const globalIndex = (currentPage - 1) * 2 + idx + 1;
-                          const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
-                          return (
-                            <div key={stg.id} className="space-y-0.5">
-                              {/* Título Centralizado em Vermelho Negrito igual ao DESCRITIVO MODELO.xlsx */}
-                              <div className="border border-b-0 border-slate-700 text-center font-extrabold text-[6.8px] text-[#FF0000] py-0.5 uppercase">
-                                {globalIndex}. {cleanTitle}
+                {/* Moldura Externa Espessa (B15:I36) + Caixa Interna Contínua (C17:H34) */}
+                <div className="mt-1 flex-1 border-[1.5px] border-black flex flex-col justify-between overflow-hidden bg-white">
+                  <div className="flex-1 px-2 py-1.5 overflow-hidden flex flex-col">
+                    <div className="flex-1 border border-black px-1.5 py-1 overflow-hidden">
+                      {stages.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center space-y-1 text-slate-400">
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-amber-600" />
+                          <strong className="text-[7px] font-bold text-slate-700 uppercase">
+                            Planilha Base Vinculada
+                          </strong>
+                          <p className="text-[6px] text-slate-500 leading-tight">
+                            Descreva os serviços no chat ao lado para preenchimento automático.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1.5 overflow-hidden">
+                          {stages.map((stg, idx) => {
+                            const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+                            return (
+                              <div key={stg.id} className="space-y-0.5">
+                                <div className="text-center font-extrabold text-[6px] text-[#FF0000] uppercase">
+                                  {idx + 1}. {cleanTitle}
+                                </div>
+                                <div className="space-y-0.5">
+                                  {stg.items.map((it) => (
+                                    <p key={it.id} className="text-[5.2px] text-black leading-[1.15]">
+                                      {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                                    </p>
+                                  ))}
+                                </div>
                               </div>
-                              {/* Caixa de Subitens com Borda */}
-                              <div className="border border-slate-700 p-1 space-y-0.5 bg-white">
-                                {stg.items.map((it) => (
-                                  <p key={it.id} className="text-[6.2px] text-slate-900 leading-[1.2] line-clamp-2">
-                                    {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  <div className="h-1 border-t border-black w-full shrink-0" />
                 </div>
 
                 {/* Linha 37: Data Extensa com Dia da Semana no Rodapé da Planilha Base */}
-                <div className="pt-0.5 text-center font-bold text-[6px] text-slate-900 lowercase">
+                <div className="pt-0.5 text-center font-bold text-[5.5px] text-black lowercase">
                   {(formData.dataExtensa || "").toLowerCase()}
                 </div>
               </div>
@@ -1272,23 +1350,23 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
             <div className="flex-1 overflow-y-auto p-6 sm:p-8 bg-[#090b10] flex justify-center">
               <div className="w-full max-w-3xl bg-white text-slate-900 rounded-sm shadow-2xl p-6 sm:p-8 space-y-3 text-xs leading-relaxed border border-slate-300">
                 {/* Bloco de Cabeçalho e Metadados (Linhas 2 a 9 da Planilha Base) */}
-                <div className="border border-slate-900 text-[11px]">
-                  <div className="grid grid-cols-12 border-b border-slate-900">
-                    <div className="col-span-9 border-r border-slate-900">
-                      <div className="bg-[#0070C0] text-white font-extrabold text-center py-1.5 px-2 border-b border-slate-900 uppercase text-xs sm:text-sm">
-                        PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - {(formData.schoolName || "UNIDADE ESCOLAR").toUpperCase()}
+                <div className="border border-black text-[11px] bg-white text-black">
+                  <div className="grid grid-cols-12 border-b border-black">
+                    <div className="col-span-9 border-r border-black">
+                      <div className="bg-white text-black font-extrabold text-center py-1.5 px-2 border-b border-black uppercase text-xs sm:text-sm">
+                        PLANILHA ORÇAMENTÁRIA DE MANUTENÇÃO - {(formData.schoolName || "CETI FADE III").toUpperCase()}
                       </div>
-                      <div className="bg-[#0070C0] text-white font-semibold text-center py-1 border-b border-slate-900 uppercase">
+                      <div className="bg-white text-black font-normal text-center py-1 border-b border-black uppercase">
                         GOVERNO DO ESTADO DO PIAUÍ
                       </div>
-                      <div className="bg-white text-slate-900 font-semibold text-center py-1 border-b border-slate-900 uppercase">
+                      <div className="bg-white text-black font-normal text-center py-1 border-b border-black uppercase">
                         SECRETARIA DE ESTADO DA EDUCAÇÃO - SEDUC
                       </div>
-                      <div className="bg-white text-slate-900 font-semibold text-center py-1 uppercase">
+                      <div className="bg-white text-black font-normal text-center py-1 uppercase">
                         UNIDADE DE GESTÃO DA REDE FÍSICA - UGERF
                       </div>
                     </div>
-                    <div className="col-span-3 bg-[#0070C0] flex items-center justify-center p-2">
+                    <div className="col-span-3 bg-white flex items-center justify-center p-2">
                       <img
                         src="/seduc-ugerf-header.png"
                         alt="Governo do Piauí / SEDUC"
@@ -1298,84 +1376,89 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   </div>
 
                   {/* Linha 6: OBJETO */}
-                  <div className="grid grid-cols-12 border-b border-slate-900">
-                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">OBJETO:</div>
-                    <div className="col-span-7 px-2 py-1 border-r border-slate-900">
+                  <div className="grid grid-cols-12 border-b border-black">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-black">OBJETO:</div>
+                    <div className="col-span-7 px-2 py-1 border-r border-black">
                       MANUTENÇÃO PREDIAL DAS UNIDADES ESCOLARES DA REDE ESTADUAL
                     </div>
-                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 text-[10px]">L.S. (MENSAL)=</div>
-                    <div className="col-span-1 text-right pr-2 py-1 font-semibold text-[10px]">70,90%</div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-black text-[10px]">L.S. (MENSAL)=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 text-[10px]">70,90%</div>
                   </div>
 
                   {/* Linha 7: DATA + DATA BASE */}
-                  <div className="grid grid-cols-12 border-b border-slate-900">
-                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">DATA:</div>
-                    <div className="col-span-3 px-2 py-1 border-r border-slate-900 font-semibold uppercase">
+                  <div className="grid grid-cols-12 border-b border-black">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-black">DATA:</div>
+                    <div className="col-span-3 px-2 py-1 border-r border-black uppercase">
                       {(formData.mesAnoRef || "").replace(/\s+de\s+/i, ", ").toUpperCase()}
                     </div>
-                    <div className="col-span-4 px-2 py-1 border-r border-slate-900 font-bold text-center text-[10px]">
+                    <div className="col-span-4 px-2 py-1 border-r border-black font-bold text-center text-[10px]">
                       DATA BASE: SINAPI_PI │ SEINFRA_CE │ ORSE_SE
                     </div>
-                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 text-[10px]">L.S. (HORISTA)=</div>
-                    <div className="col-span-1 text-right pr-2 py-1 font-semibold text-[10px]">113,05%</div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-black text-[10px]">L.S. (HORISTA)=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 text-[10px]">113,05%</div>
                   </div>
 
                   {/* Linha 8: UNIDADE */}
-                  <div className="grid grid-cols-12 border-b border-slate-900">
-                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">UNIDADE.:</div>
-                    <div className="col-span-7 px-2 py-1 border-r border-slate-900 font-semibold uppercase">
+                  <div className="grid grid-cols-12 border-b border-black">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-black">UNIDADE.:</div>
+                    <div className="col-span-7 px-2 py-1 border-r border-black uppercase">
                       {(formData.schoolName || "").toUpperCase()}
                     </div>
-                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 text-[10px]">BDI (DIF)=</div>
-                    <div className="col-span-1 text-right pr-2 py-1 font-semibold text-[10px]">0,00%</div>
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-black text-[10px]">BDI (DIF)=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 text-[10px]">0,00%</div>
                   </div>
 
                   {/* Linha 9: MUNICÍPIO + BDI */}
                   <div className="grid grid-cols-12">
-                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-slate-900">MUNICÍPIO:</div>
-                    <div className="col-span-7 px-2 py-1 border-r border-slate-900 font-semibold uppercase">
+                    <div className="col-span-2 font-bold text-right pr-2 py-1 border-r border-black">MUNICÍPIO:</div>
+                    <div className="col-span-7 px-2 py-1 border-r border-black uppercase">
                       {(formData.municipio || "").toUpperCase()}
                     </div>
-                    <div className="col-span-2 text-right pr-2 py-1 border-r border-slate-900 font-bold text-[10px]">BDI=</div>
-                    <div className="col-span-1 text-right pr-2 py-1 font-bold text-[#c2410c] text-[10px]">
+                    <div className="col-span-2 text-right pr-2 py-1 border-r border-black text-[10px]">BDI=</div>
+                    <div className="col-span-1 text-right pr-2 py-1 text-[10px]">
                       {formData.bdiPercent}
                     </div>
                   </div>
                 </div>
 
                 {/* Linha 11: MEMORIAL DESCRITIVO */}
-                <div className="border border-slate-900 bg-[#D9D9D9] py-2 text-center font-extrabold text-sm text-slate-900 uppercase">
+                <div className="border border-black bg-[#D9D9D9] py-2 text-center font-extrabold text-sm text-black uppercase">
                   MEMORIAL DESCRITIVO
                 </div>
 
                 {/* Linha 13: SERVIÇOS - NOME DA ESCOLA */}
-                <div className="border border-slate-900 bg-white py-1.5 text-center font-extrabold text-xs text-slate-900 uppercase">
+                <div className="border border-black bg-white py-1.5 text-center font-extrabold text-xs text-black uppercase">
                   SERVIÇOS - {(formData.schoolName || "").toUpperCase()}
                 </div>
 
-                {/* Moldura dos Serviços (Linhas 15 a 36 da Planilha Base) */}
-                <div className="border-2 border-slate-900 p-4 space-y-4">
-                  {stages.map((stg, idx) => {
-                    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
-                    return (
-                      <div key={stg.id}>
-                        <div className="border border-b-0 border-slate-800 py-1 px-3 text-center font-extrabold text-xs text-[#FF0000] uppercase">
-                          {idx + 1}. {cleanTitle}
-                        </div>
-                        <div className="border border-slate-800 p-3 space-y-1.5">
-                          {stg.items.map((it) => (
-                            <div key={it.id} className="text-slate-900 text-xs leading-relaxed">
-                              {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                {/* Moldura Externa Espessa (B15:I36) + Caixa Interna Contínua (C17:H34) */}
+                <div className="border-2 border-black bg-white flex flex-col">
+                  <div className="px-6 py-4">
+                    <div className="border border-black px-4 py-3 space-y-5">
+                      {stages.map((stg, idx) => {
+                        const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+                        return (
+                          <div key={stg.id} className="space-y-2">
+                            <div className="text-center font-extrabold text-xs text-[#FF0000] uppercase">
+                              {idx + 1}. {cleanTitle}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                            <div className="space-y-1">
+                              {stg.items.map((it) => (
+                                <div key={it.id} className="text-black text-xs leading-snug">
+                                  {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="h-3 border-t border-black w-full" />
                 </div>
 
                 {/* Linha 37: Data Extensa com Dia da Semana no Rodapé */}
-                <div className="pt-2 text-center font-bold text-xs text-slate-900 lowercase">
+                <div className="pt-0.5 text-center font-bold text-xs text-black lowercase">
                   {(formData.dataExtensa || "").toLowerCase()}
                 </div>
               </div>
