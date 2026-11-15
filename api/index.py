@@ -1,3 +1,4 @@
+import os
 import json
 import base64
 import io
@@ -6,6 +7,59 @@ from http.server import BaseHTTPRequestHandler
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
+try:
+    from google import genai
+    from google.genai import types
+    HAS_GOOGLE_GENAI = True
+except Exception:
+    HAS_GOOGLE_GENAI = False
+
+def carregar_system_prompt() -> str:
+    caminhos = [
+        "system_prompt_seduc.md",
+        "../system_prompt_seduc.md",
+        os.path.join(os.path.dirname(__file__), "..", "system_prompt_seduc.md"),
+    ]
+    for caminho in caminhos:
+        if os.path.exists(caminho):
+            with open(caminho, "r", encoding="utf-8") as f:
+                return f.read()
+    return "Você é um engenheiro civil especialista da SEDUC-PI."
+
+def executar_gemini_seduc(solicitacao_usuario: str) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY não configurada no ambiente.")
+    if not HAS_GOOGLE_GENAI:
+        raise RuntimeError("Biblioteca google-genai não disponível.")
+    client = genai.Client(api_key=api_key)
+    system_instruction_text = carregar_system_prompt()
+    modelos_candidatos = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.8-flash"]
+    response = None
+    ultimo_erro = None
+    for modelo in modelos_candidatos:
+        try:
+            response = client.models.generate_content(
+                model=modelo,
+                contents=solicitacao_usuario,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction_text,
+                    temperature=0.2,
+                ),
+            )
+            break
+        except Exception as err:
+            ultimo_erro = err
+    if response is None:
+        raise ultimo_erro
+    return response.text or ""
 
 # Sinônimos e termos chave da Engenharia Civil para AI Matching Semântico
 SYNONYM_GROUPS = [
@@ -564,14 +618,36 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
         post_data = self.rfile.read(content_length)
+        raw_text = post_data.decode('utf-8', errors='replace')
         
         try:
-            body = json.loads(post_data.decode('utf-8'))
-        except Exception as e:
-            self.send_json(400, {"status": "error", "message": f"JSON inválido: {str(e)}"})
+            body = json.loads(raw_text)
+            if not isinstance(body, dict):
+                body = {"solicitacao": str(body)}
+        except Exception:
+            # Caso o cliente envie texto puro (padrão api/index.py do Ultimate Master Prompt)
+            try:
+                resposta_ia = executar_gemini_seduc(raw_text)
+            except Exception as e:
+                resposta_ia = f"Erro ao processar: {str(e)}"
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-type', 'text/plain; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(resposta_ia.encode('utf-8'))
             return
 
         action = body.get("action", "")
+
+        # 0. Rota de Geração de Memorial Descritivo SEDUC-PI via Gemini 2.5 Flash
+        if action == "gerar_descritivo" or ("solicitacao" in body and not action):
+            solicitacao = body.get("solicitacao") or body.get("userInput") or raw_text
+            try:
+                resposta_ia = executar_gemini_seduc(str(solicitacao))
+                self.send_json(200, {"status": "success", "text": resposta_ia})
+            except Exception as e:
+                self.send_json(500, {"status": "error", "message": f"Erro ao processar: {str(e)}"})
+            return
 
         # 1. Rota de Inspeção Inteligente do Contrato Base
         if action == "inspect_contract":

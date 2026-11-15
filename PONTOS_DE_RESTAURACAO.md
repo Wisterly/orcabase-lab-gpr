@@ -11,6 +11,33 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.049]
+- **Data/Hora:** 15/11/2026 03:49 (Horário Local)
+- **Tag Git:** `PR.049` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Rota Segura Gemini Next.js: https://orcabase-lab-gpr.vercel.app/api/gemini
+  - Rota Serverless Python: https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.049 (`ULTIMATE MASTER PROMPT & GUIA DE DEPLOY: ASSISTENTE TÉCNICO SEDUC-PI`):
+1. **Execução Integral dos 7 Passos de `ultimate_master_prompt_deployment_guide.md` e `gemini-code-1794724516703.py`:**
+   - **Passo 1 (`.env` e `.gitignore`):** Chave `GEMINI_API_KEY` configurada com segurança em `.env` e bloqueada no `.gitignore`.
+   - **Passo 2 (`vercel.json`):** Criado `vercel.json` na raiz compatibilizando o servidor Next.js com as funções Python Serverless (`api/*.py`).
+   - **Passo 3 (`system_prompt_seduc.md`):** Criado na raiz do repositório como fonte única da verdade (`Single Source of Truth`) para o Super System Prompt do Assistente Técnico SEDUC-PI.
+   - **Passo 4 (`api/index.py`, `api/gerar_descritivo.py` e `src/app/api/gemini/route.ts`):**
+     - `api/gerar_descritivo.py` atualizado conforme `gemini-code-1794724516703.py` (`carregar_system_prompt("system_prompt_seduc.md")` e `gerar_memorial_descritivo`).
+     - `api/index.py` integrado ao cliente oficial `google.genai` com carregamento dinâmico de `system_prompt_seduc.md` (preservando 100% das rotas `openpyxl`).
+     - `src/app/api/gemini/route.ts` conectado diretamente ao arquivo `system_prompt_seduc.md` com cascata inteligente de modelos Flash de baixa latência (`gemini-3.5-flash` / `gemini-3.6-flash` / `gemini-2.5-flash` / `gemini-3.8-flash`).
+   - **Passo 5 (`testar_gemini.py`):** Criado e validado localmente com sucesso (`🎉 Teste concluído com sucesso!`).
+   - **Passo 6 (`requirements.txt`):** Atualizado com `google-genai`, `python-dotenv` e `openpyxl>=3.1.2`.
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% intocados.
+
+---
+
 ### [PR.048]
 - **Data/Hora:** 15/11/2026 03:36 (Horário Local)
 - **Tag Git:** `PR.048` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)

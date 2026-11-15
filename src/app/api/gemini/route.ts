@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
 // ============================================================================
 // ROTA SEGURA DE BACKEND NEXT.JS (/api/gemini) — ENGENHEIRO CIVIL MASTER (V2)
 // Utiliza a variável de ambiente GEMINI_API_KEY do arquivo .env no servidor
-// e injeta o SYSTEM_PROMPT_COMPLETO com model="gemini-2.5-flash" e temperature=0.2
+// e carrega `system_prompt_seduc.md` com model="gemini-2.5-flash" e temperature=0.2
 // ============================================================================
 
 const SYSTEM_PROMPT_COMPLETO = `# SYSTEM PROMPT: ENGENHEIRO CIVIL MASTER & ORÇAMENTISTA (PADRÃO SEDUC-PI)
@@ -77,6 +79,21 @@ Ao final da resposta em texto formatado, inclua também o bloco JSON estruturado
 \`\`\`
 `;
 
+function carregarSystemPromptSeduc(): string {
+  try {
+    const promptPath = path.join(process.cwd(), "system_prompt_seduc.md");
+    if (fs.existsSync(promptPath)) {
+      const mdContent = fs.readFileSync(promptPath, "utf-8");
+      if (mdContent && mdContent.trim().length > 50) {
+        return `${mdContent.trim()}\n\nAo final da resposta em texto formatado, inclua também o bloco JSON estruturado delimitado por \`\`\`json com a chave "stages" para sincronização imediata da planilha e do PDF:\n\`\`\`json\n{\n  "stages": [\n    {\n      "title": "PISOS E CALÇADAS",\n      "items": [\n        { "description": "Executar demolição e remoção de placas de concreto danificadas das calçadas com regularização e compactação do subleito." }\n      ]\n    }\n  ]\n}\n\`\`\``;
+      }
+    }
+  } catch {
+    // Fallback para constante embutida
+  }
+  return SYSTEM_PROMPT_COMPLETO;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -113,7 +130,7 @@ ${stagesSummary}
 SOLICITAÇÃO DO USUÁRIO:
 ${userInput}`;
 
-    const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    const modelsToTry = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.8-flash"];
     let lastError = "";
 
     for (const modelName of modelsToTry) {
@@ -127,7 +144,7 @@ ${userInput}`;
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             systemInstruction: {
-              parts: [{ text: SYSTEM_PROMPT_COMPLETO }],
+              parts: [{ text: carregarSystemPromptSeduc() }],
             },
             contents: [
               {

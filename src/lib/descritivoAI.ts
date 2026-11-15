@@ -952,32 +952,39 @@ NOVA DEMANDA DO USUÁRIO (Texto / Áudio):
 
     // 2. Fallback direto se uma chave foi informada no cliente
     if (!rawText && apiKey && apiKey.trim()) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(
-        apiKey.trim()
-      )}`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: SUPER_PROMPT_MEMORIAL }],
-          },
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: contextMessage }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 3500,
-          },
-        }),
-      });
+      for (const directModel of ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.8-flash"]) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${directModel}:generateContent?key=${encodeURIComponent(
+            apiKey.trim()
+          )}`;
+          const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: SUPER_PROMPT_MEMORIAL }],
+              },
+              contents: [
+                {
+                  role: "user",
+                  parts: [{ text: contextMessage }],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.2,
+                maxOutputTokens: 3500,
+              },
+            }),
+          });
 
-      if (response.ok) {
-        const data = await response.json();
-        rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (response.ok) {
+            const data = await response.json();
+            rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            if (rawText) break;
+          }
+        } catch {
+          // tenta próximo modelo
+        }
       }
     }
 
