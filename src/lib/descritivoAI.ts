@@ -95,78 +95,80 @@ export interface ChatMessage {
 }
 
 // ----------------------------------------------------------------------------
-// SUPER PROMPT MESTRE — DIRETRIZES DA ENGENHARIA DE INFRAESTRUTURA ESCOLAR
+// SYSTEM PROMPT OFICIAL: ASSISTENTE TÉCNICO DE ORÇAMENTOS DE OBRAS ESCOLARES (SEDUC-PI)
 // ----------------------------------------------------------------------------
-export const SUPER_PROMPT_MEMORIAL = `
-# ESPECIFICAÇÃO TÉCNICA — ASSISTENTE DE MEMORIAIS DESCRITIVOS DE INFRAESTRUTURA ESCOLAR
-(Arquitetura Funcional e Manual Operacional da SEDUC / GPR)
+export const SUPER_PROMPT_MEMORIAL = `# SYSTEM PROMPT: ASSISTENTE TÉCNICO DE ORÇAMENTOS DE OBRAS ESCOLARES (SEDUC-PI)
 
-## 1. OBJETIVO E IDENTIDADE
-Você é um Assistente Técnico Especialista em engenharia e infraestrutura escolar.
-Sua função principal é receber demandas, descrições informais, listas de serviços e transcrições de áudio do usuário e convertê-las em um Memorial Descritivo de Serviços padronizado, técnico, conciso, organizado e pronto para orçamentos escolares e importação no Microsoft Excel.
-PRIORIDADE ABSOLUTA: CLAREZA + OBJETIVIDADE + PADRONIZAÇÃO + FIDELIDADE.
+## 1. PERSONA E DIRETRIZ CENTRAL
+Você é um Engenheiro Civil e Especialista em Orçamentação de Obras Públicas (Padrão SEDUC-PI). Sua única função é interpretar as solicitações textuais informadas pelo usuário (que podem ser informais, diretas ou conter pequenos erros de digitação) e transformá-las em descritivos técnicos de serviços **altamente personalizados, contextuais e aderentes ao que foi pedido**.
 
-## 2. PRINCÍPIOS OBRIGATÓRIOS
-1. FIDELIDADE: Não retirar nenhum serviço solicitado pelo usuário.
-2. NÃO INVENÇÃO: Não criar quantidades, medidas, espessuras, materiais, marcas, capacidades (ex: 10.000L), métodos executivos ou especificações que o usuário não tenha informado expressamente.
-3. ORGANIZAÇÃO: Agrupar serviços correlatos em grupos coerentes por ambiente ou especialidade.
-4. CLAREZA E CONCISÃO: Escrever de forma objetiva, técnica e compreensível, sem explicações longas quando uma frase técnica resolve.
-5. ATUALIZAÇÃO INTEGRAL (REGRA DE OURO): Sempre que o usuário acrescentar, excluir, corrigir ou reorganizar serviços, reapresente NOVAMENTE o descritivo COMPLETO, CONSOLIDADO E ATUALIZADO. Nunca entregue apenas o trecho alterado.
+---
 
-## 3. PADRÃO OBRIGATÓRIO DE FORMATAÇÃO
-### TÍTULOS:
-- Sempre em CAIXA ALTA (Ex: FORROS, PINTURA GERAL, BANHEIROS, COZINHA, ELÉTRICA, COBERTURA, ESQUADRIAS E FERRAGENS, LABORATÓRIO DE INFORMÁTICA, POÇO, ABASTECIMENTO DE ÁGUA, LIMPEZA PÓS-OBRA).
-- SEM numeração inicial (NUNCA usar "1. FORROS", "ITEM 01 - BANHEIROS").
-- Curtos e objetivos.
+## 2. REGRA CRÍTICA DE ANTI-VÍCIO (PROIBIÇÃO DE CÓPIA LITERAL)
+- **ATENÇÃO MÁXIMA:** Os exemplos fornecidos em manuais, prompts de treinamento ou histórico de conversas servem **exclusivamente** para ilustrar o formato de escrita (estilo, tamanho e gramática). 
+- **É ESTRITAMENTE PROIBIDO** copiar, colar ou reutilizar respostas padronizadas anteriores quando o usuário solicitar um novo serviço. 
+- Se o usuário alterar os elementos (ex: trocar "telhado geral" por "retelhamento pontual na cobertura do pátio" ou adicionar "vaso acoplado e revestimento"), você **DEVE** processar essas palavras específicas e redigir um descritivo novo, adaptado cirurgicamente ao novo escopo. NUNCA substitua o pedido real do usuário por um texto genérico salvo na memória.
 
-### REGRA ESPECIAL: ELÉTRICA (OBRIGATÓRIO)
-- Todo serviço de natureza elétrica, tomadas, interruptores, pontos de luz, luminárias, luminárias slim, quadros, disjuntores ou circuitos DEVE ser agrupado exclusivamente sob o título EXATO: ELÉTRICA.
-- NUNCA criar títulos como "INSTALAÇÕES ELÉTRICAS", "ILUMINAÇÃO" ou "ELÉTRICA E ILUMINAÇÃO".
-- Quando informado que luminárias slim serão instaladas em ambientes com forro novo, manter essa especificação exata dentro de ELÉTRICA.
-- Rede lógica/cabeamento de dados de laboratório pode permanecer em LABORATÓRIO DE INFORMÁTICA, mas a infraestrutura elétrica do laboratório vai para ELÉTRICA.
+---
 
-### DESCRIÇÕES DOS SERVIÇOS:
-- Cada serviço em uma linha independente.
-- SEM marcadores, bolinhas, traços (-) ou numeração inicial.
-- SEM linhas em branco entre serviços do mesmo grupo.
-- Iniciar preferencialmente com "Executar..." ou "Fornecer e instalar..." (quando envolver aquisição).
-- Texto em português correto, linguagem técnica sem floreios desnecessários.
-- Pronto para copiar e colar diretamente nas células da planilha orçamentária do Excel.
+## 3. PADRÃO DE FORMATAÇÃO E ESTRUTURA
+Siga rigorosamente estas regras de layout:
+1. **Categorias Principais:**
+   - Numeradas sequencialmente (1., 2., 3., 4., etc.).
+   - Títulos em **CAIXA ALTA** identificando claramente o ambiente ou a disciplina (ex: \`1. COBERTURA\`, \`2. BANHEIROS\`).
+2. **Subitens:**
+   - **NÃO** utilize marcadores, hífens, travessões ou numeração decimal (como 1.1, 1.2).
+   - Escreva o texto do subitem diretamente abaixo do título, iniciando com a **primeira letra em maiúscula** e o restante em **caixa baixa**.
+   - Comece preferencialmente com o verbo técnico adequado (ex: *Executar*, *Fornecer e instalar*, *Substituir*, *Recuperar*).
+   - Mantenha os textos curtos, diretos e objetivos, prontos para planilha orçamentária.
 
-## 4. MODELOS DE REDAÇÃO POR ESPECIALIDADE
-- FORROS: "Executar instalação de forro nas salas de aula da unidade escolar.", "Executar substituição dos elementos de sustentação danificados, quando necessário." (Não presumir material se não informado).
-- PINTURA GERAL: "Executar pintura das áreas internas e externas da unidade escolar, incluindo paredes, muros e fachada."
-- BANHEIROS: Revisão hidrossanitária, reparo ou substituição de torneiras, desobstrução e reparos pontuais em louças/metais especificados.
-- COZINHA: Casa de gás externa, instalação de exaustores/coifas, adequações, bancadas, pias e prateleiras.
-- COBERTURA: Retelhamento, substituição de telhas quebradas, correção de goteiras e infiltrações, reparo na trama de madeira/metálica.
-- ESQUADRIAS E FERRAGENS: Revisão de portas e esquadrias, trincos, fechaduras e dobradiças danificadas.
-- LABORATÓRIO DE INFORMÁTICA: Adaptação de sala, bancadas, cabeamento de lógica (elétrica em ELÉTRICA).
-- DRENAGEM E ACESSOS: Construção de passagem de acesso com sistema de drenagem e grade/grelha metálica.
-- POÇO E ABASTECIMENTO: Quando solicitado separadamente, manter POÇO e ABASTECIMENTO DE ÁGUA.
-- LIMPEZA PÓS-OBRA: "Executar limpeza geral da área de intervenção após a conclusão dos serviços, com remoção dos resíduos gerados e entrega dos ambientes em condições de uso."
+---
 
-## 5. SAÍDA DIRETA E ESTRUTURAÇÃO JSON
-Apresente DIRETAMENTE o descritivo no texto (sem introduções nem conversas antes):
-### FORROS
-Executar instalação de forro nas salas de aula da unidade escolar.
+## 4. REGRAS TÉCNICAS OBRIGATÓRIAS (AUTOMAÇÕES DE ESCOPO)
+Sempre que o usuário citar determinadas palavras-chave, você deve incluir obrigatoriamente os complementos técnicos associados, adaptando-os ao contexto:
+- **Água / Hidráulica / Hidrossanitário / Poço Tubular:** Incluir obrigatoriamente ao final do bloco o subitem:
+  \`Executar teste de estanqueidade e funcionamento das instalações hidráulicas.\`
+- **Reservatório / Caixa d'Água:** Incluir obrigatoriamente os subitens:
+  \`Executar instalação de base pré-moldada para reservatório de água.\`
+  \`Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar.\`
 
-### ELÉTRICA
-Executar revisão geral das instalações elétricas, incluindo tomadas, interruptores e iluminação.
+---
 
-E no final da resposta, inclua OBRIGATORIAMENTE o bloco JSON estruturado:
+## 5. EXEMPLO DE RACIOCÍNIO CORRETO (MENTALIDADE ESPERADA)
+* **O que o usuário diz:** "retalhamento no telha na cobertura do pátio / trocar os vasos por acoplado nos banheiros e Revestimento"
+* **Como você deve pensar (Raciocínio Semântico):** 
+  - O usuário não pediu revisão geral da escola inteira. Ele especificou a *cobertura do pátio* com *retelhamento/substituição pontual*. Logo, o texto deve refletir o pátio e o retelhamento.
+  - Nos banheiros, ele especificou explicitamente a *troca de vasos por modelo com caixa acoplada* e a execução de *revestimento*. Logo, devo ignorar termos genéricos como "torneiras" ou "revisão geral" e focar estritamente em vaso acoplado, revestimento cerâmico e conexões/instalações hidráulicas inerentes.
+* **Resultado gerado:**
+  1. COBERTURA
+  Executar substituição e retelhamento pontual na cobertura do pátio para correção de infiltrações e alinhamento do telhado.
+  
+  2. BANHEIROS
+  Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis.
+  Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento.
+  Executar teste de estanqueidade e funcionamento das instalações hidráulicas.
+
+---
+
+## 6. INSTRUÇÃO DE EXECUÇÃO E ESTRUTURAÇÃO JSON
+A partir de agora, analise profundamente cada termo inserido pelo usuário. Extraia os locais, os materiais e os verbos de ação solicitados, monte os itens de forma inédita e personalizada baseada estritamente no prompt atual, mantendo o padrão formal, enxuto e sem conversas paralelas ou introduções longas.
+
+Ao final da resposta em texto puro, inclua OBRIGATORIAMENTE o bloco JSON estruturado para sincronização da planilha e do PDF:
 \`\`\`json
 {
   "stages": [
     {
-      "title": "FORROS",
+      "title": "COBERTURA",
       "items": [
-        { "description": "Executar instalação de forro nas salas de aula da unidade escolar." }
+        { "description": "Executar substituição e retelhamento pontual na cobertura do pátio para correção de infiltrações e alinhamento do telhado." }
       ]
     },
     {
-      "title": "ELÉTRICA",
+      "title": "BANHEIROS",
       "items": [
-        { "description": "Executar revisão geral das instalações elétricas, incluindo tomadas, interruptores e iluminação." }
+        { "description": "Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis." },
+        { "description": "Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento." },
+        { "description": "Executar teste de estanqueidade e funcionamento das instalações hidráulicas." }
       ]
     }
   ]
@@ -175,289 +177,564 @@ E no final da resposta, inclua OBRIGATORIAMENTE o bloco JSON estruturado:
 `;
 
 // ----------------------------------------------------------------------------
-// Ontologia da Engenharia de Infraestrutura Escolar (Classificação Local)
+// Motor Semântico Contextual Sênior (Anti-Vício / Raciocínio Personalizado SEDUC-PI)
+// Interpreta cláusula por cláusula o pedido real do usuário (incluindo erros de
+// digitação como "retalhamento no telha", locais específicos como "do pátio",
+// "nos banheiros", e aplica as Automações de Escopo obrigatórias da SEDUC-PI).
 // ----------------------------------------------------------------------------
-interface KnowledgeDiscipline {
-  keywords: string[];
-  stageTitle: string;
-  defaultItemsGenerator: (input: string) => string[];
+
+function extractSpecificLocation(clause: string): string {
+  const lower = clause.toLowerCase();
+  if (lower.includes("pátio") || lower.includes("patio")) return "do pátio";
+  if (lower.includes("refeitório") || lower.includes("refeitorio")) return "do refeitório";
+  if (lower.includes("quadra")) return "da quadra poliesportiva";
+  if (lower.includes("diretoria")) return "da diretoria";
+  if (lower.includes("secretaria")) return "da secretaria";
+  if (lower.includes("biblioteca")) return "da biblioteca";
+  if (lower.includes("corredor") || lower.includes("circulação") || lower.includes("circulacao")) return "dos corredores e áreas de circulação";
+  if (lower.includes("sala de aula") || lower.includes("salas de aula")) return "das salas de aula";
+  if (lower.includes("auditório") || lower.includes("auditorio")) return "do auditório";
+  if (lower.includes("cozinha")) return "da cozinha";
+  if (lower.includes("fachada")) return "da fachada";
+  if (lower.includes("muro")) return "do muro";
+  return "";
 }
 
-export const CIVIL_ONTOLOGY: KnowledgeDiscipline[] = [
-  {
-    keywords: ["forro", "pvc", "gesso", "desplacamento", "forros"],
-    stageTitle: "FORROS",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar instalação de forro em todas as salas de aula da unidade escolar.");
-      if (text.includes("troca") || text.includes("substitu") || text.includes("danific") || text.includes("caído")) {
-        items.push("Executar substituição dos trechos de forro danificados ou comprometidos por novos forros.");
+function normalizeSentenceCase(text: string): string {
+  const cleaned = text.replace(/^[\s•\-\*\d\.\)]+\s*/, "").trim();
+  if (!cleaned) return "";
+  const withDot = cleaned.endsWith(".") ? cleaned : `${cleaned}.`;
+  return withDot.charAt(0).toUpperCase() + withDot.slice(1);
+}
+
+/**
+ * Garante as Regras Técnicas Obrigatórias (Automações de Escopo - Seção 4 do System Prompt)
+ */
+export function enforceMandatoryScopeAutomations(
+  stages: DescritivoStage[],
+  rawUserInput: string
+): DescritivoStage[] {
+  const fullLower = rawUserInput.toLowerCase();
+
+  return stages.map((stg, idx) => {
+    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    const items = stg.items.map((it, iIdx) => ({
+      ...it,
+      itemNumber: `${iIdx + 1}`,
+      description: normalizeSentenceCase(it.description),
+    }));
+
+    const stageTextCombined = `${cleanTitle} ${items.map((i) => i.description).join(" ")}`.toLowerCase();
+
+    // Regra 4.2: Reservatório / Caixa d'Água
+    const isReservatorio =
+      stageTextCombined.includes("reservatório") ||
+      stageTextCombined.includes("reservatorio") ||
+      stageTextCombined.includes("caixa d'água") ||
+      stageTextCombined.includes("caixa d'agua") ||
+      stageTextCombined.includes("caixa dagua") ||
+      stageTextCombined.includes("caixa de água") ||
+      (cleanTitle.includes("ABASTECIMENTO") && (fullLower.includes("caixa") || fullLower.includes("reservat")));
+
+    if (isReservatorio) {
+      const baseItem = "Executar instalação de base pré-moldada para reservatório de água.";
+      const caixaItem = "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar.";
+
+      if (!items.some((i) => i.description.toLowerCase().includes("base pré-moldada") || i.description.toLowerCase().includes("base pre-moldada"))) {
+        items.push({
+          id: `auto-res-base-${Date.now()}-${idx}`,
+          itemNumber: `${items.length + 1}`,
+          description: baseItem,
+        });
       }
-      if (text.includes("revis") || text.includes("fixa")) {
-        items.push("Executar revisão e fixação dos forros existentes nos demais ambientes.");
+      if (!items.some((i) => i.description.toLowerCase().includes("10.000 l") || i.description.toLowerCase().includes("10000 l") || i.description.toLowerCase().includes("capacidade mínima de 10.000"))) {
+        items.push({
+          id: `auto-res-cx-${Date.now()}-${idx}`,
+          itemNumber: `${items.length + 1}`,
+          description: caixaItem,
+        });
       }
-      return items;
-    },
-  },
-  {
-    keywords: ["pintura", "pintar", "tinta", "parede", "sala", "muro", "fachada", "látex", "acrílica", "selador"],
-    stageTitle: "PINTURA GERAL",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar pintura geral da unidade escolar, contemplando as áreas internas e externas, incluindo paredes, muro e fachada.");
-      if (text.includes("esquadria") || text.includes("grade") || text.includes("portão") || text.includes("porta")) {
-        items.push("Executar pintura em esmalte sintético sobre esquadrias metálicas e portas de madeira.");
+    }
+
+    // Regra 4.1: Água / Hidráulica / Hidrossanitário / Poço Tubular / Banheiros com intervenção hidráulica
+    const isHidraulica =
+      stageTextCombined.includes("hidráulic") ||
+      stageTextCombined.includes("hidraulic") ||
+      stageTextCombined.includes("hidrossanit") ||
+      stageTextCombined.includes("poço") ||
+      stageTextCombined.includes("poco") ||
+      stageTextCombined.includes("água") ||
+      stageTextCombined.includes("agua") ||
+      stageTextCombined.includes("vaso") ||
+      stageTextCombined.includes("bacia sanit") ||
+      stageTextCombined.includes("torneira") ||
+      stageTextCombined.includes("tubulação") ||
+      stageTextCombined.includes("registro") ||
+      cleanTitle.includes("BANHEIRO") ||
+      cleanTitle.includes("HIDRÁULICA") ||
+      cleanTitle.includes("HIDROSSANIT") ||
+      cleanTitle.includes("POÇO") ||
+      cleanTitle.includes("ABASTECIMENTO");
+
+    if (isHidraulica) {
+      const estanqueidadeText = "Executar teste de estanqueidade e funcionamento das instalações hidráulicas.";
+      const existingIdx = items.findIndex((i) =>
+        i.description.toLowerCase().includes("teste de estanqueidade")
+      );
+      if (existingIdx === -1) {
+        items.push({
+          id: `auto-hid-est-${Date.now()}-${idx}`,
+          itemNumber: `${items.length + 1}`,
+          description: estanqueidadeText,
+        });
+      } else if (existingIdx !== items.length - 1) {
+        // Garante que fique ao final do bloco
+        const [removed] = items.splice(existingIdx, 1);
+        items.push(removed);
       }
-      return items;
-    },
-  },
-  {
-    keywords: ["vaso", "torneira", "tubo", "hidráulica", "hidraulica", "esgoto", "sanitário", "banheiro", "desentup", "desobstru"],
-    stageTitle: "BANHEIROS",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar revisão geral das instalações hidrossanitárias dos banheiros da unidade escolar.");
-      if (text.includes("torneira") || text.includes("troca") || text.includes("vazamento")) {
-        items.push("Executar substituição das torneiras danificadas, com adequação dos pontos hidráulicos.");
-      }
-      if (text.includes("vaso") || text.includes("desentup") || text.includes("desobstru")) {
-        items.push("Executar desobstrução e revisão das bacias sanitárias dos banheiros.");
-      }
-      return items;
-    },
-  },
-  {
-    keywords: ["gás", "gas", "exaustor", "cozinha", "bancada", "refeitório", "refeitorio", "fogão"],
-    stageTitle: "COZINHA",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      if (text.includes("gás") || text.includes("gas") || text.includes("abrigo")) {
-        items.push("Executar construção de casa de gás na área externa da cozinha, incluindo adequação do espaço para acomodação dos recipientes.");
-      }
-      if (text.includes("exaust") || text.includes("coifa") || text.includes("ventila")) {
-        items.push("Executar instalação de exaustores na cozinha, incluindo as adequações necessárias ao funcionamento.");
-      }
-      if (text.includes("bancada") || text.includes("pia") || text.includes("revest")) {
-        items.push("Executar adequações nas bancadas e pias da cozinha, com aplicação de revestimento cerâmico lavável.");
-      }
-      if (items.length === 0) {
-        items.push("Executar adequações físicas gerais na cozinha da unidade escolar.");
-      }
-      return items;
-    },
-  },
-  {
-    keywords: [
-      "elétrica", "eletrica", "luz", "lâmpada", "lampada", "led", "fio", "cabo",
-      "tomada", "interruptor", "disjuntor", "quadro", "qdc", "slim", "iluminação",
-      "iluminacao", "luminária", "luminaria", "chuveiro"
-    ],
-    stageTitle: "ELÉTRICA",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar revisão geral das instalações elétricas da unidade escolar, incluindo tomadas, interruptores e iluminação, com reparo ou substituição dos componentes danificados.");
-      if (text.includes("slim") || text.includes("forro") || text.includes("luminár") || text.includes("luminar") || text.includes("painel")) {
-        items.push("Executar instalação de luminárias do tipo slim nos novos ambientes que receberão forro.");
-      }
-      if (text.includes("quadro") || text.includes("disjuntor") || text.includes("proteção") || text.includes("qdc")) {
-        items.push("Executar adequação dos quadros de distribuição de circuitos, com instalação de proteções adequadas e balanceamento de cargas.");
-      }
-      if (text.includes("chuveiro") || text.includes("banho")) {
-        items.push("Executar adequação de circuito elétrico e instalação elétrica para chuveiros.");
-      }
-      return items;
-    },
-  },
-  {
-    keywords: ["telhado", "cobertura", "telha", "goteira", "infiltra", "ripa", "caibro", "terça", "madeira", "calha", "rufo", "retelhamento"],
-    stageTitle: "COBERTURA",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar retelhamento da unidade escolar, com substituição das telhas quebradas e correção dos pontos de infiltração e goteiras.");
-      if (text.includes("madeira") || text.includes("estrutura") || text.includes("terça") || text.includes("caibro")) {
-        items.push("Executar revisão da estrutura da cobertura, com recuperação dos trechos comprometidos.");
-      }
-      if (text.includes("calha") || text.includes("rufo") || text.includes("pluvial")) {
-        items.push("Executar revisão e substituição de calhas e rufos metálicos com bocal de descida.");
-      }
-      return items;
-    },
-  },
-  {
-    keywords: ["porta", "janela", "vidro", "fechadura", "esquadria", "grade", "trinco", "ferragens", "dobradiça"],
-    stageTitle: "ESQUADRIAS E FERRAGENS",
-    defaultItemsGenerator: () => [
-      "Executar revisão das portas e esquadrias de toda a unidade escolar, incluindo trincos e fechaduras, com reparo ou substituição dos componentes danificados.",
-      "Executar substituição de vidros quebrados ou danificados nas janelas das salas de aula.",
-    ],
-  },
-  {
-    keywords: ["informática", "informatica", "computador", "laboratório", "laboratorio", "rede", "lógica", "logica"],
-    stageTitle: "LABORATÓRIO DE INFORMÁTICA",
-    defaultItemsGenerator: () => [
-      "Executar adaptação de sala de aula para implantação de laboratório de informática.",
-      "Executar construção e instalação de bancadas, incluindo revestimento das superfícies.",
-      "Executar instalação de cabeamento de lógica e pontos de rede para atendimento aos equipamentos do laboratório.",
-    ],
-  },
-  {
-    keywords: ["piso", "pavimento", "cerâmica", "ceramica", "contrapiso", "lajota", "quebrado"],
-    stageTitle: "PISOS E PAVIMENTAÇÃO",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar recuperação e regularização do piso danificado da unidade escolar, com recomposição e nivelamento dos trechos quebrados.");
-      if (text.includes("cerâmica") || text.includes("ceramica") || text.includes("lajota")) {
-        items.push("Executar assentamento de piso cerâmico com rejuntamento e acabamento.");
-      }
-      return items;
-    },
-  },
-  {
-    keywords: ["calçada", "calcada", "passeio", "acesso", "rampa", "drenagem", "sarjeta", "canaleta", "passagem", "externa"],
-    stageTitle: "CALÇADAS E ÁREAS EXTERNAS",
-    defaultItemsGenerator: (text) => {
-      const items: string[] = [];
-      items.push("Executar recuperação e construção de novas calçadas de proteção e circulação da unidade escolar em concreto desempenado.");
-      if (text.includes("drenag") || text.includes("sarjeta") || text.includes("canaleta") || text.includes("grade")) {
-        items.push("Executar construção de sistema de drenagem pluvial com instalação de grade metálica para proteção e passagem de pedestres.");
-      }
-      return items;
-    },
-  },
-  {
-    keywords: ["estacionamento", "moto", "carro", "veículo", "veiculo", "brita", "garagem"],
-    stageTitle: "ESTACIONAMENTO",
-    defaultItemsGenerator: () => [
-      "Executar adequação do estacionamento com nivelamento, regularização e aplicação de colchão de brita.",
-      "Executar revisão e pintura da estrutura e portões de acesso do estacionamento.",
-    ],
-  },
-  {
-    keywords: ["auditório", "auditorio", "palco"],
-    stageTitle: "AUDITÓRIO",
-    defaultItemsGenerator: () => [
-      "Executar adequações no auditório, incluindo rampas de acesso e revisão das esquadrias.",
-    ],
-  },
-  {
-    keywords: ["dormitório", "dormitorio", "alojamento", "rede", "armador"],
-    stageTitle: "DORMITÓRIOS",
-    defaultItemsGenerator: () => [
-      "Executar instalação de armadores de rede reforçados nas paredes dos dormitórios.",
-      "Executar revisão geral hidrossanitária dos banheiros dos dormitórios.",
-    ],
-  },
-  {
-    keywords: ["limpeza", "entulho", "bota-fora", "resíduo", "residuos", "pós-obra", "pos-obra"],
-    stageTitle: "LIMPEZA PÓS-OBRA",
-    defaultItemsGenerator: () => [
-      "Executar limpeza geral da obra, incluindo remoção e retirada de todo o entulho gerado pelos serviços.",
-    ],
-  },
-  {
-    keywords: ["geral", "diversos", "serviços gerais"],
-    stageTitle: "SERVIÇOS GERAIS",
-    defaultItemsGenerator: () => [
-      "Executar serviços gerais de manutenção predial conforme alinhamento com a fiscalização.",
-    ],
-  },
-];
+    }
+
+    return {
+      ...stg,
+      stageCode: `${idx + 1}`,
+      title: cleanTitle,
+      items,
+    };
+  });
+}
 
 // ----------------------------------------------------------------------------
-// Processador de IA Local (Engenharia Civil de Infraestrutura Escolar)
+// Processador Semântico Contextual Local (Padrão SEDUC-PI — Zero Cópia Literal)
 // ----------------------------------------------------------------------------
 export function generateLocalSeniorDescription(
   userInput: string,
   existingStages: DescritivoStage[] = []
 ): DescritivoStage[] {
-  const normalized = userInput.toLowerCase();
+  const normalized = userInput.toLowerCase().trim();
   const stagesMap = new Map<string, DescritivoStage>();
 
-  // 1. Carrega as etapas existentes preservando o contexto do orçamento atual
+  // 1. Carrega etapas existentes (se o usuário estiver refinando o memorial atual)
   existingStages.forEach((stg) => {
-    stagesMap.set(stg.title.toUpperCase(), {
+    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    stagesMap.set(cleanTitle, {
       id: stg.id,
       stageCode: stg.stageCode,
-      title: stg.title.toUpperCase(),
+      title: cleanTitle,
       items: [...stg.items],
     });
   });
 
   // 2. Trata comandos explícitos de remoção
-  if (normalized.includes("tire") || normalized.includes("remova") || normalized.includes("exclua")) {
+  if (normalized.includes("tire") || normalized.includes("remova") || normalized.includes("exclua") || normalized.includes("retire")) {
     if (normalized.includes("elétrica") || normalized.includes("eletrica")) stagesMap.delete("ELÉTRICA");
-    if (normalized.includes("pintura")) stagesMap.delete("PINTURA GERAL");
+    if (normalized.includes("pintura")) {
+      stagesMap.delete("PINTURA");
+      stagesMap.delete("PINTURA GERAL");
+    }
     if (normalized.includes("forro")) stagesMap.delete("FORROS");
     if (normalized.includes("cobertura") || normalized.includes("telhado")) stagesMap.delete("COBERTURA");
     if (normalized.includes("banheiro")) stagesMap.delete("BANHEIROS");
     if (normalized.includes("cozinha")) stagesMap.delete("COZINHA");
+    if (normalized.includes("calçada") || normalized.includes("calcada")) {
+      stagesMap.delete("CALÇADAS");
+      stagesMap.delete("CALÇADAS E ÁREAS EXTERNAS");
+    }
   }
 
-  // 3. Identifica as disciplinas demandadas
-  CIVIL_ONTOLOGY.forEach((discipline) => {
-    const hasMatch = discipline.keywords.some((kw) => normalized.includes(kw));
-    if (hasMatch) {
-      const generatedItems = discipline.defaultItemsGenerator(normalized);
-      const stageTitle = discipline.stageTitle.toUpperCase();
+  const addStageItem = (rawTitle: string, itemDesc: string) => {
+    const stageTitle = rawTitle.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    const formattedDesc = normalizeSentenceCase(itemDesc);
+    if (!formattedDesc) return;
 
-      if (stagesMap.has(stageTitle)) {
-        // Se já existe, adiciona novos itens evitando repetições exatas
-        const existing = stagesMap.get(stageTitle)!;
-        generatedItems.forEach((newItemText) => {
-          const isDuplicate = existing.items.some((it) => it.description.toLowerCase().trim() === newItemText.toLowerCase().trim());
-          if (!isDuplicate) {
-            existing.items.push({
-              id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-              itemNumber: `${existing.items.length + 1}`,
-              description: newItemText,
-            });
-          }
-        });
-      } else {
-        // Cria nova etapa sem numeração no título
-        stagesMap.set(stageTitle, {
-          id: `stg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-          stageCode: `${stagesMap.size + 1}`,
-          title: stageTitle,
-          items: generatedItems.map((text, idx) => ({
-            id: `it-${Date.now()}-${idx}`,
-            itemNumber: `${idx + 1}`,
-            description: text,
-          })),
-        });
+    if (!stagesMap.has(stageTitle)) {
+      stagesMap.set(stageTitle, {
+        id: `stg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        stageCode: `${stagesMap.size + 1}`,
+        title: stageTitle,
+        items: [],
+      });
+    }
+    const stg = stagesMap.get(stageTitle)!;
+    const isDup = stg.items.some(
+      (it) => it.description.toLowerCase().trim() === formattedDesc.toLowerCase().trim()
+    );
+    if (!isDup) {
+      stg.items.push({
+        id: `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        itemNumber: `${stg.items.length + 1}`,
+        description: formattedDesc,
+      });
+    }
+  };
+
+  // 3. Divide a solicitação do usuário em cláusulas semânticas (por /, ;, quebras de linha, vírgulas longas)
+  const clauses = userInput
+    .split(/[\/;\n]+|(?:\s+-\s+)/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+
+  for (const clause of clauses) {
+    const cLower = clause.toLowerCase();
+    const loc = extractSpecificLocation(clause);
+    let matchedInClause = false;
+
+    // --- COBERTURA / TELHADO / RETELHAMENTO / GOTEIRAS ---
+    if (
+      cLower.includes("telha") ||
+      cLower.includes("cobertura") ||
+      cLower.includes("retelhamento") ||
+      cLower.includes("retalhamento") ||
+      cLower.includes("goteira") ||
+      cLower.includes("infiltra") ||
+      cLower.includes("calha") ||
+      cLower.includes("rufo")
+    ) {
+      matchedInClause = true;
+      const targetLoc = loc ? `na cobertura ${loc}` : "na cobertura da unidade escolar";
+
+      if (cLower.includes("retelhamento") || cLower.includes("retalhamento") || cLower.includes("goteira") || cLower.includes("infiltra") || cLower.includes("telha")) {
+        addStageItem(
+          "COBERTURA",
+          `Executar substituição e retelhamento pontual ${targetLoc} para correção de infiltrações e alinhamento do telhado.`
+        );
+      }
+      if (cLower.includes("madeira") || cLower.includes("estrutura") || cLower.includes("caibro") || cLower.includes("ripa") || cLower.includes("terça")) {
+        addStageItem(
+          "COBERTURA",
+          `Executar revisão e substituição de peças danificadas do madeiramento ${targetLoc}.`
+        );
+      }
+      if (cLower.includes("calha") || cLower.includes("rufo")) {
+        addStageItem(
+          "COBERTURA",
+          `Executar instalação e revisão de calhas e rufos metálicos ${targetLoc} para escoamento pluvial.`
+        );
       }
     }
-  });
 
-  // Se nenhum serviço específico for detectado, adiciona ao menos SERVIÇOS GERAIS
-  if (stagesMap.size === 0) {
-    stagesMap.set("SERVIÇOS GERAIS", {
-      id: `stg-default-${Date.now()}`,
-      stageCode: "1",
-      title: "SERVIÇOS GERAIS",
-      items: [
-        {
-          id: `it-def-1`,
-          itemNumber: "1",
-          description: "Executar serviços especializados de manutenção e adequação predial na unidade escolar.",
-        },
-      ],
-    });
+    // --- BANHEIROS / VASOS / ACOPLADO / REVESTIMENTO EM BANHEIRO / TORNEIRAS / HIDROSSANITÁRIO ---
+    if (
+      cLower.includes("banheiro") ||
+      cLower.includes("vaso") ||
+      cLower.includes("acoplado") ||
+      cLower.includes("acoplada") ||
+      cLower.includes("bacia") ||
+      cLower.includes("mictório") ||
+      cLower.includes("mictorio") ||
+      cLower.includes("lavatório") ||
+      cLower.includes("lavatorio") ||
+      cLower.includes("torneira") ||
+      cLower.includes("descarga") ||
+      cLower.includes("hidrossanit")
+    ) {
+      matchedInClause = true;
+      let addedSpecificBathroomItem = false;
+
+      if (cLower.includes("vaso") || cLower.includes("acoplad") || cLower.includes("bacia")) {
+        addedSpecificBathroomItem = true;
+        if (cLower.includes("acoplad")) {
+          addStageItem(
+            "BANHEIROS",
+            "Executar substituição de vasos sanitários convencionais por modelos com caixa acoplada, incluindo conexões e engates flexíveis."
+          );
+        } else {
+          addStageItem(
+            "BANHEIROS",
+            "Executar substituição e assentamento de vasos sanitários nos banheiros, incluindo conexões e vedação."
+          );
+        }
+      }
+
+      if (cLower.includes("revestimento") || cLower.includes("cerâmica") || cLower.includes("ceramica") || cLower.includes("azulejo")) {
+        addedSpecificBathroomItem = true;
+        addStageItem(
+          "BANHEIROS",
+          "Executar aplicação de revestimento cerâmico nas paredes dos banheiros com assentamento e rejuntamento."
+        );
+      }
+
+      if (cLower.includes("torneira") || cLower.includes("registro") || cLower.includes("lavatório") || cLower.includes("lavatorio") || cLower.includes("pia")) {
+        addedSpecificBathroomItem = true;
+        addStageItem(
+          "BANHEIROS",
+          "Fornecer e instalar torneiras e metais sanitários nos lavatórios dos banheiros."
+        );
+      }
+
+      if (cLower.includes("forro")) {
+        addedSpecificBathroomItem = true;
+        addStageItem(
+          "BANHEIROS",
+          "Executar recomposição e instalação de forro nos banheiros."
+        );
+      }
+
+      if (cLower.includes("porta") || cLower.includes("fechadura") || cLower.includes("trinco")) {
+        addedSpecificBathroomItem = true;
+        addStageItem(
+          "BANHEIROS",
+          "Executar revisão e substituição de portas, trincos e ferragens das cabines dos banheiros."
+        );
+      }
+
+      if (!addedSpecificBathroomItem) {
+        addStageItem(
+          "BANHEIROS",
+          "Executar revisão e adequação das instalações hidrossanitárias dos banheiros da unidade escolar."
+        );
+      }
+    }
+
+    // --- RESERVATÓRIO / CAIXA D'ÁGUA / ABASTECIMENTO DE ÁGUA / POÇO ---
+    if (
+      cLower.includes("reservatório") ||
+      cLower.includes("reservatorio") ||
+      cLower.includes("caixa d'água") ||
+      cLower.includes("caixa d'agua") ||
+      cLower.includes("caixa dagua") ||
+      cLower.includes("caixa de água") ||
+      cLower.includes("abastecimento") ||
+      cLower.includes("poço") ||
+      cLower.includes("poco") ||
+      (cLower.includes("água") && !cLower.includes("goteira")) ||
+      (cLower.includes("hidráulica") || cLower.includes("hidraulica"))
+    ) {
+      matchedInClause = true;
+      const stageName =
+        cLower.includes("poço") || cLower.includes("poco")
+          ? "POÇO TUBULAR E ABASTECIMENTO"
+          : cLower.includes("reservat") || cLower.includes("caixa")
+          ? "RESERVATÓRIO E ABASTECIMENTO DE ÁGUA"
+          : "INSTALAÇÕES HIDRÁULICAS";
+
+      if (cLower.includes("poço") || cLower.includes("poco")) {
+        addStageItem(
+          stageName,
+          "Executar manutenção e adequação da rede de recalque e interligação do poço tubular da unidade escolar."
+        );
+      }
+      if (cLower.includes("reservat") || cLower.includes("caixa")) {
+        addStageItem(
+          stageName,
+          "Executar instalação de base pré-moldada para reservatório de água."
+        );
+        addStageItem(
+          stageName,
+          "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar."
+        );
+      }
+      if (cLower.includes("tubula") || cLower.includes("rede") || cLower.includes("hidráulic") || cLower.includes("hidraulic")) {
+        addStageItem(
+          stageName,
+          "Executar adequação da tubulação e conexões de distribuição de água fria."
+        );
+      }
+    }
+
+    // --- CALÇADAS / PASSEIO / ACESSO / DRENAGEM ---
+    if (
+      cLower.includes("calçada") ||
+      cLower.includes("calcada") ||
+      cLower.includes("passeio") ||
+      cLower.includes("rampa") ||
+      cLower.includes("drenagem") ||
+      cLower.includes("canaleta")
+    ) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " no entorno da unidade escolar";
+      if (cLower.includes("calçada") || cLower.includes("calcada") || cLower.includes("passeio")) {
+        addStageItem(
+          "CALÇADAS",
+          `Executar construção e recomposição de calçadas em concreto desempenado${locText}, com regularização da base e juntas de dilatação.`
+        );
+      }
+      if (cLower.includes("rampa") || cLower.includes("acessibilidade")) {
+        addStageItem(
+          "CALÇADAS",
+          "Executar adequação de rampa de acessibilidade com piso tátil e acabamento antiderrapante."
+        );
+      }
+      if (cLower.includes("drenagem") || cLower.includes("canaleta") || cLower.includes("grelha")) {
+        addStageItem(
+          "DRENAGEM",
+          "Executar canaleta de drenagem pluvial com grelha para escoamento de águas superficiais."
+        );
+      }
+    }
+
+    // --- PISOS / CONTRAPISO / REVESTIMENTO FORA DE BANHEIRO ---
+    if (
+      cLower.includes("piso") ||
+      cLower.includes("contrapiso") ||
+      cLower.includes("lajota") ||
+      cLower.includes("porcelanato") ||
+      (cLower.includes("revestimento") && !cLower.includes("banheiro"))
+    ) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " nos ambientes indicados";
+      if (cLower.includes("quebrado") || cLower.includes("recuper") || cLower.includes("danific") || cLower.includes("reparo")) {
+        addStageItem(
+          "PISOS E REVESTIMENTOS",
+          `Recuperar os trechos de piso quebrado${locText}, com demolição das partes soltas, regularização de contrapiso e recomposição do acabamento.`
+        );
+      } else if (cLower.includes("cerâmic") || cLower.includes("ceramic") || cLower.includes("porcelanato")) {
+        addStageItem(
+          "PISOS E REVESTIMENTOS",
+          `Executar assentamento de revestimento cerâmico${locText}, incluindo argamassa colante e rejuntamento.`
+        );
+      } else {
+        addStageItem(
+          "PISOS E REVESTIMENTOS",
+          `Executar regularização e recomposição de piso${locText} para nivelamento da superfície.`
+        );
+      }
+    }
+
+    // --- FORROS ---
+    if ((cLower.includes("forro") || cLower.includes("pvc") || cLower.includes("gesso")) && !cLower.includes("banheiro")) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " nas salas de aula e ambientes solicitados";
+      addStageItem(
+        "FORROS",
+        `Executar instalação e recomposição de forro${locText}, incluindo estrutura de fixação e acabamento perimetral.`
+      );
+    }
+
+    // --- ELÉTRICA / ILUMINAÇÃO / QUADROS / TOMADAS ---
+    if (
+      cLower.includes("elétrica") ||
+      cLower.includes("eletrica") ||
+      cLower.includes("tomada") ||
+      cLower.includes("interruptor") ||
+      cLower.includes("luminária") ||
+      cLower.includes("luminaria") ||
+      cLower.includes("iluminação") ||
+      cLower.includes("iluminacao") ||
+      cLower.includes("disjuntor") ||
+      cLower.includes("quadro") ||
+      cLower.includes("fiação") ||
+      cLower.includes("fiacao") ||
+      cLower.includes("cabo")
+    ) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " da unidade escolar";
+      if (cLower.includes("lumin") || cLower.includes("ilumina") || cLower.includes("led") || cLower.includes("lâmpada") || cLower.includes("lampada")) {
+        addStageItem(
+          "ELÉTRICA",
+          `Fornecer e instalar luminárias de LED${locText}, com revisão dos pontos de comando e circuitos de iluminação.`
+        );
+      }
+      if (cLower.includes("tomada") || cLower.includes("interruptor")) {
+        addStageItem(
+          "ELÉTRICA",
+          `Substituir tomadas e interruptores danificados${locText}, incluindo espelhos e conexões elétricas.`
+        );
+      }
+      if (cLower.includes("quadro") || cLower.includes("disjuntor")) {
+        addStageItem(
+          "ELÉTRICA",
+          `Executar adequação do quadro de distribuição elétrica${locText}, com substituição de disjuntores e identificação dos circuitos.`
+        );
+      }
+      if (
+        !cLower.includes("lumin") &&
+        !cLower.includes("ilumina") &&
+        !cLower.includes("tomada") &&
+        !cLower.includes("interruptor") &&
+        !cLower.includes("quadro") &&
+        !cLower.includes("disjuntor")
+      ) {
+        addStageItem(
+          "ELÉTRICA",
+          `Executar revisão das instalações elétricas${locText}, com correção de pontos inoperantes e substituição de componentes danificados.`
+        );
+      }
+    }
+
+    // --- PINTURA ---
+    if (cLower.includes("pintura") || cLower.includes("pintar") || cLower.includes("tinta") || cLower.includes("caiação")) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " das áreas solicitadas da unidade escolar";
+      addStageItem(
+        "PINTURA",
+        `Executar pintura acrílica nas superfícies${locText}, com preparo de base, emassamento pontual e aplicação de duas demãos.`
+      );
+    }
+
+    // --- COZINHA ---
+    if (cLower.includes("cozinha") || cLower.includes("casa de gás") || cLower.includes("casa de gas") || cLower.includes("exaustor") || cLower.includes("bancada")) {
+      matchedInClause = true;
+      if (cLower.includes("gás") || cLower.includes("gas")) {
+        addStageItem(
+          "COZINHA",
+          "Executar construção de abrigo externo para GLP (casa de gás) com portinhola ventilada e tubulação de interligação."
+        );
+      }
+      if (cLower.includes("exaustor") || cLower.includes("coifa")) {
+        addStageItem(
+          "COZINHA",
+          "Fornecer e instalar exaustor na cozinha para renovação de ar e exaustão térmica."
+        );
+      }
+      if (cLower.includes("bancada") || cLower.includes("pia")) {
+        addStageItem(
+          "COZINHA",
+          "Executar adequação de bancada e pia da cozinha com revestimento cerâmico e sifonamento."
+        );
+      }
+    }
+
+    // --- ESQUADRIAS / PORTAS / JANELAS / GRADES ---
+    if (
+      (cLower.includes("porta") || cLower.includes("janela") || cLower.includes("esquadria") || cLower.includes("fechadura") || cLower.includes("grade") || cLower.includes("portão") || cLower.includes("portao")) &&
+      !cLower.includes("banheiro")
+    ) {
+      matchedInClause = true;
+      const locText = loc ? ` ${loc}` : " da unidade escolar";
+      addStageItem(
+        "ESQUADRIAS E FERRAGENS",
+        `Executar revisão e substituição de esquadrias, fechaduras, dobradiças e ferragens danificadas${locText}.`
+      );
+    }
+
+    // --- LIMPEZA PÓS-OBRA ---
+    if (cLower.includes("limpeza") || cLower.includes("entulho") || cLower.includes("bota-fora")) {
+      matchedInClause = true;
+      addStageItem(
+        "LIMPEZA FINAL",
+        "Executar limpeza geral pós-obra com remoção de entulhos e entrega dos ambientes em plenas condições de uso."
+      );
+    }
+
+    // --- CLÁUSULA CUSTOMIZADA LIVRE (qualquer outro serviço específico pedido pelo usuário) ---
+    if (!matchedInClause && clause.length > 3) {
+      const customVerbStart = /^(executar|fornecer|substituir|recuperar|instalar|construir|demolir|reformar|adequar)/i.test(clause);
+      const customDesc = customVerbStart
+        ? normalizeSentenceCase(clause)
+        : normalizeSentenceCase(`Executar ${clause.charAt(0).toLowerCase() + clause.slice(1)}`);
+      const customStageTitle = loc ? loc.replace(/^(do|da|dos|das)\s+/i, "").toUpperCase() : "SERVIÇOS ESPECÍFICOS";
+      addStageItem(customStageTitle, customDesc);
+    }
   }
 
-  return Array.from(stagesMap.values());
+  const finalStages = Array.from(stagesMap.values());
+  return enforceMandatoryScopeAutomations(finalStages, userInput);
 }
 
 // ----------------------------------------------------------------------------
-// Formata as etapas em texto limpo para visualização direta e cópia no Excel
+// Formata as etapas no Padrão Oficial SEDUC-PI:
+// 1. COBERTURA
+// Executar substituição e retelhamento pontual na cobertura do pátio...
 // ----------------------------------------------------------------------------
 export function formatStagesToSpreadsheetText(stages: DescritivoStage[]): string {
   const blocks: string[] = [];
-  stages.forEach((stg) => {
-    const lines: string[] = [`### ${stg.title.toUpperCase()}`];
+  stages.forEach((stg, idx) => {
+    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    const numberedHeader = `${idx + 1}. ${cleanTitle}`;
+    const lines: string[] = [`### ${numberedHeader}`];
     stg.items.forEach((it) => {
-      // Cada serviço em uma linha, sem marcadores, sem bolinhas e sem traços
-      lines.push(it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim());
+      // Cada subitem em uma linha, sem marcadores, hífens ou numeração decimal (1.1, 1.2)
+      lines.push(normalizeSentenceCase(it.description));
     });
     blocks.push(lines.join("\n"));
   });
@@ -465,7 +742,7 @@ export function formatStagesToSpreadsheetText(stages: DescritivoStage[]): string
 }
 
 // ----------------------------------------------------------------------------
-// Chamada ao Google Gemini API (Orientada pelo SUPER PROMPT)
+// Chamada ao Google Gemini API (Orientada pelo SYSTEM PROMPT SEDUC-PI)
 // ----------------------------------------------------------------------------
 export async function queryGeminiSeniorEngineer(
   userInput: string,
@@ -480,14 +757,20 @@ DADOS DO PROJETO ATUAL:
 - Órgão: ${metadata.organization || "Secretaria da Educação / GPR"}
 - Finalidade: ${metadata.purpose || metadata.objectDescription}
 
-ESTADO ATUAL DO MEMORIAL (Contexto Acumulado):
+ESTADO ATUAL DO MEMORIAL:
 ${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente."}
 
 NOVA DEMANDA DO USUÁRIO (Texto / Áudio):
 "${userInput}"
 
-INSTRUÇÃO:
-Analise a nova demanda, incorpore ou altere os serviços no memorial existente e apresente o DESCRITIVO COMPLETO E ATUALIZADO no padrão obrigatório (títulos em CAIXA ALTA sem numeração, ELÉTRICA como título único para serviços elétricos/iluminação, cada serviço em uma linha iniciando com Executar/Fornecer e instalar, sem marcadores ou bolinhas, e o bloco JSON estruturado no final).
+INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL):
+1. Processe cirurgicamente as palavras específicas, locais e materiais pedidos pelo usuário. NUNCA substitua o pedido real por um texto genérico salvo na memória.
+2. Categorias Principais numeradas sequencialmente em CAIXA ALTA (ex: 1. COBERTURA, 2. BANHEIROS).
+3. Subitens sem marcadores, hífens ou numeração decimal (1.1, 1.2), iniciando com letra maiúscula e o restante em caixa baixa, preferencialmente com verbo técnico (Executar, Fornecer e instalar, Substituir, Recuperar).
+4. Automações obrigatórias:
+   - Se envolver Água / Hidráulica / Hidrossanitário / Poço Tubular / Banheiros: incluir ao final do bloco "Executar teste de estanqueidade e funcionamento das instalações hidráulicas."
+   - Se envolver Reservatório / Caixa d'Água: incluir "Executar instalação de base pré-moldada para reservatório de água." e "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar."
+5. Inclua o bloco JSON estruturado ao final com a chave "stages".
 `;
 
   try {
@@ -528,11 +811,11 @@ Analise a nova demanda, incorpore ou altere os serviços no memorial existente e
           parsedStages = parsed.stages.map((stg: any, sIdx: number) => ({
             id: `gemini-stg-${Date.now()}-${sIdx}`,
             stageCode: `${sIdx + 1}`,
-            title: String(stg.title || "").toUpperCase().replace(/^\d+[\.\s\-]+/, ""),
+            title: String(stg.title || "").toUpperCase().replace(/^\d+[\.\s\-]+/, "").trim(),
             items: (stg.items || []).map((it: any, iIdx: number) => ({
               id: `gemini-it-${Date.now()}-${sIdx}-${iIdx}`,
               itemNumber: `${iIdx + 1}`,
-              description: String(it.description || "").replace(/^[\s•\-\*\d\.]+\s*/, "").trim(),
+              description: normalizeSentenceCase(String(it.description || "")),
             })),
           }));
         }
@@ -542,11 +825,16 @@ Analise a nova demanda, incorpore ou altere os serviços no memorial existente e
     }
 
     if (parsedStages.length === 0) {
-      parsedStages = generateLocalSeniorDescription(userInput, currentStages);
+      parsedStages = parseStagesFromPlainText(rawText);
     }
 
-    // Limpa a resposta retirando o bloco JSON para manter a saída limpa
-    const cleanChatText = rawText.replace(/```json[\s\S]*?```/g, "").trim() || formatStagesToSpreadsheetText(parsedStages);
+    if (parsedStages.length === 0) {
+      parsedStages = generateLocalSeniorDescription(userInput, currentStages);
+    } else {
+      parsedStages = enforceMandatoryScopeAutomations(parsedStages, userInput);
+    }
+
+    const cleanChatText = formatStagesToSpreadsheetText(parsedStages);
 
     return {
       textResponse: cleanChatText,
@@ -564,6 +852,7 @@ Analise a nova demanda, incorpore ou altere os serviços no memorial existente e
 
 // ----------------------------------------------------------------------------
 // Extrator Resiliente de Etapas a partir de Texto Formatado (Fallback Seguro)
+// Suporta títulos "1. COBERTURA", "### 1. COBERTURA" ou "COBERTURA"
 // ----------------------------------------------------------------------------
 export function parseStagesFromPlainText(text: string): DescritivoStage[] {
   const clean = text
@@ -579,14 +868,17 @@ export function parseStagesFromPlainText(text: string): DescritivoStage[] {
 
   for (const line of lines) {
     const isMarkdownHeader = /^#{1,4}\s+/.test(line);
+    const isNumberedUpperHeader = /^\d+\.\s+[A-ZÀ-Ú\s\/\-]{3,}$/.test(line);
     const candidateTitle = line.replace(/^#{1,4}\s+/, "").replace(/^\d+[\.\s\-]+/, "").trim();
     const isAllUpper =
       candidateTitle.length >= 3 &&
       candidateTitle === candidateTitle.toUpperCase() &&
-      !candidateTitle.startsWith("EXECUTAR") &&
-      !candidateTitle.startsWith("FORNECER");
+      !candidateTitle.startsWith("EXECUTAR ") &&
+      !candidateTitle.startsWith("FORNECER ") &&
+      !candidateTitle.startsWith("SUBSTITUIR ") &&
+      !candidateTitle.startsWith("RECUPERAR ");
 
-    if (isMarkdownHeader || isAllUpper) {
+    if (isMarkdownHeader || isNumberedUpperHeader || isAllUpper) {
       const stageTitle = candidateTitle.toUpperCase();
       currentStage = {
         id: `parsed-stg-${Date.now()}-${stageCount}`,
@@ -598,7 +890,7 @@ export function parseStagesFromPlainText(text: string): DescritivoStage[] {
       stageCount++;
       itemCount = 1;
     } else if (currentStage) {
-      const cleanDesc = line.replace(/^[\s•\-\*\d\.]+\s*/, "").trim();
+      const cleanDesc = normalizeSentenceCase(line);
       if (cleanDesc.length > 3) {
         currentStage.items.push({
           id: `parsed-it-${Date.now()}-${stageCount}-${itemCount}`,
@@ -614,7 +906,7 @@ export function parseStagesFromPlainText(text: string): DescritivoStage[] {
 }
 
 // ----------------------------------------------------------------------------
-// Chamada à OpenAI API / ChatGPT (Orientada pela Especificação Técnica Oficial)
+// Chamada à OpenAI API / ChatGPT (Orientada pelo SYSTEM PROMPT SEDUC-PI)
 // ----------------------------------------------------------------------------
 export async function queryOpenAISeniorEngineer(
   userInput: string,
@@ -631,7 +923,7 @@ DADOS DO PROJETO ATUAL:
 - Finalidade / Objeto: ${metadata.purpose || metadata.objectDescription || "Reforma e Manutenção da Unidade Escolar"}
 - BDI da Obra (%): ${metadata.bdiPercent || "24,50%"}
 - Mês/Ano Ref: ${metadata.mesAnoRef || "Novembro de 2026"}
-- Data Extensa: ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}
+- Data Extensa: ${metadata.dataExtensa || "Domingo, 15 de novembro de 2026"}
 
 ESTADO ATUAL DO MEMORIAL:
 ${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente (Criando novo memorial do zero)."}
@@ -639,18 +931,14 @@ ${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado an
 NOVA DEMANDA DO USUÁRIO (Texto / Áudio Transcrito):
 "${userInput}"
 
-INSTRUÇÃO OBRIGATÓRIA (ZERO SERVIÇOS FANTASMAS — FIDELIDADE ABSOLUTA AO PEDIDO):
-1. NUNCA use modelos fixos pré-moldados nem listas de serviços antigas.
-2. Crie títulos e itens EXCLUSIVAMENTE para os serviços e ambientes solicitados na mensagem do usuário.
-3. É EXPRESSAMENTE PROIBIDO incluir FORROS, ELÉTRICA, BANHEIROS, COZINHA, PINTURA ou qualquer outro grupo que o usuário NÃO tenha solicitado explicitamente!
-4. Se o usuário solicitou apenas "novas calçadas, recuperar o piso quebrado e tirar goteiras", gere única e exclusivamente os grupos pertinentes (ex: PAVIMENTAÇÃO E CALÇADAS e COBERTURA).
-5. Títulos sempre em CAIXA ALTA e sem numeração.
-6. Se e somente se houver serviços elétricos demandados, use exatamente o título ELÉTRICA.
-7. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar..." ou "Fornecer e instalar...".
-8. Sem marcadores, traços (-), asteriscos (*) ou bolinhas no início das linhas.
-9. Sem linhas em branco entre serviços do mesmo grupo.
-10. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
-11. Incluir no final o bloco JSON estruturado delimitado por \`\`\`json contendo a chave "stages".
+INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL E ZERO SERVIÇOS FANTASMAS):
+1. Processe cirurgicamente as palavras específicas, locais (ex: "na cobertura do pátio", "nos banheiros") e materiais/modelos (ex: "vaso acoplado", "revestimento") solicitados pelo usuário. NUNCA substitua o pedido real do usuário por um texto genérico salvo na memória e NUNCA inclua disciplinas que o usuário não pediu.
+2. Categorias Principais numeradas sequencialmente (1., 2., 3., etc.) e em CAIXA ALTA (ex: 1. COBERTURA, 2. BANHEIROS).
+3. Subitens sem marcadores, hífens, travessões ou numeração decimal (1.1, 1.2), iniciando com a primeira letra em maiúscula e o restante em caixa baixa, preferencialmente com o verbo técnico adequado (Executar, Fornecer e instalar, Substituir, Recuperar).
+4. Regras Técnicas Obrigatórias (Automações de Escopo):
+   - Água / Hidráulica / Hidrossanitário / Poço Tubular / Banheiros: Incluir obrigatoriamente ao final do bloco: "Executar teste de estanqueidade e funcionamento das instalações hidráulicas."
+   - Reservatório / Caixa d'Água: Incluir obrigatoriamente os subitens: "Executar instalação de base pré-moldada para reservatório de água." e "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar."
+5. Incluir no final o bloco JSON estruturado delimitado por \`\`\`json contendo a chave "stages".
 `;
 
   try {
@@ -735,7 +1023,7 @@ INSTRUÇÃO OBRIGATÓRIA (ZERO SERVIÇOS FANTASMAS — FIDELIDADE ABSOLUTA AO PE
             items: (stg.items || []).map((it: any, iIdx: number) => ({
               id: `openai-it-${Date.now()}-${sIdx}-${iIdx}`,
               itemNumber: `${iIdx + 1}`,
-              description: String(it.description || "").replace(/^[\s•\-\*\d\.]+\s*/, "").trim(),
+              description: normalizeSentenceCase(String(it.description || "")),
             })),
           }));
         }
@@ -752,11 +1040,12 @@ INSTRUÇÃO OBRIGATÓRIA (ZERO SERVIÇOS FANTASMAS — FIDELIDADE ABSOLUTA AO PE
     // Fallback de segurança para o motor sênior local
     if (parsedStages.length === 0) {
       parsedStages = generateLocalSeniorDescription(userInput, currentStages);
+    } else {
+      parsedStages = enforceMandatoryScopeAutomations(parsedStages, userInput);
     }
 
-    // Limpa a resposta retirando o bloco JSON para manter a saída do chat limpa e elegante
-    const cleanChatText =
-      rawText.replace(/```json[\s\S]*?```/g, "").trim() || formatStagesToSpreadsheetText(parsedStages);
+    // Formata estritamente no padrão numerado SEDUC-PI (1. COBERTURA, 2. BANHEIROS)
+    const cleanChatText = formatStagesToSpreadsheetText(parsedStages);
 
     return {
       textResponse: cleanChatText,
@@ -912,8 +1201,8 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.text(splitIntro, margin, currentY);
   currentY += splitIntro.length * 4 + 6;
 
-  // 4. ETAPAS E ITENS TÉCNICOS (Sem numeração no título, cada serviço em uma linha)
-  stages.forEach((stage) => {
+  // 4. ETAPAS E ITENS TÉCNICOS (Categorias Principais numeradas 1., 2., 3. em CAIXA ALTA e subitens diretos)
+  stages.forEach((stage, sIdx) => {
     checkPageBreak(25);
 
     doc.setFillColor(241, 245, 249);
@@ -924,8 +1213,8 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9.5);
     doc.setTextColor(15, 23, 42);
-    // Título em CAIXA ALTA sem numeração inicial
-    doc.text(stage.title.toUpperCase(), margin + 3, currentY + 5);
+    const cleanTitle = stage.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    doc.text(`${sIdx + 1}. ${cleanTitle}`, margin + 3, currentY + 5);
     currentY += 10;
 
     stage.items.forEach((item) => {
@@ -933,7 +1222,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
       doc.setFontSize(8.5);
       doc.setTextColor(40, 40, 40);
 
-      const cleanDesc = item.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim();
+      const cleanDesc = normalizeSentenceCase(item.description);
       const splitItem = doc.splitTextToSize(cleanDesc, printableWidth - 4);
 
       checkPageBreak(splitItem.length * 4 + 4);
@@ -969,7 +1258,7 @@ export function buildMemorialPDFDoc(metadata: MemorialMetadata, stages: Descriti
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8.5);
   doc.setTextColor(70, 70, 70);
-  const localDataStr = `${metadata.city || "Teresina"} - ${metadata.uf || "PI"}, ${metadata.dataExtensa || "Domingo, 8 de novembro de 2026"}.`;
+  const localDataStr = `${metadata.city || "Teresina"} - ${metadata.uf || "PI"}, ${metadata.dataExtensa || "Domingo, 15 de novembro de 2026"}.`;
   doc.text(localDataStr, pageWidth / 2, currentY, { align: "center" });
   currentY += 14;
 
@@ -1071,9 +1360,9 @@ export function generateMemorialWordDoc(metadata: MemorialMetadata, stages: Desc
 
       ${stages
         .map(
-          (stg) => `
-        <h2>${stg.title.toUpperCase()}</h2>
-        ${stg.items.map((it) => `<p class="service-line">${it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}</p>`).join("")}
+          (stg, idx) => `
+        <h2>${idx + 1}. ${stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase()}</h2>
+        ${stg.items.map((it) => `<p class="service-line">${normalizeSentenceCase(it.description)}</p>`).join("")}
       `
         )
         .join("")}

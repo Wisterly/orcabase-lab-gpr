@@ -1046,18 +1046,22 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                     {/* Etapas Dinâmicas Reais da Página Atual */}
                     {stages
                       .slice((currentPage - 1) * 2, currentPage * 2)
-                      .map((stg) => (
-                        <div key={stg.id} className="space-y-0.5">
-                          <p className="font-bold text-slate-800 uppercase text-[7.5px] border-l-2 border-[#ffaa2c] pl-1 bg-slate-100 py-0.5">
-                            {stg.title.toUpperCase()}
-                          </p>
-                          {stg.items.map((it) => (
-                            <p key={it.id} className="text-slate-600 pl-1.5 line-clamp-2">
-                              {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                      .map((stg, idx) => {
+                        const globalIndex = (currentPage - 1) * 2 + idx + 1;
+                        const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+                        return (
+                          <div key={stg.id} className="space-y-0.5">
+                            <p className="font-bold text-slate-800 uppercase text-[7.5px] border-l-2 border-[#ffaa2c] pl-1 bg-slate-100 py-0.5">
+                              {globalIndex}. {cleanTitle}
                             </p>
-                          ))}
-                        </div>
-                      ))}
+                            {stg.items.map((it) => (
+                              <p key={it.id} className="text-slate-600 pl-1.5 line-clamp-2">
+                                {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      })}
 
                     {/* Fechamento com Assinaturas na Última Página */}
                     {currentPage === totalPages && (
@@ -1277,22 +1281,25 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
                   </div>
                 </div>
 
-                {/* Etapas e Itens Técnicos (Padrão Oficial: Título em CAIXA ALTA sem numeração, cada serviço em uma linha) */}
+                {/* Etapas e Itens Técnicos (Padrão Oficial SEDUC-PI: Categorias numeradas em CAIXA ALTA e subitens diretos) */}
                 <div className="space-y-5">
-                  {stages.map((stg) => (
-                    <div key={stg.id} className="space-y-2">
-                      <div className="bg-slate-200 px-3 py-1 font-bold text-slate-900 border-l-4 border-[#ffaa2c] text-xs uppercase">
-                        {stg.title.toUpperCase()}
+                  {stages.map((stg, idx) => {
+                    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+                    return (
+                      <div key={stg.id} className="space-y-2">
+                        <div className="bg-slate-200 px-3 py-1 font-bold text-slate-900 border-l-4 border-[#ffaa2c] text-xs uppercase">
+                          {idx + 1}. {cleanTitle}
+                        </div>
+                        <div className="space-y-1.5 pl-2">
+                          {stg.items.map((it) => (
+                            <div key={it.id} className="text-slate-800 text-[11px] leading-relaxed">
+                              {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-1.5 pl-2">
-                        {stg.items.map((it) => (
-                          <div key={it.id} className="text-slate-800 text-[11px] leading-relaxed">
-                            {it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim()}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Data e Local por extenso com Dia da Semana e Assinaturas */}

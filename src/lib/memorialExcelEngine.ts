@@ -97,11 +97,12 @@ export function injectMemorialIntoExcelTemplate(
   if (memorialStartRow !== -1 && params.stages.length > 0) {
     let currentRow = memorialStartRow;
 
-    params.stages.forEach((stg) => {
-      // Linha do Título da Etapa (CAIXA ALTA, sem numeração)
+    params.stages.forEach((stg, idx) => {
+      // Linha do Título da Etapa (Numerado sequencialmente em CAIXA ALTA: 1. COBERTURA, 2. BANHEIROS)
+      const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
       const titleCellRef = XLSX.utils.encode_cell({ r: currentRow, c: memorialStartCol });
       ws[titleCellRef] = {
-        v: stg.title.toUpperCase(),
+        v: `${idx + 1}. ${cleanTitle}`,
         t: "s",
       };
       currentRow++;
@@ -174,8 +175,9 @@ export function generateDefaultMemorialTemplate(params: MemorialExcelInjectionPa
     // Remove a tag "MEMORIAL = AQUI"
     rows.pop();
 
-    params.stages.forEach((stg) => {
-      rows.push([stg.title.toUpperCase(), null, null, null]);
+    params.stages.forEach((stg, idx) => {
+      const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+      rows.push([`${idx + 1}. ${cleanTitle}`, null, null, null]);
       stg.items.forEach((it) => {
         rows.push([it.description.replace(/^[\s•\-\*\d\.]+\s*/, "").trim(), null, null, null]);
       });

@@ -11,6 +11,36 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.043]
+- **Data/Hora:** 15/11/2026 02:15 (Horário Local)
+- **Tag Git:** `PR.043`
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Backend Gateway (Next.js / Vercel): https://orcabase-lab-gpr.vercel.app/api
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Localhost de Desenvolvimento: http://localhost:3000
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.043 (Novo System Prompt SEDUC-PI na Aba Descritivos: Categorias Numeradas, Anti-Vício de Cópia Literal e Automações Obrigatórias de Escopo):
+1. **Incorporação Integral do `SYSTEM PROMPT: ASSISTENTE TÉCNICO DE ORÇAMENTOS DE OBRAS ESCOLARES (SEDUC-PI)` (`src/lib/descritivoAI.ts` e `src/app/api/openai/route.ts`):**
+   - **Persona e Diretriz Central:** Atuação como Engenheiro Civil e Especialista em Orçamentação de Obras Públicas (Padrão SEDUC-PI), interpretando solicitações textuais informais (inclusive com erros de digitação, ex: *"retalhamento no telha na cobertura do pátio / trocar os vasos por acoplado nos banheiros e Revestimento"*) e convertendo em descritivos técnicos contextuais e aderentes ao pedido.
+   - **Regra Crítica de Anti-Vício (Proibição de Cópia Literal):** Reescritura do motor local (`generateLocalSeniorDescription`) e dos prompts OpenAI/Gemini para processar cláusula por cláusula a necessidade exata do usuário (extraindo locais como *"do pátio"*, *"nos banheiros"* e itens específicos como *"retelhamento pontual"*, *"vasos sanitários com caixa acoplada"*, *"revestimento cerâmico"*), proibindo despejo de blocos genéricos padronizados.
+2. **Novo Padrão de Formatação e Estrutura (`1. COBERTURA`, `2. BANHEIROS`):**
+   - **Categorias Principais Numeradas Sequencialmente:** Títulos em **CAIXA ALTA** precedidos de numeração sequencial (`1.`, `2.`, `3.`, `4.`, etc.) identificando o ambiente ou disciplina (ex: `1. COBERTURA`, `2. BANHEIROS`).
+   - **Subitens Limpos sem Marcadores:** Subitens escritos diretamente abaixo do título, sem marcadores, hífens, travessões ou numeração decimal (`1.1`, `1.2`), iniciando com a primeira letra em maiúscula e o restante em caixa baixa, começando preferencialmente com verbo técnico (*Executar*, *Fornecer e instalar*, *Substituir*, *Recuperar*).
+   - Sincronizado em todos os canais de saída: Chat (`DescritivoView.tsx`), Copiar para Excel, Visualizador da Folha A4, Planilha Excel (`.xlsx` via `memorialExcelEngine.ts`), PDF Oficial (`buildMemorialPDFDoc`) e Word (`generateMemorialWordDoc`).
+3. **Regras Técnicas Obrigatórias (Automações de Escopo via `enforceMandatoryScopeAutomations`):**
+   - **1. Instalações Hidráulicas / Hidrossanitárias / Água / Poço:** Sempre que houver serviços relacionados a água, hidráulica, hidrossanitário, poço tubular ou banheiros com intervenção hidráulica, inclui obrigatoriamente ao final do bloco o subitem:
+     `Executar teste de estanqueidade e funcionamento das instalações hidráulicas.`
+   - **2. Reservatório / Caixa d'Água:** Sempre que for mencionada intervenção, troca ou instalação de reservatório ou caixa d'água, inclui obrigatoriamente os dois subitens:
+     `Executar instalação de base pré-moldada para reservatório de água.`
+     `Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar.`
+4. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` permaneceram 100% intocados e validados no `prebuild`.
+
+---
+
 ### [PR.042]
 - **Data/Hora:** 15/11/2026 01:58 (Horário Local)
 - **Tag Git:** `PR.042` (Ponto anterior `PR.041` preservado na tag `PR.041` / commit `1067873` para retorno imediato se solicitado)

@@ -30,18 +30,14 @@ ${formatStagesToSpreadsheetText(stages) || "Nenhum serviço registrado anteriorm
 NOVA DEMANDA DO USUÁRIO (Texto / Áudio Transcrito):
 "${userInput || ""}"
 
-INSTRUÇÃO OBRIGATÓRIA (ZERO SERVIÇOS FANTASMAS — FIDELIDADE ABSOLUTA AO PEDIDO):
-1. NUNCA use listas de serviços pré-moldadas ou modelos fixos.
-2. Crie títulos e itens EXCLUSIVAMENTE para os serviços e ambientes solicitados na mensagem do usuário.
-3. É TERMINANTEMENTE PROIBIDO incluir FORROS, ELÉTRICA, BANHEIROS, COZINHA, PINTURA ou qualquer outro grupo que o usuário NÃO tenha solicitado explicitamente!
-4. Se o usuário solicitou apenas "novas calçadas, recuperar o piso quebrado e tirar goteiras", gere única e exclusivamente os grupos pertinentes (ex: CALÇADAS E PISOS e COBERTURA).
-5. Títulos sempre em CAIXA ALTA e sem numeração (ex: COBERTURA, PAVIMENTAÇÃO E CALÇADAS).
-6. Se e somente se houver serviços elétricos demandados, o título do grupo DEVE ser exclusivamente ELÉTRICA.
-7. Cada serviço em uma linha independente, iniciando preferencialmente com "Executar..." ou "Fornecer e instalar...".
-8. Sem marcadores, traços (-), asteriscos (*) ou bolinhas no início das linhas.
-9. Sem linhas em branco entre serviços do mesmo grupo.
-10. Não inventar marcas, materiais, capacidades ou dimensões não informadas.
-11. Incluir no final da resposta o bloco JSON estruturado delimitado por \`\`\`json contendo a chave "stages".
+INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL E ZERO SERVIÇOS FANTASMAS):
+1. Processe cirurgicamente as palavras específicas, locais (ex: "na cobertura do pátio", "nos banheiros") e materiais/modelos (ex: "vaso acoplado", "revestimento") solicitados pelo usuário. NUNCA substitua o pedido real do usuário por um texto genérico salvo na memória e NUNCA inclua disciplinas que o usuário não pediu.
+2. Categorias Principais numeradas sequencialmente (1., 2., 3., etc.) e em CAIXA ALTA (ex: 1. COBERTURA, 2. BANHEIROS).
+3. Subitens sem marcadores, hífens, travessões ou numeração decimal (1.1, 1.2), iniciando com a primeira letra em maiúscula e o restante em caixa baixa, preferencialmente com o verbo técnico adequado (Executar, Fornecer e instalar, Substituir, Recuperar).
+4. Regras Técnicas Obrigatórias (Automações de Escopo):
+   - Água / Hidráulica / Hidrossanitário / Poço Tubular / Banheiros: Incluir obrigatoriamente ao final do bloco: "Executar teste de estanqueidade e funcionamento das instalações hidráulicas."
+   - Reservatório / Caixa d'Água: Incluir obrigatoriamente os subitens: "Executar instalação de base pré-moldada para reservatório de água." e "Fornecer e instalar caixa d'água com capacidade mínima de 10.000 L para abastecimento da unidade escolar."
+5. Incluir no final da resposta o bloco JSON estruturado delimitado por \`\`\`json contendo a chave "stages".
 `;
 
     const openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
