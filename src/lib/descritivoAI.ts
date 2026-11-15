@@ -286,9 +286,83 @@ export function enforceMandatoryScopeAutomations(
   });
 }
 
-export function isIncrementalCommand(text: string): boolean {
+export function isRemoveOrAlterCommand(text: string): boolean {
   const lower = text.toLowerCase().trim();
-  return /^(adicione|acrescente|inclua|insira|coloque também|coloque mais|remova|tire|exclua|retire|altere|mude|troque o título|corrija o item)\b/i.test(lower);
+  return /\b(remova|remover|tire|tirar|exclua|excluir|retire|retirar|apague|apagar|delete|altere|alterar|mude|mudar|corrija|corrigir|substitua o título|substitua o item)\b/i.test(
+    lower
+  );
+}
+
+/**
+ * Mescla acumulativamente as etapas anteriores com as novas etapas geradas pela IA
+ * quando o usuário apenas digita novos serviços (sem pedir remoção ou alteração),
+ * garantindo que o memorial NUNCA seja zerado sem clicar no botão "Novo Memorial".
+ */
+export function mergeAccumulatedStages(
+  currentStages: DescritivoStage[],
+  aiStages: DescritivoStage[],
+  userInput: string
+): DescritivoStage[] {
+  if (!currentStages || currentStages.length === 0) {
+    return aiStages;
+  }
+
+  // Se o usuário pediu explicitamente para remover ou alterar, respeita a lista editada pela IA
+  if (isRemoveOrAlterCommand(userInput)) {
+    return aiStages;
+  }
+
+  const mergedMap = new Map<string, DescritivoStage>();
+
+  // 1. Mantém todas as etapas que já estavam sendo trabalhadas no memorial
+  currentStages.forEach((stg) => {
+    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    mergedMap.set(cleanTitle, {
+      id: stg.id,
+      stageCode: stg.stageCode,
+      title: cleanTitle,
+      items: [...stg.items],
+    });
+  });
+
+  // 2. Adiciona/mescla os novos títulos e serviços retornados pela IA
+  aiStages.forEach((stg) => {
+    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    if (!cleanTitle) return;
+
+    if (!mergedMap.has(cleanTitle)) {
+      mergedMap.set(cleanTitle, {
+        id: stg.id || `stg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        stageCode: `${mergedMap.size + 1}`,
+        title: cleanTitle,
+        items: [...stg.items],
+      });
+    } else {
+      const existing = mergedMap.get(cleanTitle)!;
+      stg.items.forEach((newIt) => {
+        const normNew = normalizeSentenceCase(newIt.description);
+        const alreadyExists = existing.items.some(
+          (oldIt) => oldIt.description.toLowerCase().trim() === normNew.toLowerCase().trim()
+        );
+        if (!alreadyExists && normNew) {
+          existing.items.push({
+            id: newIt.id || `it-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            itemNumber: `${existing.items.length + 1}`,
+            description: normNew,
+          });
+        }
+      });
+    }
+  });
+
+  return Array.from(mergedMap.values()).map((stg, idx) => ({
+    ...stg,
+    stageCode: `${idx + 1}`,
+    items: stg.items.map((it, iIdx) => ({
+      ...it,
+      itemNumber: `${iIdx + 1}`,
+    })),
+  }));
 }
 
 // ----------------------------------------------------------------------------
@@ -300,20 +374,17 @@ export function generateLocalSeniorDescription(
 ): DescritivoStage[] {
   const normalized = userInput.toLowerCase().trim();
   const stagesMap = new Map<string, DescritivoStage>();
-  const incremental = isIncrementalCommand(userInput);
 
-  // 1. Carrega etapas existentes apenas se o comando for incremental (adicionar/remover/alterar)
-  if (incremental) {
-    existingStages.forEach((stg) => {
-      const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
-      stagesMap.set(cleanTitle, {
-        id: stg.id,
-        stageCode: stg.stageCode,
-        title: cleanTitle,
-        items: [...stg.items],
-      });
+  // 1. Mantém SEMPRE as etapas existentes do memorial em andamento (só zera no botão Novo Memorial)
+  existingStages.forEach((stg) => {
+    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+    stagesMap.set(cleanTitle, {
+      id: stg.id,
+      stageCode: stg.stageCode,
+      title: cleanTitle,
+      items: [...stg.items],
     });
-  }
+  });
 
   // 2. Trata comandos explícitos de remoção
   if (normalized.includes("tire") || normalized.includes("remova") || normalized.includes("exclua") || normalized.includes("retire")) {
@@ -834,9 +905,8 @@ export async function queryGeminiSeniorEngineer(
   metadata: MemorialMetadata,
   currentStages: DescritivoStage[] = []
 ): Promise<{ textResponse: string; stages: DescritivoStage[] }> {
-  const incremental = isIncrementalCommand(userInput);
-  const contextMessage = incremental && currentStages.length > 0
-    ? `MEMORIAL ATUAL:\n${formatStagesToSpreadsheetText(currentStages)}\n\nSOLICITAÇÃO DE AJUSTE DO USUÁRIO:\n${userInput}`
+  const contextMessage = currentStages.length > 0
+    ? `MEMORIAL DESCRITIVO ATUAL EM ANDAMENTO:\n${formatStagesToSpreadsheetText(currentStages)}\n\nNOVA MENSAGEM DO USUÁRIO:\n${userInput}\n\nINSTRUÇÃO OBRIGATÓRIA:\n- Se o usuário digitou novos serviços (mesmo sem dizer "adicione"), MANTENHA integralmente todos os títulos e serviços do MEMORIAL DESCRITIVO ATUAL EM ANDAMENTO e ADICIONE os novos títulos/serviços solicitados.\n- Se o usuário pediu para remover/tirar/excluir algum item ou título, remova apenas o que foi pedido e mantenha todo o restante.\n- Se o usuário pediu para alterar/mudar algum item ou título, aplique a alteração e mantenha todo o restante.`
     : userInput;
 
   try {
@@ -851,8 +921,7 @@ export async function queryGeminiSeniorEngineer(
           userInput,
           apiKey,
           metadata,
-          stages: incremental ? currentStages : [],
-          isIncremental: incremental,
+          stages: currentStages,
         }),
       });
       if (backendRes.ok) {
@@ -939,6 +1008,7 @@ export async function queryGeminiSeniorEngineer(
     if (parsedStages.length === 0) {
       parsedStages = generateLocalSeniorDescription(userInput, currentStages);
     } else {
+      parsedStages = mergeAccumulatedStages(currentStages, parsedStages, userInput);
       parsedStages = enforceMandatoryScopeAutomations(parsedStages, userInput);
     }
 
@@ -1149,6 +1219,7 @@ INSTRUÇÃO DE EXECUÇÃO (PADRÃO SEDUC-PI — ZERO CÓPIA LITERAL E ZERO SERVI
     if (parsedStages.length === 0) {
       parsedStages = generateLocalSeniorDescription(userInput, currentStages);
     } else {
+      parsedStages = mergeAccumulatedStages(currentStages, parsedStages, userInput);
       parsedStages = enforceMandatoryScopeAutomations(parsedStages, userInput);
     }
 

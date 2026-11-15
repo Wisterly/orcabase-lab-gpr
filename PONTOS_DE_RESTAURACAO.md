@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.052]
+- **Data/Hora:** 15/11/2026 04:51 (Horário Local)
+- **Tag Git:** `PR.052` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Rota Segura Gemini Next.js: https://orcabase-lab-gpr.vercel.app/api/gemini
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.052 (Continuidade Acumulativa Automática no Memorial sem Zerar até Apertar o Botão `Novo Memorial`):
+1. **Adição Automática Sem Precisar Escrever `"Adicione"` (`system_prompt_seduc.md`, `src/app/api/gemini/route.ts`, `src/lib/descritivoAI.ts` e `src/components/DescritivoView.tsx`):**
+   - Implementada a função `mergeAccumulatedStages` e a regra de **Continuidade Acumulativa**: sempre que o usuário digitar um novo serviço no chat (mesmo sem escrever `"adicione"` no início), o assistente **mantém 100% do memorial que já estava sendo trabalhado** e **adiciona automaticamente** o novo serviço ao memorial descritivo.
+   - Mantidas integralmente as funções de **`remova` / `tire` / `exclua`** (para excluir um item/título específico) e **`altere` / `mude`** (para editar um item/título específico).
+   - **Reinício Exclusivo pelo Botão `Novo Memorial`:** O memorial em andamento **nunca** é zerado sozinho entre mensagens; ele só inicia um novo memorial descritivo do zero quando o usuário clicar no botão **`Novo Memorial`**.
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% intocados.
+
+---
+
 ### [PR.051]
 - **Data/Hora:** 15/11/2026 04:38 (Horário Local)
 - **Tag Git:** `PR.051` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)

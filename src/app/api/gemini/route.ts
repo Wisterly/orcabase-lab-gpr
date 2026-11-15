@@ -105,7 +105,7 @@ function getServerGeminiKey(clientKey?: string): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userInput, apiKey, stages, isIncremental } = body;
+    const { userInput, apiKey, stages } = body;
 
     if (!userInput || typeof userInput !== "string") {
       return NextResponse.json({ error: "Solicitação de entrada vazia." }, { status: 400 });
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     let promptContents = userInput.trim();
 
-    if (isIncremental && Array.isArray(stages) && stages.length > 0) {
+    if (Array.isArray(stages) && stages.length > 0) {
       const stagesSummary = stages
         .map(
           (s: any) =>
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
         )
         .join("\n\n");
 
-      promptContents = `MEMORIAL DESCRITIVO ATUAL:\n${stagesSummary}\n\nSOLICITAÇÃO DE AJUSTE DO USUÁRIO:\n${userInput.trim()}\n\nRetorne o memorial descritivo completo atualizado aplicando a solicitação acima no mesmo padrão resumido.`;
+      promptContents = `MEMORIAL DESCRITIVO ATUAL EM ANDAMENTO:\n${stagesSummary}\n\nNOVA MENSAGEM DO USUÁRIO:\n${userInput.trim()}\n\nINSTRUÇÃO OBRIGATÓRIA:\n- Se o usuário digitou novos serviços (mesmo sem dizer "adicione"), MANTENHA integralmente todos os títulos e serviços do MEMORIAL DESCRITIVO ATUAL EM ANDAMENTO e ADICIONE os novos títulos/serviços solicitados.\n- Se o usuário pediu para remover/tirar/excluir algum item ou título, remova apenas o que foi pedido e mantenha todo o restante.\n- Se o usuário pediu para alterar/mudar algum item ou título, aplique a alteração e mantenha todo o restante.\n- Retorne o memorial descritivo completo consolidado no padrão resumido em CAIXA ALTA.`;
     }
 
     const modelsToTry = ["gemini-3.5-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-3.8-flash"];

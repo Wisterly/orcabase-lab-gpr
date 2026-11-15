@@ -397,14 +397,21 @@ Irei interpretar as demandas, aplicar a padronização oficial de engenharia e g
       let aiResponseText = "";
       let newStages: DescritivoStage[] = [];
 
+      // Se os itens atuais forem apenas o placeholder inicial de demonstração (stg-init-*),
+      // a 1ª mensagem do usuário inicia o memorial real dele; a partir daí, TODAS as mensagens
+      // acumulam/adicionam automaticamente no memorial atual e SÓ zeram ao clicar no botão "Novo Memorial".
+      const isInitialDemoPlaceholder =
+        stages.length > 0 && stages.every((s) => s.id.startsWith("stg-init-"));
+      const activeStages = isInitialDemoPlaceholder ? [] : stages;
+
       if (selectedAiProvider === "openai" && openaiApiKey) {
         // Envia para o ChatGPT / OpenAI orientado pela Especificação Técnica Oficial
-        const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, stages, openaiModel);
+        const result = await queryOpenAISeniorEngineer(text, openaiApiKey, metadata, activeStages, openaiModel);
         aiResponseText = result.textResponse;
         newStages = result.stages;
       } else {
         // Padrão Principal: Envia para a API do Google Gemini via Backend (/api/gemini + system_prompt_seduc.md)
-        const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, stages);
+        const result = await queryGeminiSeniorEngineer(text, geminiApiKey, metadata, activeStages);
         aiResponseText = result.textResponse;
         newStages = result.stages;
       }
