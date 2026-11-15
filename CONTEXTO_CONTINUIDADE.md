@@ -1,6 +1,6 @@
 # 🔄 Contexto de Continuidade Imediata — OrçaBase.lab - GPR
 
-## 📍 Ponto Atual de Entrega — Ciclo PR.050 (Ponto de Recuperação de Segurança Anterior: `PR.046`)
+## 📍 Ponto Atual de Entrega — Ciclo PR.051 (Ponto de Recuperação de Segurança Anterior: `PR.046`)
 - **`PR.046` (`de9c171`):** Ponto de Recuperação de Segurança criado **antes** da execução do `super_master_prompt_e_guia_de_implementa_o.md` (pronto para reversão imediata se solicitado pelo usuário).
-- **`PR.049`:** Implementação de `ultimate_master_prompt_deployment_guide.md` e `gemini-code-1794724516703.py`.
-- **`PR.050`:** Calibração integral do Assistente Técnico (`system_prompt_seduc.md`, `src/app/api/gemini/route.ts` e `src/lib/descritivoAI.ts`) para gerar respostas **resumidas, genéricas e objetivas** com títulos curtos sem numeração (`COBERTURA`, `BANHEIROS`, `FORROS`, `ELÉTRICA`, `MURO`, `PINTURA`, etc.) e 1 a 2 subitens diretos por disciplina.
+- **`PR.050`:** Calibração do padrão resumido, genérico e objetivo com títulos curtos em CAIXA ALTA.
+- **`PR.051`:** Sincronização direta do chat da interface (`Titular de Assistente orcabase.lab` em `src/components/DescritivoView.tsx`) com a API do Gemini (`/api/gemini` + `system_prompt_seduc.md`), eliminando a herança de títulos antigos de demonstração e garantindo que qualquer solicitação no chat da aplicação produza exatamente o mesmo raciocínio e formatação validados no `PR.050`.

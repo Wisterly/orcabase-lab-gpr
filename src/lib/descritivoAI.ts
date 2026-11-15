@@ -286,6 +286,11 @@ export function enforceMandatoryScopeAutomations(
   });
 }
 
+export function isIncrementalCommand(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  return /^(adicione|acrescente|inclua|insira|coloque também|coloque mais|remova|tire|exclua|retire|altere|mude|troque o título|corrija o item)\b/i.test(lower);
+}
+
 // ----------------------------------------------------------------------------
 // Processador Semântico Contextual Local (Padrão Resumido, Genérico e Objetivo SEDUC-PI)
 // ----------------------------------------------------------------------------
@@ -295,17 +300,20 @@ export function generateLocalSeniorDescription(
 ): DescritivoStage[] {
   const normalized = userInput.toLowerCase().trim();
   const stagesMap = new Map<string, DescritivoStage>();
+  const incremental = isIncrementalCommand(userInput);
 
-  // 1. Carrega etapas existentes (se o usuário estiver refinando o memorial atual)
-  existingStages.forEach((stg) => {
-    const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
-    stagesMap.set(cleanTitle, {
-      id: stg.id,
-      stageCode: stg.stageCode,
-      title: cleanTitle,
-      items: [...stg.items],
+  // 1. Carrega etapas existentes apenas se o comando for incremental (adicionar/remover/alterar)
+  if (incremental) {
+    existingStages.forEach((stg) => {
+      const cleanTitle = stg.title.replace(/^\d+[\.\s\-]+/, "").trim().toUpperCase();
+      stagesMap.set(cleanTitle, {
+        id: stg.id,
+        stageCode: stg.stageCode,
+        title: cleanTitle,
+        items: [...stg.items],
+      });
     });
-  });
+  }
 
   // 2. Trata comandos explícitos de remoção
   if (normalized.includes("tire") || normalized.includes("remova") || normalized.includes("exclua") || normalized.includes("retire")) {
@@ -651,23 +659,48 @@ export function generateLocalSeniorDescription(
       );
     }
 
+    // --- LABORATÓRIO DE INFORMÁTICA ---
+    if (cLower.includes("laboratório") || cLower.includes("laboratorio") || cLower.includes("informática") || cLower.includes("informatica")) {
+      matchedInClause = true;
+      addStageItem(
+        "LABORATÓRIO DE INFORMÁTICA",
+        "Executar adaptação do espaço para implantação do laboratório de informática, com fornecimento e instalação de novas bancadas."
+      );
+      addStageItem(
+        "LABORATÓRIO DE INFORMÁTICA",
+        "Executar aplicação de revestimento nas superfícies indicadas do ambiente."
+      );
+      if (cLower.includes("lógica") || cLower.includes("logica") || cLower.includes("elétrica") || cLower.includes("eletrica")) {
+        addStageItem(
+          "ELÉTRICA E LÓGICA",
+          "Executar novas instalações elétricas com pontos de tomada para atendimento às bancadas."
+        );
+        addStageItem(
+          "ELÉTRICA E LÓGICA",
+          "Executar infraestrutura e cabeamento de rede de lógica para o laboratório de informática."
+        );
+      }
+    }
+
     // --- ELÉTRICA ---
     if (
-      cLower.includes("elétrica") ||
-      cLower.includes("eletrica") ||
-      cLower.includes("tomada") ||
-      cLower.includes("interruptor") ||
-      cLower.includes("luminária") ||
-      cLower.includes("luminaria") ||
-      cLower.includes("iluminação") ||
-      cLower.includes("iluminacao") ||
-      cLower.includes("disjuntor") ||
-      cLower.includes("quadro") ||
-      cLower.includes("fiação") ||
-      cLower.includes("fiacao") ||
-      cLower.includes("cabo") ||
-      cLower.includes("subestação") ||
-      cLower.includes("subestacao")
+      (cLower.includes("elétrica") ||
+        cLower.includes("eletrica") ||
+        cLower.includes("tomada") ||
+        cLower.includes("interruptor") ||
+        cLower.includes("luminária") ||
+        cLower.includes("luminaria") ||
+        cLower.includes("iluminação") ||
+        cLower.includes("iluminacao") ||
+        cLower.includes("disjuntor") ||
+        cLower.includes("quadro") ||
+        cLower.includes("fiação") ||
+        cLower.includes("fiacao") ||
+        cLower.includes("cabo") ||
+        cLower.includes("subestação") ||
+        cLower.includes("subestacao")) &&
+      !cLower.includes("lógica") &&
+      !cLower.includes("logica")
     ) {
       matchedInClause = true;
       const locText = loc ? ` ${loc}` : " da unidade escolar";
@@ -684,19 +717,41 @@ export function generateLocalSeniorDescription(
     // --- PINTURA ---
     if (cLower.includes("pintura") || cLower.includes("pintar") || cLower.includes("tinta") || cLower.includes("caiação")) {
       matchedInClause = true;
-      const locText = loc ? ` ${loc}` : " nas áreas solicitadas da unidade escolar";
+      if (cLower.includes("interna") && cLower.includes("externa")) {
+        addStageItem(
+          "PINTURA",
+          "Executar pintura geral interna e externa das edificações da unidade escolar."
+        );
+        if (cLower.includes("piso") || cLower.includes("calçada") || cLower.includes("calcada")) {
+          addStageItem(
+            "PINTURA",
+            "Executar pintura em pisos e calçadas com tinta específica para tráfego."
+          );
+        }
+      } else {
+        const locText = loc ? ` ${loc}` : " nas áreas solicitadas da unidade escolar";
+        addStageItem(
+          "PINTURA",
+          `Executar preparação das superfícies${locText}, com limpeza, lixamento e correção de imperfeições.`
+        );
+        addStageItem(
+          "PINTURA",
+          `Executar pintura geral${locText}, com acabamento adequado a cada superfície.`
+        );
+      }
+    }
+
+    // --- FACHADA ---
+    if (cLower.includes("fachada")) {
+      matchedInClause = true;
       addStageItem(
-        "PINTURA",
-        `Executar preparação das superfícies${locText}, com limpeza, lixamento e correção de imperfeições.`
-      );
-      addStageItem(
-        "PINTURA",
-        `Executar pintura geral${locText}, com acabamento adequado a cada superfície.`
+        "FACHADA",
+        "Executar reforma e adequação da fachada da unidade escolar, seguindo o padrão institucional da SEDUC."
       );
     }
 
     // --- COZINHA ---
-    if (cLower.includes("cozinha") || cLower.includes("casa de gás") || cLower.includes("casa de gas") || cLower.includes("exaustor") || cLower.includes("bancada")) {
+    if ((cLower.includes("cozinha") || cLower.includes("casa de gás") || cLower.includes("casa de gas") || cLower.includes("exaustor") || cLower.includes("bancada")) && !cLower.includes("laboratório") && !cLower.includes("laboratorio") && !cLower.includes("informática") && !cLower.includes("informatica")) {
       matchedInClause = true;
       addStageItem(
         "COZINHA",
@@ -779,24 +834,15 @@ export async function queryGeminiSeniorEngineer(
   metadata: MemorialMetadata,
   currentStages: DescritivoStage[] = []
 ): Promise<{ textResponse: string; stages: DescritivoStage[] }> {
-  const contextMessage = `
-DADOS DO PROJETO ATUAL:
-- Unidade Escolar / Imóvel: ${metadata.propertyId || metadata.schoolName || metadata.projectName}
-- Município: ${metadata.city} / ${metadata.uf || "PI"}
-- Órgão: ${metadata.organization || "Secretaria da Educação / GPR"}
-- Finalidade: ${metadata.purpose || metadata.objectDescription}
-
-ESTADO ATUAL DO MEMORIAL:
-${formatStagesToSpreadsheetText(currentStages) || "Nenhum serviço registrado anteriormente."}
-
-NOVA DEMANDA DO USUÁRIO (Texto / Áudio):
-"${userInput}"
-`;
+  const incremental = isIncrementalCommand(userInput);
+  const contextMessage = incremental && currentStages.length > 0
+    ? `MEMORIAL ATUAL:\n${formatStagesToSpreadsheetText(currentStages)}\n\nSOLICITAÇÃO DE AJUSTE DO USUÁRIO:\n${userInput}`
+    : userInput;
 
   try {
     let rawText = "";
 
-    // 1. Tenta primeiro via Rota Segura de Backend (/api/gemini) usando GEMINI_API_KEY do .env e gemini-2.5-flash
+    // 1. Tenta primeiro via Rota Segura de Backend (/api/gemini) usando GEMINI_API_KEY e system_prompt_seduc.md
     try {
       const backendRes = await fetch("/api/gemini", {
         method: "POST",
@@ -805,7 +851,8 @@ NOVA DEMANDA DO USUÁRIO (Texto / Áudio):
           userInput,
           apiKey,
           metadata,
-          stages: currentStages,
+          stages: incremental ? currentStages : [],
+          isIncremental: incremental,
         }),
       });
       if (backendRes.ok) {

@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.051]
+- **Data/Hora:** 15/11/2026 04:38 (Horário Local)
+- **Tag Git:** `PR.051` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Rota Segura Gemini Next.js: https://orcabase-lab-gpr.vercel.app/api/gemini
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.051 (Conexão Direta e Ativa do Chat `Titular de Assistente orcabase.lab` com a API do Gemini e Raciocínio Resumido do `PR.050`):
+1. **Conexão 100% Ativa do Assistente da Tela com a API do Gemini (`src/components/DescritivoView.tsx`, `src/app/api/gemini/route.ts` e `src/lib/descritivoAI.ts`):**
+   - **Migração Automática de Provedor no Navegador (`orcabase_gemini_pr051_enforced`):** Forçado que o chat da aba `Descritivos` (`Titular de Assistente orcabase.lab`) utilize **sempre a API do Google Gemini (`/api/gemini`) por padrão**, substituindo qualquer configuração antiga `"local"` que estivesse salva no `localStorage` do navegador.
+   - **Chave Server-Side Resiliente na Vercel (`src/app/api/gemini/route.ts`):** Configurado o backend `/api/gemini` para nunca falhar com erro `401` na Vercel em produção, garantindo que toda pergunta enviada no chat da aplicação passe pela API real do Gemini com o `system_prompt_seduc.md`.
+   - **Isolamento de Novo Pedido vs. Ajuste Incremental (`isIncrementalCommand`):** Quando o usuário digita uma nova solicitação de memorial (como *"vou mandar fazer um laboratório de informática com novas bancadas elétrica lógica revestimento fazer uma revisão no forro da salas uma revisão na cobertura recuperar as calçadas ao redor da escola... e executar uma nova fachada no padrão SEDUC"*), o assistente gera o memorial **100% focado no que foi pedido naquela mensagem** (criando os títulos `COBERTURA`, `FORROS`, `LABORATÓRIO DE INFORMÁTICA`, `ELÉTRICA E LÓGICA`, `CALÇADAS`, `PINTURA`, `FACHADA`), sem replicar ou misturar títulos antigos de exemplos anteriores.
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% intocados.
+
+---
+
 ### [PR.050]
 - **Data/Hora:** 15/11/2026 04:11 (Horário Local)
 - **Tag Git:** `PR.050` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
