@@ -226,12 +226,12 @@ body {
   position: absolute;
   z-index: -1;
   inset: 1px 6px 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-bottom: 0;
   border-radius: 13px 13px 0 0;
-  background: linear-gradient(180deg, rgba(38, 40, 46, 0.82) 0%, rgba(16, 17, 20, 0.92) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, rgba(35, 38, 45, 0.65) 0%, rgba(14, 15, 18, 0.8) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   transform: perspective(110px) rotateX(19deg);
   transform-origin: bottom;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -242,8 +242,8 @@ body {
 }
 
 .app-navigation button:hover:not([aria-pressed="true"]):before {
-  border-color: rgba(255, 180, 87, 0.5);
-  background: linear-gradient(180deg, rgba(52, 54, 62, 0.88) 0%, rgba(22, 24, 28, 0.95) 100%);
+  border-color: rgba(255, 180, 87, 0.45);
+  background: linear-gradient(180deg, rgba(55, 58, 68, 0.72) 0%, rgba(22, 24, 28, 0.85) 100%);
 }
 
 .app-navigation button[aria-pressed="true"] {
@@ -253,12 +253,21 @@ body {
 }
 
 .app-navigation button[aria-pressed="true"]:before {
-  background: linear-gradient(180deg, rgba(255, 171, 42, 0.82) 0%, rgba(203, 86, 6, 0.76) 100%);
-  border: 1px solid rgba(255, 220, 160, 0.75);
+  background: linear-gradient(
+    180deg, 
+    rgba(255, 145, 25, 0.52) 0%, 
+    rgba(255, 105, 10, 0.40) 55%, 
+    rgba(230, 75, 0, 0.32) 100%
+  );
+  border: 1px solid rgba(255, 205, 140, 0.65);
   border-bottom: 0;
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-  box-shadow: 0 4px 22px rgba(255, 137, 9, 0.4), inset 0 1.5px 2px rgba(255, 255, 255, 0.65), inset 0 -2px 6px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px) saturate(220%) brightness(115%);
+  -webkit-backdrop-filter: blur(14px) saturate(220%) brightness(115%);
+  box-shadow: 
+    0 6px 24px rgba(255, 115, 10, 0.35),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.75),
+    inset 0 0 18px rgba(255, 130, 0, 0.35),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* Custom Scrollbars */
