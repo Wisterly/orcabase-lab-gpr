@@ -1663,9 +1663,9 @@ export default function OrcaBaseDashboard() {
               onClick={() => setMainModule("ORCAMENTO")}
             >
               <img
-                src="/icon-orcamento.png"
+                src="/icon-orcamento.png?v=white"
                 alt="Orçamento"
-                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
               />
               <span>Orçamento</span>
             </button>
@@ -1675,9 +1675,9 @@ export default function OrcaBaseDashboard() {
               onClick={() => setMainModule("DESCRITIVOS")}
             >
               <img
-                src="/icon-descritivo.png"
+                src="/icon-descritivo.png?v=white"
                 alt="Descritivos"
-                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
               />
               <span>Descritivos</span>
             </button>
@@ -1686,7 +1686,7 @@ export default function OrcaBaseDashboard() {
               aria-pressed={mainModule === "CONFIGURACOES"}
               onClick={() => setMainModule("CONFIGURACOES")}
             >
-              <Settings className="w-5 h-5 text-[#ffb457]" />
+              <Settings className="w-5 h-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
               <span>Configurações</span>
             </button>
           </nav>
@@ -2987,9 +2987,9 @@ export default function OrcaBaseDashboard() {
                   }`}
                 >
                   <img
-                    src="/icon-orcamento.png"
+                    src="/icon-orcamento.png?v=white"
                     alt="Orçamento"
-                    className="w-4 h-4 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                    className="w-4 h-4 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
                   />
                   <span>Demandas de Orçamento</span>
                   <span className="px-2 py-0.5 rounded text-xs font-mono bg-black/30 text-white font-bold">
@@ -3007,9 +3007,9 @@ export default function OrcaBaseDashboard() {
                   }`}
                 >
                   <img
-                    src="/icon-descritivo.png"
+                    src="/icon-descritivo.png?v=white"
                     alt="Descritivos"
-                    className="w-4 h-4 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                    className="w-4 h-4 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
                   />
                   <span>Demandas de Descritivos</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
