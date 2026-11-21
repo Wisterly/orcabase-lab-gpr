@@ -1663,11 +1663,11 @@ export default function OrcaBaseDashboard() {
               onClick={() => setMainModule("ORCAMENTO")}
             >
               <img
-                src="/icon-orcamento.png?v=white"
+                src="/icon-orcamento.png?v=bold2"
                 alt="Orçamento"
-                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+                className="w-6 h-6 sm:w-7 sm:h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
               />
-              <span>Orçamento</span>
+              <span className="font-extrabold tracking-wide text-white">Orçamento</span>
             </button>
             <button
               type="button"
@@ -1675,19 +1675,19 @@ export default function OrcaBaseDashboard() {
               onClick={() => setMainModule("DESCRITIVOS")}
             >
               <img
-                src="/icon-descritivo.png?v=white"
+                src="/icon-descritivo.png?v=bold2"
                 alt="Descritivos"
-                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]"
+                className="w-6 h-6 sm:w-7 sm:h-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]"
               />
-              <span>Descritivos</span>
+              <span className="font-extrabold tracking-wide text-white">Descritivos</span>
             </button>
             <button
               type="button"
               aria-pressed={mainModule === "CONFIGURACOES"}
               onClick={() => setMainModule("CONFIGURACOES")}
             >
-              <Settings className="w-5 h-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]" />
-              <span>Configurações</span>
+              <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]" />
+              <span className="font-extrabold tracking-wide text-white">Configurações</span>
             </button>
           </nav>
         </div>
