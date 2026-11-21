@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.054]
+- **Data/Hora:** 21/11/2026 20:08 (Horário Local)
+- **Tag Git:** `PR.054` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.054 (Novos Ícones Oficiais das Abas `Orçamento` e `Descritivos`):
+1. **Substituição dos Ícones das Abas `Orçamento` e `Descritivos` (`public/icon-orcamento.png`, `public/icon-descritivo.png` e `src/app/page.tsx`):**
+   - Processadas com fundo 100% transparente e gradiente institucional dourado/laranja as duas imagens enviadas pelo usuário:
+     - **Aba `Orçamento` (`public/icon-orcamento.png`):** Ícone de planilha/documento com símbolo `$` e lápis.
+     - **Aba `Descritivos` (`public/icon-descritivo.png`):** Ícone de memorial/documento com lápis e engrenagem.
+   - Aplicados nas abas principais do topo (`.app-navigation`) e nos seletores de demandas na Central de Configurações (`Demandas de Orçamento` e `Demandas de Descritivos`).
+2. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% intocados.
+
+---
+
 ### [PR.053]
 - **Data/Hora:** 15/11/2026 05:00 (Horário Local)
 - **Tag Git:** `PR.053` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)

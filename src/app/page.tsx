@@ -1662,7 +1662,11 @@ export default function OrcaBaseDashboard() {
               aria-pressed={mainModule === "ORCAMENTO"}
               onClick={() => setMainModule("ORCAMENTO")}
             >
-              <Calculator className="w-5 h-5 text-[#ffb457]" />
+              <img
+                src="/icon-orcamento.png"
+                alt="Orçamento"
+                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+              />
               <span>Orçamento</span>
             </button>
             <button
@@ -1670,7 +1674,11 @@ export default function OrcaBaseDashboard() {
               aria-pressed={mainModule === "DESCRITIVOS"}
               onClick={() => setMainModule("DESCRITIVOS")}
             >
-              <BrainCircuit className="w-5 h-5 text-[#ffb457]" />
+              <img
+                src="/icon-descritivo.png"
+                alt="Descritivos"
+                className="w-5 h-5 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+              />
               <span>Descritivos</span>
             </button>
             <button
@@ -2978,7 +2986,11 @@ export default function OrcaBaseDashboard() {
                       : "text-gray-300 hover:text-white hover:bg-[#1a2233]"
                   }`}
                 >
-                  <Calculator className="w-4 h-4" />
+                  <img
+                    src="/icon-orcamento.png"
+                    alt="Orçamento"
+                    className="w-4 h-4 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                  />
                   <span>Demandas de Orçamento</span>
                   <span className="px-2 py-0.5 rounded text-xs font-mono bg-black/30 text-white font-bold">
                     {contracts.length}
@@ -2994,7 +3006,11 @@ export default function OrcaBaseDashboard() {
                       : "text-gray-300 hover:text-white hover:bg-[#1a2233]"
                   }`}
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <img
+                    src="/icon-descritivo.png"
+                    alt="Descritivos"
+                    className="w-4 h-4 object-contain drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                  />
                   <span>Demandas de Descritivos</span>
                   <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
                     memorialTemplateMeta ? "bg-emerald-500/20 text-emerald-400 font-bold" : "bg-black/30 text-gray-300"
