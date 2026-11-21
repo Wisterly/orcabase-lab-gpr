@@ -11,6 +11,26 @@ Este documento registra cronologicamente todos os pontos de restauração do pro
 
 ---
 
+### [PR.058]
+- **Data/Hora:** 21/11/2026 20:50 (Horário Local)
+- **Tag Git:** `PR.058` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)
+- **Status:** Ativo / Em Produção 24/7
+- **Links Oficiais:**
+  - Produção Oficial (Vercel): https://orcabase-lab-gpr.vercel.app (e alias https://orcaeng-lab-ai-matching.vercel.app)
+  - Repositório GitHub: https://github.com/Wisterly/orcabase-lab-gpr
+  - Pasta Oficial no Disco: C:\Users\Lenovo\Documents\antigravity\LAB - GPR\OrçaBase.lab - GPR
+
+#### 🎯 Implementações Estruturais do PR.058 (Efeito Neon Glass Laranja Fiel à Imagem de Referência):
+1. **Eliminação Total de Tonalidades Marrons/Opacas (`src/app/globals.css`):**
+   - Substituída a camada marrom escura por um corpo de vidro transparente e translúcido (`rgba(255, 218, 130, 0.22)` a `rgba(255, 140, 15, 0.25)`).
+2. **Contorno e Halo de Neon Incandescente Laranja Elétrico:**
+   - Adicionada borda neon incandescente `1.5px solid #ffbe3d` com halo difuso multicamada `box-shadow: 0 0 14px rgba(255, 165, 35, 0.85), 0 0 30px rgba(255, 120, 15, 0.55), 0 0 50px rgba(255, 95, 0, 0.32)`.
+   - Reflexo de chanfro superior cristalino `inset 0 1.5px 2px rgba(255, 245, 205, 0.95)` e glow interno encostado nas bordas.
+3. **🔒 Cadeado Criptográfico SHA-256 Mantido 100% Intacto:**
+   - `src/lib/excelEngine.ts` e `src/lib/compatEngineLock.ts` 100% preservados e validados no prebuild.
+
+---
+
 ### [PR.057]
 - **Data/Hora:** 21/11/2026 20:44 (Horário Local)
 - **Tag Git:** `PR.057` (Ponto de Recuperação de Segurança Anterior: **`PR.046`**)

@@ -242,32 +242,38 @@ body {
 }
 
 .app-navigation button:hover:not([aria-pressed="true"]):before {
-  border-color: rgba(255, 180, 87, 0.45);
-  background: linear-gradient(180deg, rgba(55, 58, 68, 0.72) 0%, rgba(22, 24, 28, 0.85) 100%);
+  border-color: rgba(255, 186, 59, 0.6);
+  background: linear-gradient(180deg, rgba(255, 186, 59, 0.12) 0%, rgba(32, 35, 44, 0.75) 100%);
+  box-shadow: 0 0 16px rgba(255, 160, 30, 0.35);
 }
 
 .app-navigation button[aria-pressed="true"] {
   color: #ffffff;
   font-weight: 900;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7), 0 0 14px rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.6), 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .app-navigation button[aria-pressed="true"]:before {
+  /* Fundo de vidro limpo translúcido com reflexo suave sem escurecer/amarronzar */
   background: linear-gradient(
     180deg, 
-    rgba(255, 145, 25, 0.52) 0%, 
-    rgba(255, 105, 10, 0.40) 55%, 
-    rgba(230, 75, 0, 0.32) 100%
+    rgba(255, 218, 130, 0.22) 0%, 
+    rgba(255, 150, 25, 0.14) 30%, 
+    rgba(22, 18, 16, 0.45) 65%, 
+    rgba(255, 140, 15, 0.25) 100%
   );
-  border: 1px solid rgba(255, 205, 140, 0.65);
+  /* Contorno incandescente de neon laranja/dourado elétrico */
+  border: 1.5px solid #ffbe3d;
   border-bottom: 0;
-  backdrop-filter: blur(14px) saturate(220%) brightness(115%);
-  -webkit-backdrop-filter: blur(14px) saturate(220%) brightness(115%);
+  backdrop-filter: blur(14px) saturate(200%);
+  -webkit-backdrop-filter: blur(14px) saturate(200%);
+  /* Halo e Glow de Neon Laranja característico da referência */
   box-shadow: 
-    0 6px 24px rgba(255, 115, 10, 0.35),
-    inset 0 1.5px 2px rgba(255, 255, 255, 0.75),
-    inset 0 0 18px rgba(255, 130, 0, 0.35),
-    inset 0 -2px 6px rgba(0, 0, 0, 0.25);
+    0 0 14px rgba(255, 165, 35, 0.85),
+    0 0 30px rgba(255, 120, 15, 0.55),
+    0 0 50px rgba(255, 95, 0, 0.32),
+    inset 0 0 16px rgba(255, 155, 30, 0.45),
+    inset 0 1.5px 2px rgba(255, 245, 205, 0.95);
 }
 
 /* Custom Scrollbars */
